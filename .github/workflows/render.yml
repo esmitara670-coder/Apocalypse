@@ -23,7 +23,7 @@ jobs:
           pip install edge-tts --break-system-packages
           npm install
 
-      - name: Generate Synced Hindi AI Voiceover
+      - name: Generate Zero-Overlap Hindi Voiceover
         run: |
           python3 - << 'EOF'
           import os, re, subprocess
@@ -43,28 +43,47 @@ jobs:
               scenes = re.findall(pattern_text, code)
 
           if not scenes:
-              subprocess.run(["edge-tts", "--voice", voice, "--text", "Simulation starting now.", "--write-media", "public/voice.mp3"], check=True)
+              subprocess.run(["edge-tts", "--voice", voice, "--text", "नमस्ते", "--write-media", "public/voice.mp3"], check=True)
           else:
-              inputs = []
-              filters = []
+              fixed_clips = []
               for i, (start, dur, spoken_text) in enumerate(scenes):
-                  clip = f"scene_{i}.mp3"
+                  dur_f = float(dur)
+                  raw_clip = f"raw_{i}.mp3"
+                  fixed_clip = f"fixed_{i}.wav"
+
                   subprocess.run([
                       "edge-tts",
                       "--voice", voice,
-                      "--rate=+8%",
-                      "--pitch=-2Hz",
+                      "--rate=+18%",
+                      "--pitch=+0Hz",
                       "--text", spoken_text,
-                      "--write-media", clip
+                      "--write-media", raw_clip
                   ], check=True)
-                  delay_ms = int(float(start) * 1000)
-                  inputs.extend(["-i", clip])
-                  filters.append(f"[{i}:a]adelay={delay_ms}|{delay_ms}[a{i}]")
 
-              mix_inputs = "".join(f"[a{i}]" for i in range(len(scenes)))
-              filter_complex = ";".join(filters) + f";{mix_inputs}amix=inputs={len(scenes)}:normalize=0[out]"
-              cmd = ["ffmpeg", "-y"] + inputs + ["-filter_complex", filter_complex, "-map", "[out]", "public/voice.mp3"]
-              subprocess.run(cmd, check=True)
+                  probe = subprocess.run([
+                      "ffprobe", "-v", "error", "-show_entries", "format=duration",
+                      "-of", "default=noprint_wrappers=1:nokey=1", raw_clip
+                  ], capture_output=True, text=True, check=True)
+                  clip_dur = float(probe.stdout.strip() or dur_f)
+
+                  target_max = dur_f - 0.12
+                  if clip_dur > target_max:
+                      tempo = min(1.85, max(1.0, clip_dur / target_max))
+                      af = f"atempo={tempo:.3f},apad=whole_dur={dur_f},atrim=0:{dur_f}"
+                  else:
+                      af = f"apad=whole_dur={dur_f},atrim=0:{dur_f}"
+
+                  subprocess.run([
+                      "ffmpeg", "-y", "-i", raw_clip,
+                      "-af", af, "-ar", "44100", "-ac", "2", fixed_clip
+                  ], check=True)
+                  fixed_clips.append(fixed_clip)
+
+              inputs = []
+              for fc in fixed_clips:
+                  inputs.extend(["-i", fc])
+              concat_filter = "".join(f"[{i}:a]" for i in range(len(fixed_clips))) + f"concat=n={len(fixed_clips)}:v=0:a=1[out]"
+              subprocess.run(["ffmpeg", "-y"] + inputs + ["-filter_complex", concat_filter, "-map", "[out]", "public/voice.mp3"], check=True)
           EOF
 
       - name: Render 1080p 60FPS MP4
