@@ -1,0 +1,72 @@
+name: Render Reel
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Remotion & Voice Engine
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install edge-tts --break-system-packages
+          npm install
+
+      - name: Generate Synced AI Voiceover
+        run: |
+          python3 - << 'EOF'
+          import os, re, subprocess
+
+          os.makedirs("public", exist_ok=True)
+          with open("src/Root.tsx", "r", encoding="utf-8") as f:
+              code = f.read()
+
+          voice_match = re.search(r'VOICE\s*=\s*["\']([^"\']+)["\']', code)
+          voice = voice_match.group(1) if voice_match else "en-US-ChristopherNeural"
+
+          pattern = r'start:\s*(\d+(?:\.\d+)?)\s*,\s*duration:\s*(\d+(?:\.\d+)?)\s*,\s*text:\s*["\']([^"\']+)["\']'
+          scenes = re.findall(pattern, code)
+
+          if not scenes:
+              subprocess.run(["edge-tts", "--voice", voice, "--text", "Video starting now.", "--write-media", "public/voice.mp3"], check=True)
+          else:
+              inputs = []
+              filters = []
+              for i, (start, dur, text) in enumerate(scenes):
+                  clip = f"scene_{i}.mp3"
+                  subprocess.run([
+                      "edge-tts",
+                      "--voice", voice,
+                      "--rate=+10%",
+                      "--text", text,
+                      "--write-media", clip
+                  ], check=True)
+                  delay_ms = int(float(start) * 1000)
+                  inputs.extend(["-i", clip])
+                  filters.append(f"[{i}:a]adelay={delay_ms}|{delay_ms}[a{i}]")
+
+              mix_inputs = "".join(f"[a{i}]" for i in range(len(scenes)))
+              filter_complex = ";".join(filters) + f";{mix_inputs}amix=inputs={len(scenes)}:normalize=0[out]"
+              cmd = ["ffmpeg", "-y"] + inputs + ["-filter_complex", filter_complex, "-map", "[out]", "public/voice.mp3"]
+              subprocess.run(cmd, check=True)
+          EOF
+
+      - name: Render 1080p 60FPS MP4
+        run: npx remotion render Reel Out.mp4 --codec=h264
+
+      - name: Upload Final Video
+        uses: actions/upload-artifact@v4
+        with:
+          name: Final-Reel-MP4
+          path: Out.mp4
