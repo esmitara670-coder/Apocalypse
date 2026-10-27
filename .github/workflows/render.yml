@@ -23,7 +23,7 @@ jobs:
           pip install edge-tts --break-system-packages
           npm install
 
-      - name: Generate Synced AI Voiceover
+      - name: Generate Synced Hindi AI Voiceover
         run: |
           python3 - << 'EOF'
           import os, re, subprocess
@@ -33,23 +33,28 @@ jobs:
               code = f.read()
 
           voice_match = re.search(r'VOICE\s*=\s*["\']([^"\']+)["\']', code)
-          voice = voice_match.group(1) if voice_match else "en-US-ChristopherNeural"
+          voice = voice_match.group(1) if voice_match else "hi-IN-MadhurNeural"
 
-          pattern = r'start:\s*(\d+(?:\.\d+)?)\s*,\s*duration:\s*(\d+(?:\.\d+)?)\s*,\s*text:\s*["\']([^"\']+)["\']'
-          scenes = re.findall(pattern, code)
+          pattern_tts = r'start:\s*(\d+(?:\.\d+)?)\s*,\s*duration:\s*(\d+(?:\.\d+)?)\s*,\s*text:\s*["\'][^"\']+["\']\s*,\s*tts:\s*["\']([^"\']+)["\']'
+          scenes = re.findall(pattern_tts, code)
 
           if not scenes:
-              subprocess.run(["edge-tts", "--voice", voice, "--text", "Video starting now.", "--write-media", "public/voice.mp3"], check=True)
+              pattern_text = r'start:\s*(\d+(?:\.\d+)?)\s*,\s*duration:\s*(\d+(?:\.\d+)?)\s*,\s*text:\s*["\']([^"\']+)["\']'
+              scenes = re.findall(pattern_text, code)
+
+          if not scenes:
+              subprocess.run(["edge-tts", "--voice", voice, "--text", "Simulation starting now.", "--write-media", "public/voice.mp3"], check=True)
           else:
               inputs = []
               filters = []
-              for i, (start, dur, text) in enumerate(scenes):
+              for i, (start, dur, spoken_text) in enumerate(scenes):
                   clip = f"scene_{i}.mp3"
                   subprocess.run([
                       "edge-tts",
                       "--voice", voice,
-                      "--rate=+10%",
-                      "--text", text,
+                      "--rate=+8%",
+                      "--pitch=-2Hz",
+                      "--text", spoken_text,
                       "--write-media", clip
                   ], check=True)
                   delay_ms = int(float(start) * 1000)
