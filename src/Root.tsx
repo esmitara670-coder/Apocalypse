@@ -15,12 +15,12 @@ import {
 const VOICE = "hi-IN-MadhurNeural";
 
 const SCENES = [
-  { start: 0, duration: 5, speechDur: 3.8, caption: "Agar duniya se oxygen sirf 5 second ke liye gayab ho jaye,", tts: "अगर दुनिया से ऑक्सीजन सिर्फ पांच सेकंड के लिए गायब हो जाए," },
-  { start: 5, duration: 5, speechDur: 3.8, caption: "Toh saans rok kar bhi aap bilkul nahi bach paoge!", tts: "तो सांस रोक कर भी आप बिलकुल नहीं बच पाओगे!" },
-  { start: 10, duration: 5, speechDur: 4.1, caption: "Kyunki oxygen hi har concrete building ko jod kar rakhta hai.", tts: "क्योंकि ऑक्सीजन ही हर कंक्रीट बिल्डिंग को जोड़ कर रखता है।" },
-  { start: 15, duration: 5, speechDur: 4.0, caption: "Hawa ka pressure girte hi sabke kaan ke parde phat jayenge.", tts: "हवा का प्रेशर गिरते ही सबके कान के पर्दे तुरंत फट जाएंगे।" },
-  { start: 20, duration: 5, speechDur: 4.1, caption: "Din mein aasman kaala hoga aur saare engine band ho jayenge.", tts: "दिन में आसमान पूरा काला होगा और सारे इंजन बंद हो जाएंगे।" },
-  { start: 25, duration: 5, speechDur: 4.1, caption: "Kyunki zameen ki parat bhi 45% oxygen se hi bani hai!", tts: "क्योंकि ज़मीन की परत भी पैंतालीस परसेंट ऑक्सीजन से ही बनी है!" }
+  { start: 0, duration: 3.5, speechDur: 3.1, caption: "Agar duniya se oxygen sirf 5 second ke liye gayab ho jaye,", tts: "अगर दुनिया से ऑक्सीजन सिर्फ पांच सेकंड के लिए गायब हो जाए," },
+  { start: 3.5, duration: 3.5, speechDur: 3.0, caption: "Toh saans rok kar bhi aap bilkul nahi bach paoge!", tts: "तो सांस रोक कर भी आप बिलकुल नहीं बच पाओगे!" },
+  { start: 7.0, duration: 3.5, speechDur: 3.2, caption: "Kyunki oxygen hi har concrete building ko jod kar rakhta hai.", tts: "क्योंकि ऑक्सीजन ही हर कंक्रीट बिल्डिंग को जोड़ कर रखता है।" },
+  { start: 10.5, duration: 3.5, speechDur: 3.2, caption: "Hawa ka pressure girte hi sabke kaan ke parde turant phat jayenge.", tts: "हवा का प्रेशर गिरते ही सबके कान के पर्दे तुरंत फट जाएंगे।" },
+  { start: 14.0, duration: 3.5, speechDur: 3.2, caption: "Din mein aasman poora kaala hoga aur saare engine band ho jayenge.", tts: "दिन में आसमान पूरा काला होगा और सारे इंजन बंद हो जाएंगे।" },
+  { start: 17.5, duration: 3.5, speechDur: 3.2, caption: "Kyunki zameen ki parat bhi 45 percent oxygen se hi bani hai!", tts: "क्योंकि जमीन की परत भी पैंतालीस परसेंट ऑक्सीजन से ही बनी है!" }
 ];
 
 const W = 1080;
@@ -28,9 +28,9 @@ const H = 1920;
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
 const VintagePaperBackground: React.FC<{ figNum: number; sectionTag: string }> = ({ figNum, sectionTag }) => (
-  <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 0 }}>
+  <AbsoluteFill style={{ pointerEvents: 'none', zIndex: 1 }}>
     <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 45%, #f6efe0 0%, #eadec5 58%, #d5c4a1 100%)' }} />
-    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ opacity: 0.2 }}>
+    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, opacity: 0.2 }}>
       {Array.from({ length: 27 }, (_, i) => <line key={`v${i}`} x1={i * 40} y1={0} x2={i * 40} y2={H} stroke="#8c785c" strokeWidth="1" />)}
       {Array.from({ length: 48 }, (_, i) => <line key={`h${i}`} x1={0} y1={i * 40} x2={W} y2={i * 40} stroke="#8c785c" strokeWidth="1" />)}
     </svg>
@@ -45,11 +45,11 @@ const VintagePaperBackground: React.FC<{ figNum: number; sectionTag: string }> =
 const TopScientificTelemetry: React.FC = () => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
-  const o2 = interpolate(frame, [0, 110, 200], [20.9, 20.9, 0.0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const pressure = interpolate(frame, [0, 900, 1020], [101.3, 101.3, 79.8], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const bonds = interpolate(frame, [0, 600, 760], [100, 100, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const sky = interpolate(frame, [0, 1200, 1340], [100, 100, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const timer = interpolate(frame, [100, durationInFrames], [5.0, 0.0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const o2 = interpolate(frame, [0, 80, 150], [20.9, 20.9, 0.0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const pressure = interpolate(frame, [0, 630, 720], [101.3, 101.3, 79.8], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const bonds = interpolate(frame, [0, 420, 540], [100, 100, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const sky = interpolate(frame, [0, 840, 950], [100, 100, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const timer = interpolate(frame, [70, durationInFrames], [5.0, 0.0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
   const items = [
     { label: 'O2 LEVEL', val: `${o2.toFixed(1)}%`, bad: o2 < 5 },
@@ -74,7 +74,7 @@ const TopScientificTelemetry: React.FC = () => {
 const EditorialHeadline: React.FC<{ line1: string; line2: string }> = ({ line1, line2 }) => {
   const frame = useCurrentFrame();
   const full = `${line1}\n${line2}`;
-  const sub = full.slice(0, Math.min(full.length, Math.floor(frame * 0.9)));
+  const sub = full.slice(0, Math.min(full.length, Math.floor(frame * 1.15)));
   const [p1 = '', p2 = ''] = sub.split('\n');
   return (
     <div style={{ position: 'absolute', top: 232, left: 64, right: 64, zIndex: 20, fontFamily: 'Impact, Arial Black, sans-serif', textTransform: 'uppercase', lineHeight: 1.05 }}>
@@ -84,7 +84,7 @@ const EditorialHeadline: React.FC<{ line1: string; line2: string }> = ({ line1, 
   );
 };
 
-const DiagramBadge: React.FC<{ x: number; y: number; text: string; variant?: 'dark' | 'red'; delay?: number }> = ({ x, y, text, variant = 'dark', delay = 15 }) => {
+const DiagramBadge: React.FC<{ x: number; y: number; text: string; variant?: 'dark' | 'red'; delay?: number }> = ({ x, y, text, variant = 'dark', delay = 10 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const pop = spring({ frame: Math.max(0, frame - delay), fps, config: { damping: 14, stiffness: 150 } });
@@ -102,22 +102,22 @@ const Scene1: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const scaleIn = spring({ frame, fps, config: { damping: 16 } });
-  const dissolve = interpolate(frame, [110, 210], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const magX = interpolate(frame, [0, 140, 300], [400, 545, 580]);
-  const magY = interpolate(frame, [0, 140, 300], [1070, 975, 955]);
+  const dissolve = interpolate(frame, [75, 165], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const magX = interpolate(frame, [0, 100, 210], [400, 545, 580]);
+  const magY = interpolate(frame, [0, 100, 210], [1070, 975, 955]);
 
   return (
     <AbsoluteFill>
       <VintagePaperBackground figNum={1} sectionTag="THE BASICS" />
       <EditorialHeadline line1="OXYGEN GAYAB" line2="FOR 5 SECONDS?" />
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
         <g transform={`translate(540, 980) scale(${scaleIn}) translate(-540, -980)`}>
           <rect x="140" y="590" width="800" height="730" rx="28" fill="#d8e6e7" stroke="#362a20" strokeWidth="6" />
           <rect x="143" y="593" width="794" height="110" rx="24" fill="#82aeb8" />
           <line x1="140" y1="705" x2="940" y2="705" stroke="#362a20" strokeWidth="5" />
           <text x="540" y="662" textAnchor="middle" fill="#2b2119" fontSize="28" fontWeight="900" letterSpacing="3">EARTH ATMOSPHERE // 20.9% O2</text>
 
-          <circle cx="540" cy="980" r="215" fill="none" stroke="#d43527" strokeWidth="5" strokeDasharray="14 10" transform={`rotate(${frame * 0.8} 540 980)`} />
+          <circle cx="540" cy="980" r="215" fill="none" stroke="#d43527" strokeWidth="5" strokeDasharray="14 10" transform={`rotate(${frame * 0.9} 540 980)`} />
 
           <g opacity={1 - dissolve * 0.9} transform={`translate(540, 980) scale(${1 - dissolve * 0.3}) translate(-540, -980)`}>
             <rect x="400" y="960" width="280" height="14" rx="7" fill="#362a20" />
@@ -136,11 +136,11 @@ const Scene1: React.FC = () => {
 
           <g transform={`translate(${magX}, ${magY}) rotate(-26)`}>
             <rect x="-16" y="130" width="32" height="180" rx="14" fill="#6e472b" stroke="#2b2119" strokeWidth="6" />
-            <circle cx="0" cy="0" r="135" fill="rgba(255,255,255,0.25)" stroke="#2b2119" strokeWidth="14" />
+            <circle cx="0" cy="0" r="135" fill="rgba(255,255,255,0.28)" stroke="#2b2119" strokeWidth="14" />
           </g>
 
-          <DiagramBadge x={310} y={1240} text="COVALENT O2" delay={10} />
-          <DiagramBadge x={755} y={800} text={dissolve > 0.3 ? 'O2 VANISHED!' : 'TIMER: 5.0 SEC'} variant="red" delay={35} />
+          <DiagramBadge x={310} y={1240} text="COVALENT O2" delay={8} />
+          <DiagramBadge x={755} y={800} text={dissolve > 0.3 ? 'O2 VANISHED!' : 'TIMER: 5.0 SEC'} variant="red" delay={25} />
         </g>
       </svg>
     </AbsoluteFill>
@@ -150,15 +150,15 @@ const Scene1: React.FC = () => {
 /* SCENE 2: Lungs Breathing vs City Buildings Cracking */
 const Scene2: React.FC = () => {
   const frame = useCurrentFrame();
-  const breath = 1 + Math.sin(frame * 0.12) * 0.06;
-  const shake = frame > 70 ? Math.sin(frame * 1.8) * 8 : 0;
-  const crack = interpolate(frame, [60, 180], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const breath = 1 + Math.sin(frame * 0.15) * 0.06;
+  const shake = frame > 45 ? Math.sin(frame * 1.9) * 8 : 0;
+  const crack = interpolate(frame, [40, 145], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
   return (
     <AbsoluteFill>
       <VintagePaperBackground figNum={2} sectionTag="THE MECHANISM" />
       <EditorialHeadline line1="SAANS ROKNA" line2="BEKAAR KYUN HAI?" />
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
         <g>
           <rect x="70" y="610" width="445" height="690" rx="24" fill="#e8d8c8" stroke="#362a20" strokeWidth="5" />
           <g transform={`translate(292, 955) scale(${breath}) translate(-292, -955)`}>
@@ -166,8 +166,8 @@ const Scene2: React.FC = () => {
             <path d="M268 785 C160 780, 120 910, 140 1065 C155 1140, 255 1110, 272 1020 Z" fill="#d98a7c" stroke="#362a20" strokeWidth="5" />
             <path d="M316 785 C424 780, 464 910, 444 1065 C429 1140, 329 1110, 312 1020 Z" fill="#d98a7c" stroke="#362a20" strokeWidth="5" />
           </g>
-          <DiagramBadge x={292} y={675} text="HOLD BREATH: OK" delay={10} />
-          <DiagramBadge x={292} y={1225} text="FEFDON (LUNGS)" delay={25} />
+          <DiagramBadge x={292} y={675} text="HOLD BREATH: OK" delay={8} />
+          <DiagramBadge x={292} y={1225} text="FEFDON (LUNGS)" delay={18} />
         </g>
 
         <g transform={`translate(${shake}, 0)`}>
@@ -176,9 +176,9 @@ const Scene2: React.FC = () => {
           <rect x="785" y={720 + crack * 50} width="155" height="380" fill="#7f8c8d" stroke="#362a20" strokeWidth="5" transform={`rotate(${crack * 8} 860 1100)`} />
           <path d="M625 850 L700 910 L650 990 M785 810 L875 885 L815 975" stroke="#d43527" strokeWidth={8 * crack} fill="none" />
           <rect x="595" y="1095" width="385" height="55" rx="8" fill="#8c6239" stroke="#362a20" strokeWidth="5" />
-          <circle cx="787" cy="925" r="175" fill="none" stroke="#d43527" strokeWidth="5" strokeDasharray="12 8" transform={`rotate(${-frame * 0.9} 787 925)`} />
-          <DiagramBadge x={787} y={675} text="OUTSIDE COLLAPSE" variant="red" delay={35} />
-          <DiagramBadge x={787} y={1225} text="CHAARON TARAF" delay={45} />
+          <circle cx="787" cy="925" r="175" fill="none" stroke="#d43527" strokeWidth="5" strokeDasharray="12 8" transform={`rotate(${-frame * 1.1} 787 925)`} />
+          <DiagramBadge x={787} y={675} text="OUTSIDE COLLAPSE" variant="red" delay={25} />
+          <DiagramBadge x={787} y={1225} text="CHAARON TARAF" delay={35} />
         </g>
       </svg>
     </AbsoluteFill>
@@ -188,7 +188,7 @@ const Scene2: React.FC = () => {
 /* SCENE 3: Concrete Ca-O-Si Molecular Matrix & Dam Crumbling Into Dust */
 const Scene3: React.FC = () => {
   const frame = useCurrentFrame();
-  const crumble = interpolate(frame, [75, 220], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const crumble = interpolate(frame, [50, 165], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const nodes = [
     { x: 360, y: 820, t: 'Ca' }, { x: 540, y: 820, t: 'O' }, { x: 720, y: 820, t: 'Si' },
     { x: 360, y: 960, t: 'O' },  { x: 540, y: 960, t: 'Ca' }, { x: 720, y: 960, t: 'O' },
@@ -199,7 +199,7 @@ const Scene3: React.FC = () => {
     <AbsoluteFill>
       <VintagePaperBackground figNum={3} sectionTag="MATERIAL SCIENCE" />
       <EditorialHeadline line1="CONCRETE BUILDINGS" line2="TURN TO DUST!" />
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
         <rect x="140" y="590" width="800" height="730" rx="28" fill="#d9d4cc" stroke="#362a20" strokeWidth="6" />
         <rect x="143" y="593" width="794" height="105" rx="24" fill="#a59f95" />
         <line x1="140" y1="698" x2="940" y2="698" stroke="#362a20" strokeWidth="5" />
@@ -230,8 +230,8 @@ const Scene3: React.FC = () => {
           <circle key={i} cx={220 + random(`dx${i}`) * 640} cy={1265 - random(`dy${i}`) * 95 * crumble} r={5 + random(`dr${i}`) * 8} fill="#7f786d" opacity={crumble} />
         ))}
 
-        <DiagramBadge x={310} y={1245} text="OXYGEN = CEMENT GLUE" delay={10} />
-        <DiagramBadge x={765} y={765} text={crumble > 0.3 ? 'CRUMBLED TO DUST' : 'BONDS SNAPPING'} variant="red" delay={40} />
+        <DiagramBadge x={310} y={1245} text="OXYGEN = CEMENT GLUE" delay={8} />
+        <DiagramBadge x={765} y={765} text={crumble > 0.3 ? 'CRUMBLED TO DUST' : 'BONDS SNAPPING'} variant="red" delay={28} />
       </svg>
     </AbsoluteFill>
   );
@@ -240,13 +240,13 @@ const Scene3: React.FC = () => {
 /* SCENE 4: Air Pressure -21% & Eardrum Rupture Cross-Section */
 const Scene4: React.FC = () => {
   const frame = useCurrentFrame();
-  const flex = interpolate(frame, [55, 165], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const flex = interpolate(frame, [40, 130], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
   return (
     <AbsoluteFill>
       <VintagePaperBackground figNum={4} sectionTag="HUMAN ANATOMY" />
       <EditorialHeadline line1="PRESSURE -21%" line2="KAAN KE PARDE!" />
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
         <rect x="140" y="590" width="800" height="730" rx="28" fill="#f3d6c1" stroke="#362a20" strokeWidth="6" />
         <rect x="143" y="593" width="794" height="95" rx="24" fill="#c98a6b" />
         <line x1="140" y1="688" x2="940" y2="688" stroke="#362a20" strokeWidth="5" />
@@ -270,9 +270,9 @@ const Scene4: React.FC = () => {
           <text x="20" y="-24" textAnchor="middle" fill="#f6efe0" fontSize="24" fontWeight="900">-21% DROP</text>
         </g>
 
-        <circle cx="565" cy="975" r="160" fill="none" stroke="#d43527" strokeWidth="5" strokeDasharray="12 9" transform={`rotate(${frame * 0.8} 565 975)`} />
-        <DiagramBadge x={315} y={1235} text="OUTER EAR CANAL" delay={10} />
-        <DiagramBadge x={745} y={775} text={flex > 0.6 ? 'EARDRUM RUPTURED!' : 'KAAN KA PARDA'} variant="red" delay={35} />
+        <circle cx="565" cy="975" r="160" fill="none" stroke="#d43527" strokeWidth="5" strokeDasharray="12 9" transform={`rotate(${frame * 0.9} 565 975)`} />
+        <DiagramBadge x={315} y={1235} text="OUTER EAR CANAL" delay={8} />
+        <DiagramBadge x={745} y={775} text={flex > 0.6 ? 'EARDRUM RUPTURED!' : 'KAAN KA PARDA'} variant="red" delay={25} />
       </svg>
     </AbsoluteFill>
   );
@@ -281,16 +281,16 @@ const Scene4: React.FC = () => {
 /* SCENE 5: Daytime Black Sky, Falling Plane & Dead Combustion Engine */
 const Scene5: React.FC = () => {
   const frame = useCurrentFrame();
-  const black = interpolate(frame, [45, 150], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const planeY = interpolate(frame, [0, 240], [780, 1090]);
-  const pistonY = frame < 95 ? Math.sin(frame * 0.3) * 45 : 35;
-  const gearRot = frame < 95 ? frame * 3 : 95 * 3;
+  const black = interpolate(frame, [35, 120], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const planeY = interpolate(frame, [0, 200], [780, 1090]);
+  const pistonY = frame < 75 ? Math.sin(frame * 0.35) * 45 : 35;
+  const gearRot = frame < 75 ? frame * 3.5 : 75 * 3.5;
 
   return (
     <AbsoluteFill>
       <VintagePaperBackground figNum={5} sectionTag="APPLIED PHYSICS" />
       <EditorialHeadline line1="KAALA AASMAN" line2="& ENGINE DEAD!" />
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
         <rect x="70" y="610" width="445" height="690" rx="24" fill={black > 0.45 ? '#14171f' : '#70a1be'} stroke="#362a20" strokeWidth="5" />
         <circle cx="175" cy="745" r="50" fill="#f5cd79" stroke="#362a20" strokeWidth="5" />
         {black > 0.35 && (
@@ -300,10 +300,10 @@ const Scene5: React.FC = () => {
         )}
         <g transform={`translate(290, ${planeY}) rotate(28)`}>
           <path d="M-75 0 L55 0 L80 18 L-70 18 L-90 -22 L-65 -22 Z" fill="#f6efe0" stroke="#362a20" strokeWidth="4" />
-          {frame > 60 && <circle cx="-95" cy="5" r="22" fill="#d43527" opacity="0.8" />}
+          {frame > 45 && <circle cx="-95" cy="5" r="22" fill="#d43527" opacity="0.8" />}
         </g>
-        <DiagramBadge x={292} y={670} text="DAYTIME = BLACK" variant="red" delay={15} />
-        <DiagramBadge x={292} y={1225} text="NO SCATTERING" delay={30} />
+        <DiagramBadge x={292} y={670} text="DAYTIME = BLACK" variant="red" delay={10} />
+        <DiagramBadge x={292} y={1225} text="NO SCATTERING" delay={22} />
 
         <rect x="565" y="610" width="445" height="690" rx="24" fill="#dfd6c7" stroke="#362a20" strokeWidth="5" />
         <rect x="675" y="750" width="225" height="330" rx="16" fill="#95a5a6" stroke="#362a20" strokeWidth="5" />
@@ -312,8 +312,8 @@ const Scene5: React.FC = () => {
           <circle cx="0" cy="0" r="44" fill="#d48c46" stroke="#362a20" strokeWidth="5" />
           <circle cx="0" cy="0" r="16" fill="#dfd6c7" stroke="#362a20" strokeWidth="4" />
         </g>
-        <DiagramBadge x={787} y={670} text="ENGINES STALLED" variant="red" delay={25} />
-        <DiagramBadge x={787} y={1225} text="NO COMBUSTION" delay={45} />
+        <DiagramBadge x={787} y={670} text="ENGINES STALLED" variant="red" delay={18} />
+        <DiagramBadge x={787} y={1225} text="NO COMBUSTION" delay={32} />
       </svg>
     </AbsoluteFill>
   );
@@ -322,13 +322,13 @@ const Scene5: React.FC = () => {
 /* SCENE 6: Earth Crust Strata (45% Oxygen) Cracking & Collapsing */
 const Scene6: React.FC = () => {
   const frame = useCurrentFrame();
-  const sep = interpolate(frame, [65, 220], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const sep = interpolate(frame, [45, 165], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
   return (
     <AbsoluteFill>
       <VintagePaperBackground figNum={6} sectionTag="GEOLOGY // SUMMARY" />
       <EditorialHeadline line1="ZAMEEN KA 45%" line2="HISSA OXYGEN HAI!" />
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
         <rect x="140" y="590" width="800" height="730" rx="28" fill="#e5dac7" stroke="#362a20" strokeWidth="6" />
 
         <g transform={`translate(0, ${-sep * 30})`} opacity={1 - sep * 0.45}>
@@ -345,27 +345,44 @@ const Scene6: React.FC = () => {
         <rect x="200" y="1030" width="680" height="145" rx="14" fill="#c44536" stroke="#362a20" strokeWidth="5" />
         <text x="540" y="1115" textAnchor="middle" fill="#f6efe0" fontSize="30" fontWeight="900">DEEP MANTLE // LITHOSPHERE</text>
 
-        <circle cx="540" cy="875" r="215" fill="none" stroke="#d43527" strokeWidth="6" strokeDasharray="14 10" transform={`rotate(${frame * 0.7} 540 875)`} />
-        <DiagramBadge x={320} y={1245} text="CRUST = 45% O2" delay={10} />
-        <DiagramBadge x={755} y={1245} text="GROUND COLLAPSES" variant="red" delay={35} />
+        <circle cx="540" cy="875" r="215" fill="none" stroke="#d43527" strokeWidth="6" strokeDasharray="14 10" transform={`rotate(${frame * 0.8} 540 875)`} />
+        <DiagramBadge x={320} y={1245} text="CRUST = 45% O2" delay={8} />
+        <DiagramBadge x={755} y={1245} text="GROUND COLLAPSES" variant="red" delay={25} />
       </svg>
     </AbsoluteFill>
   );
 };
 
-/* AUTO-SYNCED HINGLISH CAPTIONS (4 Words Per Chunk, Synced to Exact Voice Duration) */
+/* SYLLABLE-WEIGHTED AUTO-SYNCED HINGLISH CAPTIONS */
 const EditorialPaperCaptions: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const sceneIndex = Math.min(SCENES.length - 1, Math.floor(frame / (5 * fps)));
+  const sceneFrames = 3.5 * fps;
+  const sceneIndex = Math.min(SCENES.length - 1, Math.floor(frame / sceneFrames));
   const scene = SCENES[sceneIndex];
   const localFrame = frame - scene.start * fps;
 
+  const leadInFrames = 4;
   const speechFrames = scene.speechDur * fps;
   const words = scene.caption.split(' ');
-  const progress = clamp01(localFrame / speechFrames);
-  const activeWordIndex = Math.min(words.length - 1, Math.floor(progress * words.length));
+
+  // Weight each word by character length so short words ('se', 'hi') pass quickly and long words hold naturally
+  const weights = words.map((w) => Math.max(2.2, w.replace(/[^a-zA-Z0-9]/g, '').length));
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+  const progress = clamp01((localFrame - leadInFrames) / speechFrames);
+  const targetWeight = progress * totalWeight;
+
+  let cumulative = 0;
+  let activeWordIndex = 0;
+  for (let i = 0; i < weights.length; i++) {
+    cumulative += weights[i];
+    if (targetWeight <= cumulative || i === weights.length - 1) {
+      activeWordIndex = i;
+      break;
+    }
+  }
 
   const chunkSize = 4;
   const activeChunkIndex = Math.floor(activeWordIndex / chunkSize);
@@ -377,7 +394,7 @@ const EditorialPaperCaptions: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 14, padding: '14px 24px' }}>
         {visibleWords.map((word, idx) => {
           const globalIdx = chunkStart + idx;
-          const isActive = globalIdx === activeWordIndex && localFrame <= speechFrames + 15;
+          const isActive = globalIdx === activeWordIndex && localFrame <= speechFrames + 12;
           return (
             <span
               key={`${sceneIndex}-${globalIdx}`}
@@ -405,7 +422,7 @@ const ScienceReel: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: '#eadec5' }}>
     <TopScientificTelemetry />
     {SCENES.map((scene, index) => (
-      <Sequence key={index} from={scene.start * 60} durationInFrames={scene.duration * 60}>
+      <Sequence key={index} from={Math.round(scene.start * 60)} durationInFrames={Math.round(scene.duration * 60)}>
         {index === 0 && <Scene1 />}
         {index === 1 && <Scene2 />}
         {index === 2 && <Scene3 />}
@@ -420,5 +437,5 @@ const ScienceReel: React.FC = () => (
 );
 
 export const RemotionRoot: React.FC = () => (
-  <Composition id="Reel" component={ScienceReel} durationInFrames={1800} fps={60} width={1080} height={1920} />
+  <Composition id="Reel" component={ScienceReel} durationInFrames={1260} fps={60} width={1080} height={1920} />
 );
