@@ -32,76 +32,58 @@ jobs:
           with open("src/Root.tsx", "r", encoding="utf-8") as f:
               code = f.read()
 
-          voice_match = re.search(r'VOICE\s*=\s*["\']([^"\']+)["\']', code)
-          voice = voice_match.group(1) if voice_match else "hi-IN-MadhurNeural"
+          voice = "hi-IN-MadhurNeural"
+          scenes = re.findall(r'duration:\s*(\d+(?:\.\d+)?)[^\n]*?(?:tts|text):\s*["\']([^"\']+)["\']', code)
 
-          pattern = r'(start:\s*(\d+(?:\.\d+)?)\s*,\s*duration:\s*(\d+(?:\.\d+)?)\s*,\s*speechDur:\s*)(\d+(?:\.\d+)?)(\s*,\s*caption:\s*"[^"]+"\s*,\s*tts:\s*"([^"]+)")'
-          matches = list(re.finditer(pattern, code))
-
-          if not matches:
-              subprocess.run(["edge-tts", "--voice", voice, "--text", "नमस्ते", "--write-media", "public/voice.mp3"], check=True)
+          if not scenes:
+              subprocess.run(["edge-tts", "--voice", voice, "--text", "Namaste dosto", "--write-media", "public/voice.mp3"], check=True)
           else:
-              fixed_clips = []
-              new_code = code
-              offset = 0
+              clips = []
+              speech_durs = []
+              for i, (dur_s, txt) in enumerate(scenes):
+                  dur = float(dur_s)
+                  raw = f"raw_{i}.mp3"
+                  wav = f"fixed_{i}.wav"
+                  subprocess.run(["edge-tts", "--voice", voice, "--text", txt, "--write-media", raw], check=True)
 
-              for i, m in enumerate(matches):
-                  dur_f = float(m.group(3))
-                  spoken_text = m.group(6)
-                  raw_clip = f"raw_{i}.mp3"
-                  trim_clip = f"trim_{i}.wav"
-                  fixed_clip = f"fixed_{i}.wav"
+                  out = subprocess.run(
+                      ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", raw],
+                      capture_output=True, text=True
+                  ).stdout.strip()
+                  try:
+                      cdur = float(out)
+                  except:
+                      cdur = dur - 0.5
 
-                  subprocess.run([
-                      "edge-tts",
-                      "--voice", voice,
-                      "--rate=+0%",
-                      "--pitch=-2Hz",
-                      "--text", spoken_text,
-                      "--write-media", raw_clip
-                  ], check=True)
-
-                  subprocess.run([
-                      "ffmpeg", "-y", "-i", raw_clip,
-                      "-af", "silenceremove=start_periods=1:start_silence=0.04:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_silence=0.04:start_threshold=-45dB,areverse",
-                      trim_clip
-                  ], check=True)
-
-                  probe = subprocess.run([
-                      "ffprobe", "-v", "error", "-show_entries", "format=duration",
-                      "-of", "default=noprint_wrappers=1:nokey=1", trim_clip
-                  ], capture_output=True, text=True, check=True)
-                  clip_dur = float(probe.stdout.strip() or (dur_f - 0.4))
-
-                  max_allowed = dur_f - 0.25
-                  if clip_dur > max_allowed:
-                      tempo = min(1.35, max(1.0, clip_dur / max_allowed))
-                      actual_speech_dur = clip_dur / tempo
-                      af = f"atempo={tempo:.3f},apad=whole_dur={dur_f},atrim=0:{dur_f}"
+                  max_d = dur - 0.2
+                  if cdur > max_d and max_d > 0:
+                      spd = min(1.35, max(1.0, cdur / max_d))
+                      sdur = cdur / spd
+                      af = f"atempo={spd:.3f},apad=whole_dur={dur},atrim=0:{dur}"
                   else:
-                      actual_speech_dur = clip_dur
-                      af = f"apad=whole_dur={dur_f},atrim=0:{dur_f}"
+                      sdur = max(1.0, cdur - 0.15)
+                      af = f"apad=whole_dur={dur},atrim=0:{dur}"
 
-                  subprocess.run([
-                      "ffmpeg", "-y", "-i", trim_clip,
-                      "-af", af, "-ar", "44100", "-ac", "2", fixed_clip
-                  ], check=True)
-                  fixed_clips.append(fixed_clip)
+                  speech_durs.append(sdur)
+                  subprocess.run(["ffmpeg", "-y", "-i", raw, "-af", af, "-ar", "44100", "-ac", "2", wav], check=True)
+                  clips.append(wav)
 
-                  start_idx = m.start(4) + offset
-                  end_idx = m.end(4) + offset
-                  replacement = f"{actual_speech_dur:.2f}"
-                  new_code = new_code[:start_idx] + replacement + new_code[end_idx:]
-                  offset += len(replacement) - (m.end(4) - m.start(4))
+              idx = 0
+              def repl(m):
+                  global idx
+                  val = speech_durs[idx] if idx < len(speech_durs) else 3.8
+                  idx += 1
+                  return f"speechDur: {val:.2f}"
 
+              new_code = re.sub(r'speechDur:\s*\d+(?:\.\d+)?', repl, code)
               with open("src/Root.tsx", "w", encoding="utf-8") as f:
                   f.write(new_code)
 
               inputs = []
-              for fc in fixed_clips:
-                  inputs.extend(["-i", fc])
-              concat_filter = "".join(f"[{i}:a]" for i in range(len(fixed_clips))) + f"concat=n={len(fixed_clips)}:v=0:a=1[out]"
-              subprocess.run(["ffmpeg", "-y"] + inputs + ["-filter_complex", concat_filter, "-map", "[out]", "public/voice.mp3"], check=True)
+              for c in clips:
+                  inputs.extend(["-i", c])
+              cf = "".join(f"[{i}:a]" for i in range(len(clips))) + f"concat=n={len(clips)}:v=0:a=1[out]"
+              subprocess.run(["ffmpeg", "-y"] + inputs + ["-filter_complex", cf, "-map", "[out]", "public/voice.mp3"], check=True)
           EOF
 
       - name: Render 1080p 60FPS MP4
