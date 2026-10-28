@@ -23,7 +23,7 @@ jobs:
           pip install edge-tts --break-system-packages
           npm install
 
-      - name: Generate Crisp Hindi Voice & Exact Sync
+      - name: Generate New Tone Hindi Voice
         run: |
           python3 - << 'EOF'
           import os, re, subprocess
@@ -32,7 +32,11 @@ jobs:
           with open("src/Root.tsx", "r", encoding="utf-8") as f:
               code = f.read()
 
-          voice = "hi-IN-MadhurNeural"
+          # Ekhane voice change kora jabe:
+          # Option 1: "hi-IN-SwaraNeural" (Clear female documentary voice)
+          # Option 2: "hi-IN-MadhurNeural" (Deep energetic male voice)
+          voice = "hi-IN-SwaraNeural"
+
           scenes = re.findall(r'duration:\s*(\d+(?:\.\d+)?)[^\n]*?tts:\s*"([^"]+)"', code)
 
           if not scenes:
@@ -48,8 +52,8 @@ jobs:
                   subprocess.run([
                       "edge-tts",
                       "--voice", voice,
-                      "--rate=+8%",
-                      "--pitch=+0Hz",
+                      "--rate=+10%",
+                      "--pitch=-1Hz",
                       "--text", txt,
                       "--write-media", raw
                   ], check=True)
@@ -66,10 +70,10 @@ jobs:
                   max_d = dur - 0.12
                   if cdur > max_d and max_d > 0:
                       spd = min(1.30, max(1.0, cdur / max_d))
-                      sdur = (cdur / spd) - 0.18
+                      sdur = (cdur / spd) - 0.15
                       af = f"atempo={spd:.3f},apad=whole_dur={dur},atrim=0:{dur}"
                   else:
-                      sdur = max(1.2, cdur - 0.22)
+                      sdur = max(1.2, cdur - 0.2)
                       af = f"apad=whole_dur={dur},atrim=0:{dur}"
 
                   speech_durs.append(sdur)
