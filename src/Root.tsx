@@ -1,4 +1,4 @@
-Import React from 'react';
+import React from 'react';
 import {
   AbsoluteFill,
   Audio,
