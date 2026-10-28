@@ -23,7 +23,7 @@ jobs:
           pip install edge-tts --break-system-packages
           npm install
 
-      - name: Generate Zero-Overlap Hindi Voiceover
+      - name: Generate Hindi Voice & Auto-Sync Captions
         run: |
           python3 - << 'EOF'
           import os, re, subprocess
@@ -35,49 +35,67 @@ jobs:
           voice_match = re.search(r'VOICE\s*=\s*["\']([^"\']+)["\']', code)
           voice = voice_match.group(1) if voice_match else "hi-IN-MadhurNeural"
 
-          pattern_tts = r'start:\s*(\d+(?:\.\d+)?)\s*,\s*duration:\s*(\d+(?:\.\d+)?)\s*,\s*text:\s*["\'][^"\']+["\']\s*,\s*tts:\s*["\']([^"\']+)["\']'
-          scenes = re.findall(pattern_tts, code)
+          pattern = r'(start:\s*(\d+(?:\.\d+)?)\s*,\s*duration:\s*(\d+(?:\.\d+)?)\s*,\s*speechDur:\s*)(\d+(?:\.\d+)?)(\s*,\s*caption:\s*"[^"]+"\s*,\s*tts:\s*"([^"]+)")'
+          matches = list(re.finditer(pattern, code))
 
-          if not scenes:
-              pattern_text = r'start:\s*(\d+(?:\.\d+)?)\s*,\s*duration:\s*(\d+(?:\.\d+)?)\s*,\s*text:\s*["\']([^"\']+)["\']'
-              scenes = re.findall(pattern_text, code)
-
-          if not scenes:
+          if not matches:
               subprocess.run(["edge-tts", "--voice", voice, "--text", "नमस्ते", "--write-media", "public/voice.mp3"], check=True)
           else:
               fixed_clips = []
-              for i, (start, dur, spoken_text) in enumerate(scenes):
-                  dur_f = float(dur)
+              new_code = code
+              offset = 0
+
+              for i, m in enumerate(matches):
+                  dur_f = float(m.group(3))
+                  spoken_text = m.group(6)
                   raw_clip = f"raw_{i}.mp3"
+                  trim_clip = f"trim_{i}.wav"
                   fixed_clip = f"fixed_{i}.wav"
 
                   subprocess.run([
                       "edge-tts",
                       "--voice", voice,
-                      "--rate=+18%",
-                      "--pitch=+0Hz",
+                      "--rate=+0%",
+                      "--pitch=-2Hz",
                       "--text", spoken_text,
                       "--write-media", raw_clip
                   ], check=True)
 
+                  subprocess.run([
+                      "ffmpeg", "-y", "-i", raw_clip,
+                      "-af", "silenceremove=start_periods=1:start_silence=0.04:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_silence=0.04:start_threshold=-45dB,areverse",
+                      trim_clip
+                  ], check=True)
+
                   probe = subprocess.run([
                       "ffprobe", "-v", "error", "-show_entries", "format=duration",
-                      "-of", "default=noprint_wrappers=1:nokey=1", raw_clip
+                      "-of", "default=noprint_wrappers=1:nokey=1", trim_clip
                   ], capture_output=True, text=True, check=True)
-                  clip_dur = float(probe.stdout.strip() or dur_f)
+                  clip_dur = float(probe.stdout.strip() or (dur_f - 0.4))
 
-                  target_max = dur_f - 0.12
-                  if clip_dur > target_max:
-                      tempo = min(1.85, max(1.0, clip_dur / target_max))
+                  max_allowed = dur_f - 0.25
+                  if clip_dur > max_allowed:
+                      tempo = min(1.35, max(1.0, clip_dur / max_allowed))
+                      actual_speech_dur = clip_dur / tempo
                       af = f"atempo={tempo:.3f},apad=whole_dur={dur_f},atrim=0:{dur_f}"
                   else:
+                      actual_speech_dur = clip_dur
                       af = f"apad=whole_dur={dur_f},atrim=0:{dur_f}"
 
                   subprocess.run([
-                      "ffmpeg", "-y", "-i", raw_clip,
+                      "ffmpeg", "-y", "-i", trim_clip,
                       "-af", af, "-ar", "44100", "-ac", "2", fixed_clip
                   ], check=True)
                   fixed_clips.append(fixed_clip)
+
+                  start_idx = m.start(4) + offset
+                  end_idx = m.end(4) + offset
+                  replacement = f"{actual_speech_dur:.2f}"
+                  new_code = new_code[:start_idx] + replacement + new_code[end_idx:]
+                  offset += len(replacement) - (m.end(4) - m.start(4))
+
+              with open("src/Root.tsx", "w", encoding="utf-8") as f:
+                  f.write(new_code)
 
               inputs = []
               for fc in fixed_clips:
