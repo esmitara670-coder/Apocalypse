@@ -23,7 +23,7 @@ jobs:
           pip install edge-tts --break-system-packages
           npm install
 
-      - name: Generate Hindi Voice & Auto-Sync Captions
+      - name: Generate Crisp Hindi Voice & Exact Sync
         run: |
           python3 - << 'EOF'
           import os, re, subprocess
@@ -33,10 +33,10 @@ jobs:
               code = f.read()
 
           voice = "hi-IN-MadhurNeural"
-          scenes = re.findall(r'duration:\s*(\d+(?:\.\d+)?)[^\n]*?(?:tts|text):\s*["\']([^"\']+)["\']', code)
+          scenes = re.findall(r'duration:\s*(\d+(?:\.\d+)?)[^\n]*?tts:\s*"([^"]+)"', code)
 
           if not scenes:
-              subprocess.run(["edge-tts", "--voice", voice, "--text", "Namaste dosto", "--write-media", "public/voice.mp3"], check=True)
+              subprocess.run(["edge-tts", "--voice", voice, "--text", "नमस्ते दोस्तों", "--write-media", "public/voice.mp3"], check=True)
           else:
               clips = []
               speech_durs = []
@@ -44,7 +44,15 @@ jobs:
                   dur = float(dur_s)
                   raw = f"raw_{i}.mp3"
                   wav = f"fixed_{i}.wav"
-                  subprocess.run(["edge-tts", "--voice", voice, "--text", txt, "--write-media", raw], check=True)
+
+                  subprocess.run([
+                      "edge-tts",
+                      "--voice", voice,
+                      "--rate=+8%",
+                      "--pitch=+0Hz",
+                      "--text", txt,
+                      "--write-media", raw
+                  ], check=True)
 
                   out = subprocess.run(
                       ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", raw],
@@ -53,15 +61,15 @@ jobs:
                   try:
                       cdur = float(out)
                   except:
-                      cdur = dur - 0.5
+                      cdur = dur - 0.25
 
-                  max_d = dur - 0.2
+                  max_d = dur - 0.12
                   if cdur > max_d and max_d > 0:
-                      spd = min(1.35, max(1.0, cdur / max_d))
-                      sdur = cdur / spd
+                      spd = min(1.30, max(1.0, cdur / max_d))
+                      sdur = (cdur / spd) - 0.18
                       af = f"atempo={spd:.3f},apad=whole_dur={dur},atrim=0:{dur}"
                   else:
-                      sdur = max(1.0, cdur - 0.15)
+                      sdur = max(1.2, cdur - 0.22)
                       af = f"apad=whole_dur={dur},atrim=0:{dur}"
 
                   speech_durs.append(sdur)
@@ -71,7 +79,7 @@ jobs:
               idx = 0
               def repl(m):
                   global idx
-                  val = speech_durs[idx] if idx < len(speech_durs) else 3.8
+                  val = speech_durs[idx] if idx < len(speech_durs) else 3.1
                   idx += 1
                   return f"speechDur: {val:.2f}"
 
