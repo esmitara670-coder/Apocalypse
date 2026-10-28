@@ -1,3 +1,4 @@
+
 name: Render Reel
 
 on:
@@ -17,86 +18,23 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Remotion & Voice Engine
+      - name: Install Remotion & FFmpeg
         run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg
-          pip install edge-tts --break-system-packages
           npm install
 
-      - name: Generate New Tone Hindi Voice
+      - name: Generate Frame-Synced Cinematic SFX Track (No TTS)
         run: |
-          python3 - << 'EOF'
-          import os, re, subprocess
-
-          os.makedirs("public", exist_ok=True)
-          with open("src/Root.tsx", "r", encoding="utf-8") as f:
-              code = f.read()
-
-          # Ekhane voice change kora jabe:
-          # Option 1: "hi-IN-SwaraNeural" (Clear female documentary voice)
-          # Option 2: "hi-IN-MadhurNeural" (Deep energetic male voice)
-          voice = "hi-IN-SwaraNeural"
-
-          scenes = re.findall(r'duration:\s*(\d+(?:\.\d+)?)[^\n]*?tts:\s*"([^"]+)"', code)
-
-          if not scenes:
-              subprocess.run(["edge-tts", "--voice", voice, "--text", "नमस्ते दोस्तों", "--write-media", "public/voice.mp3"], check=True)
-          else:
-              clips = []
-              speech_durs = []
-              for i, (dur_s, txt) in enumerate(scenes):
-                  dur = float(dur_s)
-                  raw = f"raw_{i}.mp3"
-                  wav = f"fixed_{i}.wav"
-
-                  subprocess.run([
-                      "edge-tts",
-                      "--voice", voice,
-                      "--rate=+10%",
-                      "--pitch=-1Hz",
-                      "--text", txt,
-                      "--write-media", raw
-                  ], check=True)
-
-                  out = subprocess.run(
-                      ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", raw],
-                      capture_output=True, text=True
-                  ).stdout.strip()
-                  try:
-                      cdur = float(out)
-                  except:
-                      cdur = dur - 0.25
-
-                  max_d = dur - 0.12
-                  if cdur > max_d and max_d > 0:
-                      spd = min(1.30, max(1.0, cdur / max_d))
-                      sdur = (cdur / spd) - 0.15
-                      af = f"atempo={spd:.3f},apad=whole_dur={dur},atrim=0:{dur}"
-                  else:
-                      sdur = max(1.2, cdur - 0.2)
-                      af = f"apad=whole_dur={dur},atrim=0:{dur}"
-
-                  speech_durs.append(sdur)
-                  subprocess.run(["ffmpeg", "-y", "-i", raw, "-af", af, "-ar", "44100", "-ac", "2", wav], check=True)
-                  clips.append(wav)
-
-              idx = 0
-              def repl(m):
-                  global idx
-                  val = speech_durs[idx] if idx < len(speech_durs) else 3.1
-                  idx += 1
-                  return f"speechDur: {val:.2f}"
-
-              new_code = re.sub(r'speechDur:\s*\d+(?:\.\d+)?', repl, code)
-              with open("src/Root.tsx", "w", encoding="utf-8") as f:
-                  f.write(new_code)
-
-              inputs = []
-              for c in clips:
-                  inputs.extend(["-i", c])
-              cf = "".join(f"[{i}:a]" for i in range(len(clips))) + f"concat=n={len(clips)}:v=0:a=1[out]"
-              subprocess.run(["ffmpeg", "-y"] + inputs + ["-filter_complex", cf, "-map", "[out]", "public/voice.mp3"], check=True)
-          EOF
+          mkdir -p public
+          ffmpeg -y -f lavfi -i "anullsrc=r=44100:cl=stereo:d=33.5" \
+            -f lavfi -i "sine=f=880:d=0.18,afade=t=out:st=0.05:d=0.13,volume=0.25,adelay=200|200" \
+            -f lavfi -i "sine=f=220:d=0.45,afade=t=out:st=0.15:d=0.30,volume=0.35,adelay=5300|5300" \
+            -f lavfi -i "sine=f=520:d=0.60,afade=t=in:st=0:d=0.15,afade=t=out:st=0.30:d=0.30,volume=0.22,adelay=8500|8500" \
+            -f lavfi -i "anoise=d=0.25:c=pink,afade=t=out:st=0.04:d=0.21,volume=0.45,adelay=15200|15200" \
+            -f lavfi -i "sine=f=160:d=0.55,afade=t=out:st=0.20:d=0.35,volume=0.40,adelay=19600|19600" \
+            -f lavfi -i "sine=f=660:d=0.15,afade=t=out:st=0.04:d=0.11,volume=0.30,adelay=25200|25200" \
+            -filter_complex "[0][1][2][3][4][5][6]amix=inputs=7:normalize=0,alimiter=limit=0.9" \
+            -ar 44100 -ac 2 public/sfx.wav
 
       - name: Render 1080p 60FPS MP4
         run: npx remotion render Reel Out.mp4 --codec=h264
@@ -106,3 +44,4 @@ jobs:
         with:
           name: Final-Reel-MP4
           path: Out.mp4
+
