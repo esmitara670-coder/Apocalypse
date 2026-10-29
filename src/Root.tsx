@@ -8,598 +8,803 @@ import {
   spring,
   staticFile,
   useCurrentFrame,
+  useVideoConfig,
 } from 'remotion';
 
 const FPS = 60;
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const DURATION = 2010;
+const DURATION = 2064; // 34.4 seconds
+
+type Theme = 'dark' | 'paper';
+type Scene = (typeof SCENES)[number];
 
 const SCENES = [
-  { id: 1, start: 0.0, end: 5.2, speechStart: 0.10, speechEnd: 5.05, caption: "Kya aapko pata hai aapke shareer ke immune system ko yeh pata hi nahi hai ki aapke paas aankhein bhi hain?" },
-  { id: 2, start: 5.2, end: 8.3, speechStart: 5.30, speechEnd: 8.05, caption: "Aur agar use pata chal gaya, toh woh aapko andha kar dega!" },
-  { id: 3, start: 8.3, end: 14.3, speechStart: 8.45, speechEnd: 14.05, caption: "Darasal, hamari eyes ka apna ek alag security system hota hai, jo unhein shareer se chhupa kar rakhta hai." },
-  { id: 4, start: 14.3, end: 19.3, speechStart: 14.45, speechEnd: 19.15, caption: "Par agar kisi gehri chot ki wajah se body ke immune system ko aapki aankhon ka pata chal jaye," },
-  { id: 5, start: 19.3, end: 25.0, speechStart: 19.35, speechEnd: 24.75, caption: "Toh woh unhein koi bahari virus samajh kar seedha attack kar dega, aur aapko hamesha ke liye andha bana dega!" },
-  { id: 6, start: 25.0, end: 33.5, speechStart: 25.15, speechEnd: 33.40, caption: "Waise, aapka kaun sa chashmish dost aisa hai jise dekh kar lagta hai ki uske immune system ko uski aankhon ka pata chal chuka hai? Comment mein uska naam zaroor batao!" },
+  {
+    id: 1,
+    theme: 'dark',
+    start: 0.0,
+    end: 4.2,
+    speechStart: 0.10,
+    speechEnd: 4.10,
+    tag: 'SPACE TIME PARADOX',
+    titleWhite: 'EARTH TO',
+    titleAccent: 'DEEP SPACE',
+    caption: 'Kya aapko pata hai ki agar aap space mein lambe samay tak rehkar',
+  },
+  {
+    id: 2,
+    theme: 'paper',
+    start: 4.2,
+    end: 7.9,
+    speechStart: 4.20,
+    speechEnd: 7.65,
+    tag: 'THE TWIN PARADOX',
+    titleWhite: 'TWIN BROTHER SE',
+    titleAccent: 'YOUNGER!',
+    caption: 'wapas zameen par aayenge, toh aap apne twin brother se thode chhote, yaani younger lagenge?',
+  },
+  {
+    id: 3,
+    theme: 'dark',
+    start: 7.9,
+    end: 14.7,
+    speechStart: 8.10,
+    speechEnd: 14.45,
+    tag: 'EINSTEIN RELATIVITY',
+    titleWhite: 'GRAVITY & SPEED',
+    titleAccent: 'SLOWS TIME',
+    caption: 'Darasal, Einstein ke theory ke mutabik, jahan gravity ya speed bahut zyada hoti hai, wahan time slow ho jata hai.',
+  },
+  {
+    id: 4,
+    theme: 'paper',
+    start: 14.7,
+    end: 23.8,
+    speechStart: 14.85,
+    speechEnd: 23.55,
+    tag: 'ISS ORBITAL VELOCITY',
+    titleWhite: 'JUMP INTO THE',
+    titleAccent: 'FUTURE!',
+    caption: 'Space station mein high speed par travel karne ki wajah se astronaut ka time zameen ke muqable thoda slow chalta hai, jisse woh literally future mein thoda aage chale jaate hain.',
+  },
+  {
+    id: 5,
+    theme: 'dark',
+    start: 23.8,
+    end: 27.2,
+    speechStart: 23.95,
+    speechEnd: 27.00,
+    tag: 'REAL LIFE SCI-FI',
+    titleWhite: 'REAL TIME',
+    titleAccent: 'MACHINE',
+    caption: 'Matlab, space travel ek tarah ki time machine hi hai!',
+  },
+  {
+    id: 6,
+    theme: 'paper',
+    start: 27.2,
+    end: 34.4,
+    speechStart: 27.35,
+    speechEnd: 34.30,
+    tag: 'YOUR FUTURE JOURNEY',
+    titleWhite: 'KISKE PAAS',
+    titleAccent: 'JAANA CHAHOGE?',
+    caption: 'Waise, agar aapko kabhi time travel karke future mein jaane ka mauka mile, toh aap sabse pehle kiske paas jaana chahoge? Comment mein uska naam zaroor',
+  },
 ] as const;
 
-type Scene = (typeof SCENES)[number];
-type SceneId = Scene['id'];
-
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const sceneStartFrame = (s: Scene) => Math.round(s.start * FPS);
-const sceneEndFrame = (s: Scene) => Math.round(s.end * FPS);
-const localSec = (frame: number, s: Scene) => (frame - sceneStartFrame(s)) / FPS;
-const progressFor = (frame: number, s: Scene) =>
-  clamp01((frame - sceneStartFrame(s)) / Math.max(1, sceneEndFrame(s) - sceneStartFrame(s)));
-
-const TITLES: Record<SceneId, string> = {
-  1: 'THE IMMUNE BLIND SPOT',
-  2: 'TARGET ACQUIRED // DANGER',
-  3: 'THE EYE’S SECRET FORTRESS',
-  4: 'TRAUMA: BARRIER SHATTERED',
-  5: 'AUTOIMMUNE ASSAULT',
-  6: 'THE CHASHMISH FRIEND TEST',
-};
-
-const ACCENTS: Record<SceneId, string> = {
-  1: '#00f2fe',
-  2: '#ff2e4c',
-  3: '#ffd166',
-  4: '#ff4757',
-  5: '#7bed9f',
-  6: '#ffc857',
-};
-
-const wordWeight = (word: string) => {
-  let extra = 0;
-  if (word.includes(',')) extra += 3;
-  if (word.includes('?') || word.includes('!')) extra += 4;
-  return Math.max(1, word.replace(/[.,!?;:…“”"'()]/g, '').length) + extra;
-};
-
-/* ======================== KINETIC TITLE & CAPTIONS ======================== */
-
-function SceneTitle({ frame, scene }: { frame: number; scene: Scene }) {
-  const lf = frame - sceneStartFrame(scene);
-  const enter = spring({ frame: lf, fps: FPS, config: { damping: 12, stiffness: 160 } });
-  const accent = ACCENTS[scene.id];
-  const pulse = 1 + Math.sin(frame * 0.14) * 0.025;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        zIndex: 25,
-        top: 96,
-        left: '50%',
-        transform: `translateX(-50%) translateY(${interpolate(enter, [0, 1], [-80, 0])}px) scale(${enter * pulse})`,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
-        whiteSpace: 'nowrap',
-        padding: '16px 28px',
-        borderRadius: 999,
-        border: `2px solid ${accent}`,
-        background: 'rgba(6, 12, 24, 0.90)',
-        boxShadow: `0 0 40px ${accent}55, inset 0 0 18px ${accent}25`,
-        color: '#ffffff',
-        fontFamily: 'Inter, Arial Black, sans-serif',
-        fontSize: 25,
-        fontWeight: 900,
-        letterSpacing: 2.5,
-      }}
-    >
-      <span
-        style={{
-          width: 14,
-          height: 14,
-          borderRadius: '50%',
-          background: accent,
-          boxShadow: `0 0 20px ${accent}`,
-        }}
-      />
-      <span>{TITLES[scene.id]}</span>
-    </div>
-  );
-}
-
-function WordCaptions({ frame, scene }: { frame: number; scene: Scene }) {
-  const words = scene.caption.trim().split(/\s+/);
-  const speechStart = Math.round(scene.speechStart * FPS);
-  const speechEnd = Math.round(scene.speechEnd * FPS);
-
-  if (frame < speechStart || frame > speechEnd) return null;
-
-  const weights = words.map(wordWeight);
-  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-  const spanFrames = Math.max(1, speechEnd - speechStart);
-  const normalized = clamp01((frame - speechStart) / spanFrames);
-  const weightedPos = normalized * totalWeight;
-
-  let activeIndex = words.length - 1;
-  let running = 0;
-  for (let i = 0; i < weights.length; i++) {
-    if (weightedPos < running + weights[i] || i === words.length - 1) {
-      activeIndex = i;
-      break;
-    }
-    running += weights[i];
-  }
-
-  const chunkStart = Math.floor(activeIndex / 4) * 4;
-  const chunkWords = words.slice(chunkStart, chunkStart + 4);
-  const beforeActive = weights.slice(0, activeIndex).reduce((s, w) => s + w, 0);
-  const wordStart = speechStart + Math.round((beforeActive / totalWeight) * spanFrames);
-
-  const pop = spring({
-    frame: Math.max(0, frame - wordStart),
-    fps: FPS,
-    config: { damping: 8, stiffness: 280, mass: 0.35 },
-  });
-  const accent = ACCENTS[scene.id];
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        zIndex: 30,
-        left: '50%',
-        bottom: 155,
-        transform: 'translateX(-50%)',
-        width: 'calc(100% - 76px)',
-        maxWidth: 950,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 10,
-        padding: '22px 24px',
-        borderRadius: 28,
-        border: `1.5px solid ${accent}55`,
-        background: 'linear-gradient(135deg, rgba(4,9,20,0.92), rgba(10,20,38,0.84))',
-        boxShadow: `0 20px 60px rgba(0,0,0,0.65), 0 0 30px ${accent}22`,
-        fontFamily: 'Inter, Arial Black, sans-serif',
-      }}
-    >
-      {chunkWords.map((word, idx) => {
-        const wIdx = chunkStart + idx;
-        const active = wIdx === activeIndex;
-        const scale = active ? interpolate(pop, [0, 1], [0.82, 1.14]) : 1;
-        const rot = active ? interpolate(pop, [0, 1], [-3, 0]) : 0;
-
-        return (
-          <span
-            key={`${scene.id}-${wIdx}`}
-            style={{
-              display: 'inline-flex',
-              transform: `scale(${scale}) rotate(${rot}deg)`,
-              padding: active ? '8px 16px 10px' : '8px 6px 10px',
-              borderRadius: 14,
-              background: active ? accent : 'transparent',
-              boxShadow: active ? `0 0 28px ${accent}99` : 'none',
-              color: active ? '#040811' : '#f1f6ff',
-              fontSize: 42,
-              fontWeight: 900,
-              lineHeight: 1.1,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {word}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ======================== SHARED SVG DEFS & DYNAMIC BG ======================== */
-
-function SvgDefs() {
-  return (
-    <defs>
-      <radialGradient id="bgGrad" cx="50%" cy="45%" r="65%">
-        <stop offset="0%" stopColor="#162c4e" />
-        <stop offset="55%" stopColor="#091326" />
-        <stop offset="100%" stopColor="#040710" />
-      </radialGradient>
-      <linearGradient id="sclera" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#ffffff" />
-        <stop offset="55%" stopColor="#dff4ff" />
-        <stop offset="100%" stopColor="#8ab4d0" />
-      </linearGradient>
-      <radialGradient id="irisCyan" cx="40%" cy="35%" r="70%">
-        <stop offset="0%" stopColor="#9bfff8" />
-        <stop offset="35%" stopColor="#00d2d3" />
-        <stop offset="75%" stopColor="#09527a" />
-        <stop offset="100%" stopColor="#041b2e" />
-      </radialGradient>
-      <radialGradient id="irisRed" cx="40%" cy="35%" r="70%">
-        <stop offset="0%" stopColor="#ff9eaa" />
-        <stop offset="40%" stopColor="#ff2e4c" />
-        <stop offset="80%" stopColor="#6b0918" />
-        <stop offset="100%" stopColor="#240208" />
-      </radialGradient>
-      <linearGradient id="goldShield" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#ffe885" />
-        <stop offset="50%" stopColor="#00f2fe" />
-        <stop offset="100%" stopColor="#4facfe" />
-      </linearGradient>
-      <linearGradient id="bladeGrad" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#ffffff" />
-        <stop offset="45%" stopColor="#95afc0" />
-        <stop offset="100%" stopColor="#2f3640" />
-      </linearGradient>
-      <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-        <feGaussianBlur stdDeviation="8" result="b" />
-        <feMerge>
-          <feMergeNode in="b" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-      <filter id="heavyGlow" x="-100%" y="-100%" width="300%" height="300%">
-        <feGaussianBlur stdDeviation="16" result="b" />
-        <feMerge>
-          <feMergeNode in="b" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-    </defs>
-  );
-}
-
-/* Fast-flowing bloodstream highway in background so canvas is ALWAYS alive */
-function BloodstreamHighway({ frame, alertLevel = 0 }: { frame: number; alertLevel?: number }) {
-  const rbcs = Array.from({ length: 28 }, (_, i) => {
-    const speed = 4.5 + (i % 5) * 1.8;
-    const x = ((i * 193 + frame * speed) % (WIDTH + 240)) - 120;
-    const yBase = (i * 137) % HEIGHT;
-    const wave = Math.sin(frame * 0.05 + i) * 35;
-    const y = yBase + wave;
-    const rot = (frame * (2 + (i % 4)) + i * 45) % 360;
-    const scale = 0.55 + (i % 4) * 0.22;
-    return { x, y, rot, scale, i };
-  });
-
-  return (
-    <g>
-      <rect width={WIDTH} height={HEIGHT} fill="url(#bgGrad)" />
-      {alertLevel > 0 && (
-        <rect
-          width={WIDTH}
-          height={HEIGHT}
-          fill="#ff002b"
-          opacity={alertLevel * (0.12 + Math.sin(frame * 0.25) * 0.08)}
-        />
-      )}
-
-      {/* Animated pulsing blood vessel tunnels */}
-      {[380, 920, 1460].map((vy, idx) => {
-        const dY = Math.sin(frame * 0.04 + idx) * 25;
-        return (
-          <path
-            key={idx}
-            d={`M-100 ${vy + dY} Q 540 ${vy - 120 - dY} 1180 ${vy + dY}`}
-            fill="none"
-            stroke={alertLevel > 0.3 ? '#ff2e4c' : '#1e4875'}
-            strokeWidth={75}
-            opacity={0.18}
-            strokeLinecap="round"
-          />
-        );
-      })}
-
-      {/* Fast-moving Red Blood Cells */}
-      {rbcs.map((cell) => (
-        <g
-          key={cell.i}
-          transform={`translate(${cell.x} ${cell.y}) rotate(${cell.rot}) scale(${cell.scale})`}
-          opacity={0.28}
-        >
-          <ellipse cx="0" cy="0" rx="34" ry="22" fill="#d63031" />
-          <ellipse cx="0" cy="0" rx="18" ry="10" fill="#851414" />
-        </g>
-      ))}
-    </g>
-  );
-}
-
-/* Expressive Animated Eye that looks around, blinks, dilates, cloaks, or goes grayscale */
-function DynamicEye({
-  frame,
-  lookX = 0,
-  lookY = 0,
-  pupilScale = 1,
-  stealthCloak = 0,
-  dangerMode = 0,
-  blackout = 0,
-  deadGrey = 0,
-  crossSection = false,
-  scale = 1,
-}: {
-  frame: number;
-  lookX?: number;
-  lookY?: number;
-  pupilScale?: number;
-  stealthCloak?: number;
-  dangerMode?: number;
-  blackout?: number;
-  deadGrey?: number;
-  crossSection?: boolean;
-  scale?: number;
-}) {
-  // Periodic natural blink every ~110 frames
-  const blinkCycle = frame % 115;
-  const blinkOpen =
-    blinkCycle < 8
-      ? interpolate(blinkCycle, [0, 4, 8], [1, 0.08, 1])
-      : 1;
-
-  const pRadius = 38 * pupilScale;
-  const irisRayCount = 24;
-
-  return (
-    <g
-      transform={`translate(540 850) scale(${scale})`}
-      style={{ filter: deadGrey > 0 ? `grayscale(${deadGrey * 100}%)` : undefined }}
-    >
-      {/* Outer Glow */}
-      <ellipse
-        cx="0"
-        cy="0"
-        rx="430"
-        ry="290"
-        fill={dangerMode > 0.3 ? '#ff2e4c' : '#00f2fe'}
-        opacity={0.18 + Math.sin(frame * 0.1) * 0.05}
-        filter="url(#heavyGlow)"
-      />
-
-      {/* Animated Optic Nerve Tail waving at the back */}
-      <path
-        d={`M 260 0 Q 360 ${Math.sin(frame * 0.12) * 28} 475 ${15 + Math.cos(frame * 0.1) * 22} L 475 ${65 + Math.cos(frame * 0.1) * 22} Q 360 ${45 + Math.sin(frame * 0.12) * 28} 250 42 Z`}
-        fill="#e6c28b"
-        stroke="#ffdfab"
-        strokeWidth="4"
-      />
-
-      {/* Eye Group with Blinking & Stealth Opacity */}
-      <g
-        transform={`scale(1 ${blinkOpen})`}
-        opacity={1 - stealthCloak * 0.68}
-      >
-        {/* Sclera */}
-        <path
-          d="M-360 0 C-245 -180 245 -180 360 0 C245 180 -245 180 -360 0 Z"
-          fill="url(#sclera)"
-          stroke={dangerMode > 0.3 ? '#ff4757' : '#a8f9ff'}
-          strokeWidth="10"
-        />
-
-        {/* Pulsing Blood Vessels on Sclera */}
-        <g
-          fill="none"
-          stroke="#e84158"
-          strokeLinecap="round"
-          opacity={0.35 + dangerMode * 0.55}
-        >
-          <path d="M-315 -15 Q-240 -35 -185 12 T-125 25" strokeWidth={4 + dangerMode * 3} />
-          <path d="M-290 50 Q-220 35 -165 72" strokeWidth={3 + dangerMode * 2} />
-          <path d="M285 -45 Q215 -20 155 -8" strokeWidth={4 + dangerMode * 3} />
-          <path d="M270 55 Q205 40 148 65" strokeWidth={3 + dangerMode * 2} />
-        </g>
-
-        {/* Cross-section internal retinal layers for Scene 3 & 4 */}
-        {crossSection && (
-          <g>
-            <path
-              d="M115 -132 C230 -115 305 -58 338 0 C305 58 230 115 115 132 C185 82 205 40 205 0 C205 -40 185 -82 115 -132 Z"
-              fill="#ff7675"
-              opacity="0.38"
-              stroke="#fab1a0"
-              strokeWidth="4"
-            />
-            <path
-              d="M150 -112 C230 -80 280 -40 302 0 C280 40 230 80 150 112"
-              fill="none"
-              stroke="#ffeaa7"
-              strokeWidth="7"
-              strokeDasharray="14 8"
-            />
-          </g>
-        )}
-
-        {/* MOVING IRIS & PUPIL (Tracks lookX, lookY!) */}
-        <g transform={`translate(${lookX} ${lookY})`}>
-          <circle
-            cx="0"
-            cy="0"
-            r="112"
-            fill={dangerMode > 0.4 ? 'url(#irisRed)' : 'url(#irisCyan)'}
-            stroke={dangerMode > 0.4 ? '#ff7685' : '#9efff9'}
-            strokeWidth="6"
-          />
-          {Array.from({ length: irisRayCount }, (_, i) => {
-            const ang = (i / irisRayCount) * Math.PI * 2 + frame * 0.008;
-            return (
-              <line
-                key={i}
-                x1={Math.cos(ang) * (pRadius + 8)}
-                y1={Math.sin(ang) * (pRadius + 8)}
-                x2={Math.cos(ang) * 102}
-                y2={Math.sin(ang) * 102}
-                stroke={dangerMode > 0.4 ? '#ffccd5' : '#b8fff9'}
-                strokeWidth="3"
-                opacity="0.55"
-              />
-            );
-          })}
-          <circle cx="0" cy="0" r={pRadius} fill="#040812" stroke="#ffffff" strokeWidth="2" />
-          {/* Specular Eye Highlights */}
-          <ellipse
-            cx={-28}
-            cy={-34}
-            rx="20"
-            ry="12"
-            fill="#ffffff"
-            opacity="0.92"
-            transform="rotate(-30 -28 -34)"
-          />
-          <circle cx="30" cy="30" r="8" fill="#ffffff" opacity="0.8" />
-        </g>
-      </g>
-
-      {/* STEALTH WIREFRAME OVERLAY (When cloaked in Scene 1) */}
-      {stealthCloak > 0.05 && (
-        <g opacity={stealthCloak}>
-          <path
-            d="M-360 0 C-245 -180 245 -180 360 0 C245 180 -245 180 -360 0 Z"
-            fill="none"
-            stroke="#00f2fe"
-            strokeWidth="5"
-            strokeDasharray="18 12"
-            filter="url(#glow)"
-          />
-          {[-100, -50, 0, 50, 100].map((ly) => (
-            <line
-              key={ly}
-              x1="-310"
-              y1={ly}
-              x2="310"
-              y2={ly}
-              stroke="#00f2fe"
-              strokeWidth="2"
-              opacity="0.45"
-              strokeDasharray="10 14"
-            />
-          ))}
-        </g>
-      )}
-
-      {/* BLACKOUT SHATTER OVERLAY (Scene 2 & 5) */}
-      {blackout > 0.02 && (
-        <g opacity={clamp01(blackout)}>
-          <path
-            d="M-362 0 C-245 -182 245 -182 362 0 C245 182 -245 182 -362 0 Z"
-            fill="#03050a"
-            opacity={0.92}
-          />
-          <path
-            d="M-220 -95 L-40 -10 L-140 95 M190 -85 L30 15 L155 110 M0 -150 L-15 150"
-            stroke="#ff2e4c"
-            strokeWidth="7"
-            fill="none"
-            filter="url(#glow)"
-          />
-        </g>
-      )}
-    </g>
-  );
-}
-
-/* Animated Hunter T-Cell with rotating scanner or angry spikes */
-function KineticTCell({
-  x,
-  y,
-  frame,
-  scale = 1,
-  angry = false,
-  scanAngle,
-}: {
-  x: number;
-  y: number;
-  frame: number;
-  scale?: number;
-  angry?: boolean;
-  scanAngle?: number;
-}) {
-  const color = angry ? '#ff2e4c' : '#00f2fe';
-  const squishX = 1 + Math.sin(frame * 0.18 + x) * 0.09;
-  const squishY = 1 + Math.cos(frame * 0.18 + y) * 0.09;
-
-  return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      {/* Optional Laser Scanner Cone */}
-      {scanAngle !== undefined && (
-        <g transform={`rotate(${scanAngle})`}>
-          <path
-            d="M0 0 L 420 -85 L 420 85 Z"
-            fill={color}
-            opacity={0.22 + Math.sin(frame * 0.25) * 0.08}
-          />
-          <line x1="0" y1="0" x2="420" y2="-85" stroke={color} strokeWidth="3" opacity="0.8" />
-          <line x1="0" y1="0" x2="420" y2="85" stroke={color} strokeWidth="3" opacity="0.8" />
-        </g>
-      )}
-
-      <g transform={`scale(${squishX} ${squishY})`}>
-        <circle r="68" fill={color} opacity="0.2" filter="url(#glow)" />
-        {/* Tentacle/Receptor spikes */}
-        {Array.from({ length: 10 }, (_, i) => {
-          const a = (i / 10) * Math.PI * 2 + frame * (angry ? 0.08 : 0.03);
-          const r1 = 44;
-          const r2 = angry ? 72 : 58;
-          return (
-            <line
-              key={i}
-              x1={Math.cos(a) * r1}
-              y1={Math.sin(a) * r1}
-              x2={Math.cos(a) * r2}
-              y2={Math.sin(a) * r2}
-              stroke={color}
-              strokeWidth={angry ? 7 : 5}
-              strokeLinecap="round"
-            />
-          );
-        })}
-        <circle
-          r="46"
-          fill={angry ? '#4a0815' : '#0b3854'}
-          stroke={color}
-          strokeWidth="6"
-        />
-        {/* Animated Eye/Core inside the T-Cell */}
-        <circle
-          cx={Math.cos(frame * 0.1) * 8}
-          cy={Math.sin(frame * 0.1) * 8}
-          r="18"
-          fill={color}
-          filter="url(#glow)"
-        />
-        <circle
-          cx={Math.cos(frame * 0.1) * 8 - 5}
-          cy={Math.sin(frame * 0.1) * 8 - 5}
-          r="6"
-          fill="#ffffff"
-        />
-      </g>
-    </g>
-  );
-}
-
-/* ======================== SCENE 1: IMMUNE PATROL & STEALTH CLOAK ======================== */
-
-function SceneOne({ frame, scene }: { frame: number; scene: Scene }) {
-  const t = localSec(frame, scene);
-
-  // T-Cell Drone 1 sweeps right across the screen and scans the eye!
-  const droneX = interpolate(t, [0, 2.5, 5.2], [140, 540, 940]);
-  const droneY = interpolate(t, [0, 2.5, 5.2], [440, 390, 460]);
-  const scanDeg = interpolate(t, [0, 2.5, 5.2], [45, 90, 135]);
-
-  // Eye looks directly at the patrolling drone!
-  const lookX = interpolate(t, [0, 2.5, 5.2], [-55, 0, 55]);
-  const lookY = -30;
-
-  // When drone passes over the eye (1.3s to 3.8s), Stealth Cloak activates!
-  const cloak = interpolate(t, [1.0, 1.8, 3.5, 4.3], [0, 1, 1, 0.2], {
+const clamp = (value: number, input: number[], output: number[]) =>
+  interpolate(value, input, output, {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
 
-  // Organ checklist badges on top-left & top-right showing Immune System knows other organs
-  const organs = [
-    { name: 'HEART: KNOWN ✅', x: 230, y: 275, delay: 0.2 },
-    { name: 'LUNGS: KNOWN ✅', x: 850, y: 275, delay: 0.6 },
-    { name: 'EYES: 404 NOT FOUND ❓', x: 540, y: 1255, dela
+const ease = (value: number, input: number[], output: number[]) =>
+  interpolate(value, input, output, {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.cubic),
+  });
+
+const sceneStartFrame = (scene: Scene) => Math.round(scene.start * FPS);
+const sceneEndFrame = (scene: Scene) => Math.round(scene.end * FPS);
+const localFrameFor = (frame: number, scene: Scene) =>
+  Math.max(0, frame - sceneStartFrame(scene));
+
+function seededUnit(seed: number) {
+  const v = Math.sin(seed * 127.1 + 311.7) * 43758.5453123;
+  return v - Math.floor(v);
+}
+
+function Background({
+  theme,
+  frame,
+}: {
+  theme: Theme;
+  frame: number;
+}) {
+  const stars = Array.from({ length: 118 }, (_, i) => {
+    const x = 16 + seededUnit(i + 5) * 1048;
+    const y = 20 + seededUnit(i + 210) * 1870;
+    const r = 0.7 + seededUnit(i + 470) * 2.2;
+    const twinkle =
+      0.25 +
+      0.75 *
+        ((Math.sin(frame * (0.025 + seededUnit(i + 30) * 0.055) + i) + 1) /
+          2);
+    return { x, y, r, twinkle, key: i };
+  });
+
+  if (theme === 'paper') {
+    return (
+      <AbsoluteFill
+        style={{
+          background:
+            'linear-gradient(145deg, #f4efe4 0%, #eee5d5 48%, #e5dbc6 100%)',
+          overflow: 'hidden',
+        }}
+      >
+        <AbsoluteFill
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(77,69,55,0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(77,69,55,0.09) 1px, transparent 1px), linear-gradient(rgba(77,69,55,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(77,69,55,0.035) 1px, transparent 1px)',
+            backgroundSize:
+              '200px 200px, 200px 200px, 40px 40px, 40px 40px',
+          }}
+        />
+
+        <svg
+          width={WIDTH}
+          height={HEIGHT}
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          style={{ position: 'absolute', inset: 0 }}
+        >
+          <g
+            stroke="#665d4c"
+            strokeOpacity="0.24"
+            fill="none"
+            strokeWidth="2"
+          >
+            <path d="M 36 380 V 1500 M 44 380 V 1500 M 1036 380 V 1500 M 1044 380 V 1500" />
+
+            {Array.from({ length: 29 }, (_, i) => {
+              const y = 400 + i * 38;
+              return (
+                <path
+                  key={i}
+                  d={`M 26 ${y} h ${i % 5 === 0 ? 28 : 13} M 1054 ${y} h -${i % 5 === 0 ? 28 : 13}`}
+                />
+              );
+            })}
+
+            <path
+              d="M 74 356 H 1006 M 74 1510 H 1006"
+              strokeOpacity="0.45"
+            />
+
+            <path d="M 100 348 v 16 M 200 348 v 16 M 300 348 v 16 M 400 348 v 16 M 500 348 v 16 M 600 348 v 16 M 700 348 v 16 M 800 348 v 16 M 900 348 v 16 M 1000 348 v 16" />
+          </g>
+
+          <g
+            fill="#625745"
+            opacity="0.45"
+            fontFamily="Arial, sans-serif"
+            fontSize="14"
+            letterSpacing="2"
+          >
+            <text x="62" y="386">
+              FIG. 01
+            </text>
+            <text x="1018" y="386" textAnchor="end">
+              FIELD NOTES / RELATIVITY
+            </text>
+            <text x="62" y="1538">
+              ENGINEERING PAPER · 40 PX GRID
+            </text>
+            <text x="1018" y="1538" textAnchor="end">
+              REV. 2026
+            </text>
+          </g>
+        </svg>
+
+        <AbsoluteFill
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 38%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 52%)',
+            pointerEvents: 'none',
+          }}
+        />
+      </AbsoluteFill>
+    );
+  }
+
+  return (
+    <AbsoluteFill
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% 48%, #181d38 0%, #0b1022 48%, #060916 100%)',
+        overflow: 'hidden',
+      }}
+    >
+      <AbsoluteFill
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 82%, rgba(212,130,90,0.23) 0%, rgba(212,130,90,0.06) 25%, transparent 49%), radial-gradient(ellipse at 82% 12%, rgba(0,229,255,0.07) 0%, transparent 36%)',
+        }}
+      />
+
+      <svg
+        width={WIDTH}
+        height={HEIGHT}
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        style={{ position: 'absolute', inset: 0 }}
+      >
+        <defs>
+          <radialGradient id="starHalo">
+            <stop offset="0" stopColor="#d9faff" stopOpacity="0.9" />
+            <stop offset="1" stopColor="#d9faff" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {stars.map((s) => (
+          <g key={s.key} opacity={s.twinkle}>
+            <circle
+              cx={s.x}
+              cy={s.y}
+              r={s.r}
+              fill={s.key % 7 === 0 ? '#ffce9b' : '#d9faff'}
+            />
+
+            {s.key % 19 === 0 && (
+              <circle
+                cx={s.x}
+                cy={s.y}
+                r={s.r * 5}
+                fill="url(#starHalo)"
+                opacity="0.22"
+              />
+            )}
+          </g>
+        ))}
+
+        <g fill="none" stroke="#00e5ff" strokeOpacity="0.09">
+          <circle cx="900" cy="1070" r="360" strokeWidth="1" />
+          <circle cx="900" cy="1070" r="420" strokeWidth="1" />
+          <circle cx="900" cy="1070" r="485" strokeWidth="1" />
+        </g>
+      </svg>
+
+      <AbsoluteFill
+        style={{
+          background:
+            'linear-gradient(180deg, transparent 0%, rgba(6,9,22,0.08) 76%, rgba(6,9,22,0.38) 100%)',
+        }}
+      />
+    </AbsoluteFill>
+  );
+}
+
+function EditorialHeader({
+  scene,
+  frame,
+}: {
+  scene: Scene;
+  frame: number;
+}) {
+  const local = localFrameFor(frame, scene);
+  const { fps } = useVideoConfig();
+
+  const reveal = spring({
+    frame: local,
+    fps,
+    config: { damping: 19, stiffness: 125, mass: 0.82 },
+  });
+
+  const accent =
+    scene.theme === 'paper'
+      ? '#d93829'
+      : scene.id === 3
+        ? '#00e5ff'
+        : scene.id === 5
+          ? '#ffd166'
+          : '#ff9f43';
+
+  const primary = scene.theme === 'paper' ? '#24211d' : '#f8f7f2';
+  const enterY = interpolate(reveal, [0, 1], [30, 0]);
+  const blur = interpolate(reveal, [0, 1], [12, 0]);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 78,
+        left: 42,
+        right: 42,
+        height: 270,
+        textAlign: 'center',
+        zIndex: 10,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 18,
+          height: 30,
+          opacity: interpolate(reveal, [0, 1], [0, 1]),
+        }}
+      >
+        <div
+          style={{
+            width: 108,
+            height: 2,
+            background: accent,
+            opacity: 0.8,
+          }}
+        />
+
+        <div
+          style={{
+            color: scene.theme === 'paper' ? '#5a5144' : '#d7e7f4',
+            fontFamily: 'Arial, Helvetica, sans-serif',
+            fontWeight: 800,
+            fontSize: 19,
+            letterSpacing: 4,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {scene.tag}
+        </div>
+
+        <div
+          style={{
+            width: 108,
+            height: 2,
+            background: accent,
+            opacity: 0.8,
+          }}
+        />
+      </div>
+
+      <div
+        style={{
+          marginTop: 14,
+          transform: `translateY(${enterY}px)`,
+          filter: `blur(${blur}px)`,
+          opacity: reveal,
+          fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
+          fontSize: scene.id === 6 ? 60 : 64,
+          lineHeight: 1.04,
+          fontWeight: 900,
+          letterSpacing: -1.4,
+          textTransform: 'uppercase',
+          color: primary,
+          textShadow:
+            scene.theme === 'dark'
+              ? '0 6px 32px rgba(0,0,0,0.28)'
+              : '0 2px 0 rgba(255,255,255,0.24)',
+        }}
+      >
+        <div>{scene.titleWhite}</div>
+        <div style={{ color: accent, marginTop: 3 }}>{scene.titleAccent}</div>
+      </div>
+
+      <div
+        style={{
+          width: 74,
+          height: 5,
+          borderRadius: 10,
+          margin: '15px auto 0',
+          background: accent,
+          transform: `scaleX(${reveal})`,
+          boxShadow:
+            scene.theme === 'dark' ? `0 0 18px ${accent}66` : 'none',
+        }}
+      />
+    </div>
+  );
+}
+
+function punctuationPause(word: string) {
+  if (/[.!?…]$/.test(word)) return 2.6;
+  if (/[,;:]$/.test(word)) return 1.5;
+  return 0;
+}
+
+function CaptionPill({
+  scene,
+  frame,
+}: {
+  scene: Scene;
+  frame: number;
+}) {
+  const words = scene.caption.trim().split(/\s+/);
+  const start = Math.round(scene.speechStart * FPS);
+  const end = Math.round(scene.speechEnd * FPS);
+
+  const weights = words.map(
+    (word) =>
+      Math.max(2, word.replace(/[^a-zA-Z0-9]/g, '').length) +
+      punctuationPause(word),
+  );
+
+  const total = weights.reduce((a, b) => a + b, 0);
+  const elapsed = Math.max(0, Math.min(end - start, frame - start));
+  const weightedProgress = (elapsed / Math.max(1, end - start)) * total;
+
+  let cumulative = 0;
+  let activeIndex = 0;
+
+  for (let i = 0; i < weights.length; i++) {
+    if (weightedProgress >= cumulative) activeIndex = i;
+    cumulative += weights[i];
+    if (weightedProgress < cumulative) break;
+  }
+
+  if (frame >= end) activeIndex = words.length - 1;
+
+  const chunkStart = Math.floor(activeIndex / 4) * 4;
+  const visibleWords = words.slice(
+    chunkStart,
+    Math.min(chunkStart + 4, words.length),
+  );
+
+  const dark = scene.theme === 'dark';
+
+  const highlight =
+    scene.id === 2 || scene.id === 4 || scene.id === 6
+      ? '#ff5252'
+      : '#ffb142';
+
+  const reveal = spring({
+    frame: Math.max(0, frame - sceneStartFrame(scene)),
+    fps: FPS,
+    config: { damping: 20, stiffness: 150 },
+  });
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 1570,
+        left: 55,
+        right: 55,
+        minHeight: 94,
+        boxSizing: 'border-box',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px 32px',
+        borderRadius: 20,
+        background: dark
+          ? 'rgba(18,22,36,0.90)'
+          : 'rgba(36,33,29,0.94)',
+        border: `1.5px solid ${
+          dark ? 'rgba(205,229,248,0.24)' : 'rgba(255,255,255,0.2)'
+        }`,
+        boxShadow: dark
+          ? '0 18px 48px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.08)'
+          : '0 12px 32px rgba(35,25,12,0.20)',
+        opacity: interpolate(reveal, [0, 1], [0.6, 1]),
+        transform: `translateY(${interpolate(reveal, [0, 1], [12, 0])}px)`,
+        zIndex: 12,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '0 10px',
+          color: '#f8f5ef',
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontSize: 34,
+          lineHeight: 1.25,
+          fontWeight: 700,
+          letterSpacing: -0.45,
+          textAlign: 'center',
+        }}
+      >
+        {visibleWords.map((word, index) => {
+          const absoluteIndex = chunkStart + index;
+          const isActive = absoluteIndex === activeIndex;
+
+          return (
+            <span
+              key={`${absoluteIndex}-${word}`}
+              style={{
+                color: isActive ? highlight : '#f8f5ef',
+                textShadow: isActive ? `0 0 18px ${highlight}66` : 'none',
+                transform: isActive ? 'translateY(-1px)' : 'none',
+                transition: 'none',
+                whiteSpace: 'pre',
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Stage({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 350,
+        width: WIDTH,
+        height: 1160,
+        overflow: 'hidden',
+        zIndex: 3,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ISS({
+  x,
+  y,
+  scale = 1,
+  rotate = 0,
+}: {
+  x: number;
+  y: number;
+  scale?: number;
+  rotate?: number;
+}) {
+  return (
+    <g
+      transform={`translate(${x} ${y}) rotate(${rotate}) scale(${scale})`}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <g stroke="#d6a74e" strokeWidth="3" fill="#9c762e">
+        <rect
+          x="-410"
+          y="-48"
+          width="152"
+          height="96"
+          rx="3"
+          fill="#173a58"
+        />
+        <rect
+          x="258"
+          y="-48"
+          width="152"
+          height="96"
+          rx="3"
+          fill="#173a58"
+        />
+
+        {Array.from({ length: 8 }, (_, i) => (
+          <path
+            key={`l${i}`}
+            d={`M ${-410 + i * 19} -48 V 48`}
+            stroke="#d6a74e"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        {Array.from({ length: 8 }, (_, i) => (
+          <path
+            key={`r${i}`}
+            d={`M ${258 + i * 19} -48 V 48`}
+            stroke="#d6a74e"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        {Array.from({ length: 5 }, (_, i) => (
+          <path
+            key={`lh${i}`}
+            d={`M -410 ${-48 + i * 24} H -258`}
+            stroke="#d6a74e"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        {Array.from({ length: 5 }, (_, i) => (
+          <path
+            key={`rh${i}`}
+            d={`M 258 ${-48 + i * 24} H 410`}
+            stroke="#d6a74e"
+            strokeWidth="1.5"
+          />
+        ))}
+
+        <path
+          d="M -255 0 H 255"
+          fill="none"
+          stroke="#c2cbd5"
+          strokeWidth="11"
+        />
+
+        <path
+          d="M -150 -18 H 150"
+          fill="none"
+          stroke="#dce5eb"
+          strokeWidth="13"
+        />
+
+        <rect
+          x="-118"
+          y="-34"
+          width="76"
+          height="68"
+          rx="15"
+          fill="#d4d8da"
+          stroke="#f6f4e9"
+        />
+
+        <rect
+          x="-36"
+          y="-42"
+          width="96"
+          height="84"
+          rx="16"
+          fill="#f0eee4"
+          stroke="#ffffff"
+          strokeWidth="3"
+        />
+
+        <rect
+          x="64"
+          y="-28"
+          width="67"
+          height="56"
+          rx="13"
+          fill="#d5dad9"
+          stroke="#ffffff"
+          strokeWidth="2"
+        />
+
+        <rect
+          x="140"
+          y="-21"
+          width="60"
+          height="42"
+          rx="10"
+          fill="#aebfca"
+          stroke="#edf5f9"
+          strokeWidth="2"
+        />
+
+        <path
+          d="M -84 -34 V 34 M -44 -34 V 34 M -20 -42 V 42 M 12 -42 V 42 M 40 -42 V 42 M 80 -28 V 28 M 105 -28 V 28"
+          stroke="#61717f"
+          strokeWidth="2"
+        />
+
+        <path
+          d="M -205 0 v -62 h 30 v 62 M 202 0 v -62 h 30 v 62"
+          fill="none"
+          stroke="#e3e8e8"
+          strokeWidth="6"
+        />
+
+        <path
+          d="M -140 -56 V 56 M 140 -56 V 56"
+          fill="none"
+          stroke="#f4d78a"
+          strokeWidth="4"
+        />
+      </g>
+
+      <g fill="#00e5ff" opacity="0.86">
+        <circle cx="-4" cy="-2" r="6" />
+        <circle cx="88" cy="0" r="4" />
+      </g>
+    </g>
+  );
+}
+
+function Rocket({
+  x,
+  y,
+  scale = 1,
+  flame = 1,
+}: {
+  x: number;
+  y: number;
+  scale?: number;
+  flame?: number;
+}) {
+  return (
+    <g
+      transform={`translate(${x} ${y}) scale(${scale})`}
+      strokeLinejoin="round"
+    >
+      <ellipse
+        cx="0"
+        cy="57"
+        rx="26"
+        ry={45 * flame}
+        fill="#ff6d35"
+        opacity={0.55 * flame}
+        filter="url(#rocketGlow)"
+      />
+
+      <path
+        d={`M -12 48 L 0 ${48 + 72 * flame} L 12 48 Z`}
+        fill="#ffb142"
+        opacity={flame}
+      />
+
+      <path
+        d={`M -5 48 L 0 ${48 + 48 * flame} L 5 48 Z`}
+        fill="#fff2bb"
+        opacity={flame}
+      />
+
+      <path
+        d="M -22 25 L -37 48 L -20 45 M 22 25 L 37 48 L 20 45"
+        fill="#e64f35"
+        stroke="#ffb142"
+        strokeWidth="3"
+      />
+
+      <path
+        d="M -22 24 Q -25 -26 0 -63 Q 25 -26 22 24 Z"
+        fill="#e4e7ec"
+        stroke="#ffffff"
+        strokeWidth="3"
+      />
+
+      <path
+        d="M -15 -2 Q 0 -22 15 -2 L 13 15 H -13 Z"
+        fill="#274c6b"
+        stroke="#7de9f2"
+        strokeWidth="2"
+      />
+
+      <path
+        d="M -20 18 H 20 L 15 40 H -15 Z"
+        fill="#c2c8d0"
+        stroke="#ffffff"
+        strokeWidth="2"
+      />
+
+      <path
+        d="M -9 -38 L 0 -55 L 9 -38"
+        fill="none"
+        stroke="#ffb142"
+        strokeWidth="3"
+      />
+    </g>
+  );
+}
+
+function SceneOne({ scene }: { scene: Scene }) {
+  const frame = useCurrentFrame();
+  const local = localFrameFor(frame, scene);
+  const seconds = local / FPS;
+
+  const cameraY = ease(local, [0, 252], [-1900, -600]);
+  const rocketY = ease(local, [0, 250], [2670, 900]);
+  const rocketFlame = clamp(local, [0, 190, 250], [1, 0.72, 0.12]);
+  const altitude = Math.round(clamp(local, [0, 252], [0, 408]));
+  const markerY = clamp(altitude, [0, 408], [930, 180]);
+  const cityOpacity = clamp(local, [0, 115, 195], [1, 0.42, 0.06]);
+  const cloudOpacity = clamp(local, [50, 102, 175], [0.12, 1, 0.38]);
+  const spaceOpacity = clamp(local, [90, 180, 252], [0.08, 0.64, 1]);
+
+  return (
+    <Stage>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          overflow: 'hidden',
+        }}
+      >
+        <svg
+ 
