@@ -11,7 +11,7 @@ import {
 
 /**
  * Vertical biomedical short — timing is intentionally locked to the supplied VO script.
- * No TTS, generated voice, or music. Only public/sfx.wav is played.
+ * No TTS, generated voice, or music. Only public/voice.mp3 (SFX track) is played.
  */
 const FPS = 60;
 const WIDTH = 1080;
@@ -1883,7 +1883,7 @@ const Reel: React.FC = () => {
         fontFamily: 'Inter, Arial, sans-serif',
       }}
     >
-      <Audio src={staticFile('sfx.wav')} />
+      <Audio src={staticFile('voice.mp3')} />
 
       <SceneArtwork frame={safeFrame} scene={activeScene} />
       <SceneTitle frame={safeFrame} scene={activeScene} />
@@ -1912,3 +1912,5 @@ export const RemotionRoot: React.FC = () => (
     height={HEIGHT}
   />
 );
+
+export default RemotionRoot;
