@@ -22,14 +22,14 @@ jobs:
           sudo apt-get update && sudo apt-get install -y ffmpeg
           npm install
 
-      - name: Generate Frame-Synced Cinematic SFX Track (No TTS)
+      - name: Generate Stable Multi-Synced SFX Track (No TTS)
         run: |
           mkdir -p public
           ffmpeg -y -f lavfi -i "anullsrc=r=44100:cl=stereo:d=33.5" \
             -f lavfi -i "sine=f=880:d=0.18,afade=t=out:st=0.05:d=0.13,volume=0.25,adelay=200|200" \
             -f lavfi -i "sine=f=220:d=0.45,afade=t=out:st=0.15:d=0.30,volume=0.35,adelay=5300|5300" \
             -f lavfi -i "sine=f=520:d=0.60,afade=t=in:st=0:d=0.15,afade=t=out:st=0.30:d=0.30,volume=0.22,adelay=8500|8500" \
-            -f lavfi -i "anoise=d=0.25:c=pink,afade=t=out:st=0.04:d=0.21,volume=0.45,adelay=15200|15200" \
+            -f lavfi -i "sine=f=120:d=0.25,afade=t=out:st=0.04:d=0.21,volume=0.45,adelay=15200|15200" \
             -f lavfi -i "sine=f=160:d=0.55,afade=t=out:st=0.20:d=0.35,volume=0.40,adelay=19600|19600" \
             -f lavfi -i "sine=f=660:d=0.15,afade=t=out:st=0.04:d=0.11,volume=0.30,adelay=25200|25200" \
             -filter_complex "[0][1][2][3][4][5][6]amix=inputs=7:normalize=0,alimiter=limit=0.9" \
@@ -43,4 +43,3 @@ jobs:
         with:
           name: Final-Reel-MP4
           path: Out.mp4
-
