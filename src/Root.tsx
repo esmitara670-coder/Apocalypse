@@ -8,16 +8,12 @@ import {
   spring,
   staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from 'remotion';
 
 const FPS = 60;
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const DURATION = 2064; // 34.4 seconds
-
-type Theme = 'dark' | 'paper';
-type Scene = (typeof SCENES)[number];
+const DURATION = 2064;
 
 const SCENES = [
   {
@@ -25,8 +21,8 @@ const SCENES = [
     theme: 'dark',
     start: 0.0,
     end: 4.2,
-    speechStart: 0.10,
-    speechEnd: 4.10,
+    speechStart: 0.1,
+    speechEnd: 4.1,
     tag: 'SPACE TIME PARADOX',
     titleWhite: 'EARTH TO',
     titleAccent: 'DEEP SPACE',
@@ -37,7 +33,7 @@ const SCENES = [
     theme: 'paper',
     start: 4.2,
     end: 7.9,
-    speechStart: 4.20,
+    speechStart: 4.2,
     speechEnd: 7.65,
     tag: 'THE TWIN PARADOX',
     titleWhite: 'TWIN BROTHER SE',
@@ -49,7 +45,7 @@ const SCENES = [
     theme: 'dark',
     start: 7.9,
     end: 14.7,
-    speechStart: 8.10,
+    speechStart: 8.1,
     speechEnd: 14.45,
     tag: 'EINSTEIN RELATIVITY',
     titleWhite: 'GRAVITY & SPEED',
@@ -74,7 +70,7 @@ const SCENES = [
     start: 23.8,
     end: 27.2,
     speechStart: 23.95,
-    speechEnd: 27.00,
+    speechEnd: 27.0,
     tag: 'REAL LIFE SCI-FI',
     titleWhite: 'REAL TIME',
     titleAccent: 'MACHINE',
@@ -86,7 +82,7 @@ const SCENES = [
     start: 27.2,
     end: 34.4,
     speechStart: 27.35,
-    speechEnd: 34.30,
+    speechEnd: 34.3,
     tag: 'YOUR FUTURE JOURNEY',
     titleWhite: 'KISKE PAAS',
     titleAccent: 'JAANA CHAHOGE?',
@@ -94,267 +90,105 @@ const SCENES = [
   },
 ] as const;
 
-const clamp = (value: number, input: number[], output: number[]) =>
-  interpolate(value, input, output, {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
+type Scene = (typeof SCENES)[number];
 
-const ease = (value: number, input: number[], output: number[]) =>
-  interpolate(value, input, output, {
+const clamp = (v: number, inp: number[], out: number[]) =>
+  interpolate(v, inp, out, { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+
+const ease = (v: number, inp: number[], out: number[]) =>
+  interpolate(v, inp, out, {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
     easing: Easing.inOut(Easing.cubic),
   });
 
-const sceneStartFrame = (scene: Scene) => Math.round(scene.start * FPS);
-const sceneEndFrame = (scene: Scene) => Math.round(scene.end * FPS);
-const localFrameFor = (frame: number, scene: Scene) =>
-  Math.max(0, frame - sceneStartFrame(scene));
+const sFrame = (s: Scene) => Math.round(s.start * FPS);
+const eFrame = (s: Scene) => Math.round(s.end * FPS);
+const lFrame = (f: number, s: Scene) => Math.max(0, f - sFrame(s));
 
-function seededUnit(seed: number) {
-  const v = Math.sin(seed * 127.1 + 311.7) * 43758.5453123;
-  return v - Math.floor(v);
-}
-
-function Background({ theme, frame }: { theme: Theme; frame: number }) {
-  const stars = Array.from({ length: 118 }, (_, i) => {
-    const x = 16 + seededUnit(i + 5) * 1048;
-    const y = 20 + seededUnit(i + 210) * 1870;
-    const r = 0.7 + seededUnit(i + 470) * 2.2;
-    const twinkle =
-      0.25 +
-      0.75 * ((Math.sin(frame * (0.025 + seededUnit(i + 30) * 0.055) + i) + 1) / 2);
-    return { x, y, r, twinkle, key: i };
-  });
-
+function Background({ theme, frame }: { theme: 'dark' | 'paper'; frame: number }) {
   if (theme === 'paper') {
     return (
       <AbsoluteFill
         style={{
-          background: 'linear-gradient(145deg, #f4efe4 0%, #eee5d5 48%, #e5dbc6 100%)',
-          overflow: 'hidden',
+          background: 'linear-gradient(145deg, #f4efe4 0%, #e5dbc6 100%)',
+          backgroundImage:
+            'linear-gradient(rgba(77,69,55,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(77,69,55,0.08) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
         }}
-      >
-        <AbsoluteFill
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(77,69,55,0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(77,69,55,0.09) 1px, transparent 1px), linear-gradient(rgba(77,69,55,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(77,69,55,0.035) 1px, transparent 1px)',
-            backgroundSize: '200px 200px, 200px 200px, 40px 40px, 40px 40px',
-          }}
-        />
-        <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ position: 'absolute', inset: 0 }}>
-          <g stroke="#665d4c" strokeOpacity="0.24" fill="none" strokeWidth="2">
-            <path d="M 36 380 V 1500 M 44 380 V 1500 M 1036 380 V 1500 M 1044 380 V 1500" />
-            {Array.from({ length: 29 }, (_, i) => {
-              const y = 400 + i * 38;
-              return (
-                <path
-                  key={i}
-                  d={`M 26 ${y} h ${i % 5 === 0 ? 28 : 13} M 1054 ${y} h -${i % 5 === 0 ? 28 : 13}`}
-                />
-              );
-            })}
-            <path d="M 74 356 H 1006 M 74 1510 H 1006" strokeOpacity="0.45" />
-            <path d="M 100 348 v 16 M 200 348 v 16 M 300 348 v 16 M 400 348 v 16 M 500 348 v 16 M 600 348 v 16 M 700 348 v 16 M 800 348 v 16 M 900 348 v 16 M 1000 348 v 16" />
-          </g>
-          <g fill="#625745" opacity="0.45" fontFamily="Arial, sans-serif" fontSize="14" letterSpacing="2">
-            <text x="62" y="386">FIG. 01</text>
-            <text x="1018" y="386" textAnchor="end">FIELD NOTES / RELATIVITY</text>
-            <text x="62" y="1538">ENGINEERING PAPER · 40 PX GRID</text>
-            <text x="1018" y="1538" textAnchor="end">REV. 2026</text>
-          </g>
-        </svg>
-        <AbsoluteFill
-          style={{
-            background: 'radial-gradient(ellipse at 50% 38%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 52%)',
-            pointerEvents: 'none',
-          }}
-        />
-      </AbsoluteFill>
+      />
     );
   }
-
   return (
-    <AbsoluteFill
-      style={{
-        background: 'radial-gradient(ellipse at 50% 48%, #181d38 0%, #0b1022 48%, #060916 100%)',
-        overflow: 'hidden',
-      }}
-    >
-      <AbsoluteFill
-        style={{
-          background:
-            'radial-gradient(ellipse at 50% 82%, rgba(212,130,90,0.23) 0%, rgba(212,130,90,0.06) 25%, transparent 49%), radial-gradient(ellipse at 82% 12%, rgba(0,229,255,0.07) 0%, transparent 36%)',
-        }}
-      />
-      <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ position: 'absolute', inset: 0 }}>
-        <defs>
-          <radialGradient id="starHalo">
-            <stop offset="0" stopColor="#d9faff" stopOpacity="0.9" />
-            <stop offset="1" stopColor="#d9faff" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        {stars.map((s) => (
-          <g key={s.key} opacity={s.twinkle}>
-            <circle cx={s.x} cy={s.y} r={s.r} fill={s.key % 7 === 0 ? '#ffce9b' : '#d9faff'} />
-            {s.key % 19 === 0 && <circle cx={s.x} cy={s.y} r={s.r * 5} fill="url(#starHalo)" opacity="0.22" />}
-          </g>
-        ))}
-        <g fill="none" stroke="#00e5ff" strokeOpacity="0.09">
-          <circle cx="900" cy="1070" r="360" strokeWidth="1" />
-          <circle cx="900" cy="1070" r="420" strokeWidth="1" />
-          <circle cx="900" cy="1070" r="485" strokeWidth="1" />
-        </g>
+    <AbsoluteFill style={{ background: 'radial-gradient(ellipse at 50% 45%, #181d38 0%, #060916 100%)' }}>
+      <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
+        {Array.from({ length: 48 }, (_, i) => {
+          const x = (i * 173 + 29) % WIDTH;
+          const y = (i * 257 + 41) % HEIGHT;
+          const op = 0.25 + ((Math.sin(frame * 0.05 + i) + 1) / 2) * 0.65;
+          return <circle key={i} cx={x} cy={y} r={1.2 + (i % 3)} fill="#d9faff" opacity={op} />;
+        })}
       </svg>
-      <AbsoluteFill
-        style={{
-          background: 'linear-gradient(180deg, transparent 0%, rgba(6,9,22,0.08) 76%, rgba(6,9,22,0.38) 100%)',
-        }}
-      />
     </AbsoluteFill>
   );
 }
 
 function EditorialHeader({ scene, frame }: { scene: Scene; frame: number }) {
-  const local = localFrameFor(frame, scene);
-  const { fps } = useVideoConfig();
-
-  const reveal = spring({
-    frame: local,
-    fps,
-    config: { damping: 19, stiffness: 125, mass: 0.82 },
-  });
-
-  const accent =
-    scene.theme === 'paper'
-      ? '#d93829'
-      : scene.id === 3
-        ? '#00e5ff'
-        : scene.id === 5
-          ? '#ffd166'
-          : '#ff9f43';
-
-  const primary = scene.theme === 'paper' ? '#24211d' : '#f8f7f2';
-  const enterY = interpolate(reveal, [0, 1], [30, 0]);
-  const blur = interpolate(reveal, [0, 1], [12, 0]);
+  const local = lFrame(frame, scene);
+  const rev = spring({ frame: local, fps: FPS, config: { damping: 18, stiffness: 130 } });
+  const isPaper = scene.theme === 'paper';
+  const accent = isPaper ? '#d93829' : scene.id === 3 ? '#00e5ff' : scene.id === 5 ? '#ffd166' : '#ff9f43';
+  const primary = isPaper ? '#24211d' : '#f8f7f2';
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 78,
-        left: 42,
-        right: 42,
-        height: 270,
-        textAlign: 'center',
-        zIndex: 10,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 18,
-          height: 30,
-          opacity: interpolate(reveal, [0, 1], [0, 1]),
-        }}
-      >
-        <div style={{ width: 108, height: 2, background: accent, opacity: 0.8 }} />
-        <div
-          style={{
-            color: scene.theme === 'paper' ? '#5a5144' : '#d7e7f4',
-            fontFamily: 'Arial, Helvetica, sans-serif',
-            fontWeight: 800,
-            fontSize: 19,
-            letterSpacing: 4,
-            whiteSpace: 'nowrap',
-          }}
-        >
+    <div style={{ position: 'absolute', top: 78, left: 40, right: 40, textAlign: 'center', zIndex: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, opacity: rev }}>
+        <div style={{ width: 95, height: 2, background: accent }} />
+        <span style={{ color: isPaper ? '#5a5144' : '#d7e7f4', fontWeight: 800, fontSize: 19, letterSpacing: 4 }}>
           {scene.tag}
-        </div>
-        <div style={{ width: 108, height: 2, background: accent, opacity: 0.8 }} />
+        </span>
+        <div style={{ width: 95, height: 2, background: accent }} />
       </div>
-
       <div
         style={{
           marginTop: 14,
-          transform: `translateY(${enterY}px)`,
-          filter: `blur(${blur}px)`,
-          opacity: reveal,
-          fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
-          fontSize: scene.id === 6 ? 60 : 64,
-          lineHeight: 1.04,
+          transform: `translateY(${interpolate(rev, [0, 1], [28, 0])}px)`,
+          opacity: rev,
+          fontFamily: 'Arial Black, sans-serif',
+          fontSize: 62,
+          lineHeight: 1.05,
           fontWeight: 900,
-          letterSpacing: -1.4,
-          textTransform: 'uppercase',
           color: primary,
-          textShadow:
-            scene.theme === 'dark'
-              ? '0 6px 32px rgba(0,0,0,0.28)'
-              : '0 2px 0 rgba(255,255,255,0.24)',
         }}
       >
         <div>{scene.titleWhite}</div>
-        <div style={{ color: accent, marginTop: 3 }}>{scene.titleAccent}</div>
+        <div style={{ color: accent, marginTop: 4 }}>{scene.titleAccent}</div>
       </div>
-
-      <div
-        style={{
-          width: 74,
-          height: 5,
-          borderRadius: 10,
-          margin: '15px auto 0',
-          background: accent,
-          transform: `scaleX(${reveal})`,
-          boxShadow: scene.theme === 'dark' ? `0 0 18px ${accent}66` : 'none',
-        }}
-      />
     </div>
   );
-}
-
-function punctuationPause(word: string) {
-  if (/[.!?…]$/.test(word)) return 2.6;
-  if (/[,;:]$/.test(word)) return 1.5;
-  return 0;
 }
 
 function CaptionPill({ scene, frame }: { scene: Scene; frame: number }) {
   const words = scene.caption.trim().split(/\s+/);
   const start = Math.round(scene.speechStart * FPS);
   const end = Math.round(scene.speechEnd * FPS);
-
-  const weights = words.map(
-    (word) => Math.max(2, word.replace(/[^a-zA-Z0-9]/g, '').length) + punctuationPause(word),
-  );
-
+  const weights = words.map((w) => Math.max(2, w.length) + (/[.!?]$/.test(w) ? 2.5 : /[,;:]$/.test(w) ? 1.5 : 0));
   const total = weights.reduce((a, b) => a + b, 0);
   const elapsed = Math.max(0, Math.min(end - start, frame - start));
-  const weightedProgress = (elapsed / Math.max(1, end - start)) * total;
+  const prog = (elapsed / Math.max(1, end - start)) * total;
 
-  let cumulative = 0;
-  let activeIndex = 0;
-
+  let cum = 0;
+  let activeIdx = 0;
   for (let i = 0; i < weights.length; i++) {
-    if (weightedProgress >= cumulative) activeIndex = i;
-    cumulative += weights[i];
-    if (weightedProgress < cumulative) break;
+    if (prog >= cum) activeIdx = i;
+    cum += weights[i];
+    if (prog < cum) break;
   }
+  if (frame >= end) activeIdx = words.length - 1;
 
-  if (frame >= end) activeIndex = words.length - 1;
-
-  const chunkStart = Math.floor(activeIndex / 4) * 4;
-  const visibleWords = words.slice(chunkStart, Math.min(chunkStart + 4, words.length));
-  const dark = scene.theme === 'dark';
-  const highlight = scene.id === 2 || scene.id === 4 || scene.id === 6 ? '#ff5252' : '#ffb142';
-
-  const reveal = spring({
-    frame: Math.max(0, frame - sceneStartFrame(scene)),
-    fps: FPS,
-    config: { damping: 20, stiffness: 150 },
-  });
+  const cStart = Math.floor(activeIdx / 4) * 4;
+  const chunk = words.slice(cStart, cStart + 4);
+  const hl = scene.theme === 'paper' ? '#ff5252' : '#ffb142';
 
   return (
     <div
@@ -364,51 +198,21 @@ function CaptionPill({ scene, frame }: { scene: Scene; frame: number }) {
         left: 55,
         right: 55,
         minHeight: 94,
-        boxSizing: 'border-box',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px 32px',
+        padding: '16px 28px',
         borderRadius: 20,
-        background: dark ? 'rgba(18,22,36,0.90)' : 'rgba(36,33,29,0.94)',
-        border: `1.5px solid ${dark ? 'rgba(205,229,248,0.24)' : 'rgba(255,255,255,0.2)'}`,
-        boxShadow: dark
-          ? '0 18px 48px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.08)'
-          : '0 12px 32px rgba(35,25,12,0.20)',
-        opacity: interpolate(reveal, [0, 1], [0.6, 1]),
-        transform: `translateY(${interpolate(reveal, [0, 1], [12, 0])}px)`,
+        background: scene.theme === 'dark' ? 'rgba(18,22,36,0.92)' : 'rgba(36,33,29,0.94)',
+        border: '1.5px solid rgba(255,255,255,0.22)',
         zIndex: 12,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: '0 10px',
-          color: '#f8f5ef',
-          fontFamily: 'Arial, Helvetica, sans-serif',
-          fontSize: 34,
-          lineHeight: 1.25,
-          fontWeight: 700,
-          letterSpacing: -0.45,
-          textAlign: 'center',
-        }}
-      >
-        {visibleWords.map((word, index) => {
-          const absoluteIndex = chunkStart + index;
-          const isActive = absoluteIndex === activeIndex;
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0 10px', fontSize: 34, fontWeight: 700 }}>
+        {chunk.map((word, idx) => {
+          const isAct = cStart + idx === activeIdx;
           return (
-            <span
-              key={`${absoluteIndex}-${word}`}
-              style={{
-                color: isActive ? highlight : '#f8f5ef',
-                textShadow: isActive ? `0 0 18px ${highlight}66` : 'none',
-                transform: isActive ? 'translateY(-1px)' : 'none',
-                whiteSpace: 'pre',
-              }}
-            >
+            <span key={idx} style={{ color: isAct ? hl : '#f8f5ef', textShadow: isAct ? `0 0 16px ${hl}66` : 'none' }}>
               {word}
             </span>
           );
@@ -418,150 +222,277 @@ function CaptionPill({ scene, frame }: { scene: Scene; frame: number }) {
   );
 }
 
-function Stage({ children }: { children: React.ReactNode }) {
+function ISS({ x, y, scale = 1 }: { x: number; y: number; scale?: number }) {
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: 0,
-        top: 350,
-        width: WIDTH,
-        height: 1160,
-        overflow: 'hidden',
-        zIndex: 3,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function ISS({
-  x,
-  y,
-  scale = 1,
-  rotate = 0,
-}: {
-  x: number;
-  y: number;
-  scale?: number;
-  rotate?: number;
-}) {
-  return (
-    <g transform={`translate(${x} ${y}) rotate(${rotate}) scale(${scale})`} strokeLinecap="round" strokeLinejoin="round">
-      <g stroke="#d6a74e" strokeWidth="3" fill="#9c762e">
-        <rect x="-410" y="-48" width="152" height="96" rx="3" fill="#173a58" />
-        <rect x="258" y="-48" width="152" height="96" rx="3" fill="#173a58" />
-        {Array.from({ length: 8 }, (_, i) => (
-          <path key={`l${i}`} d={`M ${-410 + i * 19} -48 V 48`} stroke="#d6a74e" strokeWidth="1.5" />
-        ))}
-        {Array.from({ length: 8 }, (_, i) => (
-          <path key={`r${i}`} d={`M ${258 + i * 19} -48 V 48`} stroke="#d6a74e" strokeWidth="1.5" />
-        ))}
-        {Array.from({ length: 5 }, (_, i) => (
-          <path key={`lh${i}`} d={`M -410 ${-48 + i * 24} H -258`} stroke="#d6a74e" strokeWidth="1.5" />
-        ))}
-        {Array.from({ length: 5 }, (_, i) => (
-          <path key={`rh${i}`} d={`M 258 ${-48 + i * 24} H 410`} stroke="#d6a74e" strokeWidth="1.5" />
-        ))}
-        <path d="M -255 0 H 255" fill="none" stroke="#c2cbd5" strokeWidth="11" />
-        <path d="M -150 -18 H 150" fill="none" stroke="#dce5eb" strokeWidth="13" />
-        <rect x="-118" y="-34" width="76" height="68" rx="15" fill="#d4d8da" stroke="#f6f4e9" />
-        <rect x="-36" y="-42" width="96" height="84" rx="16" fill="#f0eee4" stroke="#ffffff" strokeWidth="3" />
-        <rect x="64" y="-28" width="67" height="56" rx="13" fill="#d5dad9" stroke="#ffffff" strokeWidth="2" />
-        <rect x="140" y="-21" width="60" height="42" rx="10" fill="#aebfca" stroke="#edf5f9" strokeWidth="2" />
-        <path d="M -84 -34 V 34 M -44 -34 V 34 M -20 -42 V 42 M 12 -42 V 42 M 40 -42 V 42 M 80 -28 V 28 M 105 -28 V 28" stroke="#61717f" strokeWidth="2" />
-        <path d="M -205 0 v -62 h 30 v 62 M 202 0 v -62 h 30 v 62" fill="none" stroke="#e3e8e8" strokeWidth="6" />
-        <path d="M -140 -56 V 56 M 140 -56 V 56" fill="none" stroke="#f4d78a" strokeWidth="4" />
-      </g>
-      <g fill="#00e5ff" opacity="0.86">
-        <circle cx="-4" cy="-2" r="6" />
-        <circle cx="88" cy="0" r="4" />
-      </g>
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <rect x="-320" y="-42" width="120" height="84" rx="4" fill="#173a58" stroke="#d6a74e" strokeWidth="3" />
+      <rect x="200" y="-42" width="120" height="84" rx="4" fill="#173a58" stroke="#d6a74e" strokeWidth="3" />
+      <line x1="-200" y1="0" x2="200" y2="0" stroke="#c2cbd5" strokeWidth="10" />
+      <rect x="-55" y="-32" width="110" height="64" rx="14" fill="#f0eee4" stroke="#24211d" strokeWidth="3" />
+      <circle cx="0" cy="0" r="8" fill="#00e5ff" />
     </g>
   );
 }
 
-function Rocket({
-  x,
-  y,
-  scale = 1,
-  flame = 1,
-}: {
-  x: number;
-  y: number;
-  scale?: number;
-  flame?: number;
-}) {
+function Rocket({ x, y, scale = 1, flame = 1 }: { x: number; y: number; scale?: number; flame?: number }) {
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`} strokeLinejoin="round">
-      <ellipse cx="0" cy="57" rx="26" ry={45 * flame} fill="#ff6d35" opacity={0.55 * flame} />
-      <path d={`M -12 48 L 0 ${48 + 72 * flame} L 12 48 Z`} fill="#ffb142" opacity={flame} />
-      <path d={`M -5 48 L 0 ${48 + 48 * flame} L 5 48 Z`} fill="#fff2bb" opacity={flame} />
-      <path d="M -22 25 L -37 48 L -20 45 M 22 25 L 37 48 L 20 45" fill="#e64f35" stroke="#ffb142" strokeWidth="3" />
-      <path d="M -22 24 Q -25 -26 0 -63 Q 25 -26 22 24 Z" fill="#e4e7ec" stroke="#ffffff" strokeWidth="3" />
-      <path d="M -15 -2 Q 0 -22 15 -2 L 13 15 H -13 Z" fill="#274c6b" stroke="#7de9f2" strokeWidth="2" />
-      <path d="M -20 18 H 20 L 15 40 H -15 Z" fill="#c2c8d0" stroke="#ffffff" strokeWidth="2" />
-      <path d="M -9 -38 L 0 -55 L 9 -38" fill="none" stroke="#ffb142" strokeWidth="3" />
+    <g transform={`translate(${x} ${y}) scale(${scale})`}>
+      <path d={`M -14 44 L 0 ${44 + 68 * flame} L 14 44 Z`} fill="#ffb142" opacity={flame} />
+      <path d="M -22 24 L -36 46 L -18 42 M 22 24 L 36 46 L 18 42" fill="#e64f35" />
+      <path d="M -22 24 Q -24 -26 0 -62 Q 24 -26 22 24 Z" fill="#e4e7ec" stroke="#ffffff" strokeWidth="3" />
+      <circle cx="0" cy="-6" r="10" fill="#00e5ff" />
     </g>
   );
 }
 
-/* ======================== SCENE 1: EARTH TO ISS ASCENT ======================== */
-function SceneOne({ scene }: { scene: Scene }) {
-  const frame = useCurrentFrame();
-  const local = localFrameFor(frame, scene);
+function SceneStage({ scene, frame }: { scene: Scene; frame: number }) {
+  const local = lFrame(frame, scene);
+  const sec = scene.start + local / FPS;
 
-  const cameraY = ease(local, [0, 252], [-1900, -600]);
-  const rocketY = ease(local, [0, 250], [2670, 900]);
-  const rocketFlame = clamp(local, [0, 190, 250], [1, 0.72, 0.12]);
-  const altitude = Math.round(clamp(local, [0, 252], [0, 408]));
-  const markerY = clamp(altitude, [0, 408], [930, 180]);
-  const cityOpacity = clamp(local, [0, 115, 195], [1, 0.42, 0.06]);
-  const cloudOpacity = clamp(local, [50, 102, 175], [0.12, 1, 0.38]);
-  const spaceOpacity = clamp(local, [90, 180, 252], [0.08, 0.64, 1]);
+  if (scene.id === 1) {
+    const camY = ease(local, [0, 250], [-1400, -100]);
+    const rY = ease(local, [0, 250], [2100, 480]);
+    const alt = Math.round(clamp(local, [0, 250], [0, 408]));
+    const markY = clamp(alt, [0, 408], [920, 180]);
 
+    return (
+      <svg width={WIDTH} height={1160} viewBox={`0 0 ${WIDTH} 1160`}>
+        <g transform={`translate(0 ${camY})`}>
+          <circle cx="540" cy="1750" r="1200" fill="#0d2b52" stroke="#00e5ff" strokeWidth="6" opacity="0.6" />
+          <ISS x={560} y={340} scale={0.85} />
+          <g fill="#d7e7f4" opacity="0.22">
+            <ellipse cx="300" cy="1150" rx="240" ry="42" />
+            <ellipse cx="760" cy="1020" rx="280" ry="48" />
+          </g>
+          <g transform="translate(0 1850)">
+            <rect x="0" y="340" width={WIDTH} height="400" fill="#070a14" />
+            <path d="M 80 340 L 220 210 L 360 340 M 680 340 L 820 210 L 960 340 M 220 210 H 820" fill="none" stroke="#ff9f43" strokeWidth="5" opacity="0.6" />
+            {[130, 240, 350, 640, 760, 870].map((bx, i) => (
+              <rect key={i} x={bx} y={230 - (i % 3) * 30} width="65" height={110 + (i % 3) * 30} fill="#0c1122" />
+            ))}
+          </g>
+          <Rocket x={540} y={rY} scale={1.15} flame={1} />
+        </g>
+        <g transform="translate(76 0)">
+          <line x1="0" y1="160" x2="0" y2="950" stroke="#00e5ff" strokeWidth="3" strokeOpacity="0.45" />
+          <g transform={`translate(0 ${markY})`}>
+            <circle r="10" fill="#ff9f43" />
+            <rect x="20" y="-22" width="145" height="44" rx="10" fill="#ff9f43" />
+            <text x="92" y="8" fill="#060916" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="22" fontWeight="900">
+              {alt} KM
+            </text>
+          </g>
+        </g>
+      </svg>
+    );
+  }
+
+  if (scene.id === 2) {
+    const enter = spring({ frame: local, fps: FPS, config: { damping: 15, stiffness: 120 } });
+    const oldAge = Math.round(clamp(local, [25, 175], [28, 68]));
+    const ruleX = ease(local, [25, 175], [260, 820]);
+
+    return (
+      <svg width={WIDTH} height={1160} viewBox={`0 0 ${WIDTH} 1160`}>
+        <line x1="140" y1="190" x2="940" y2="190" stroke="#24211d" strokeWidth="4" />
+        {Array.from({ length: 17 }, (_, i) => (
+          <line key={i} x1={140 + i * 50} y1={190 - (i % 4 === 0 ? 26 : 12)} x2={140 + i * 50} y2="190" stroke="#24211d" strokeWidth="3" />
+        ))}
+        <circle cx={ruleX} cy="190" r="14" fill="#d93829" />
+
+        {[
+          { x: 295, title: 'YOU (SPACE TWIN)', age: '28', badge: 'STILL YOUNG ⚡', col: '#24211d', bg: '#e59f24' },
+          { x: 785, title: 'EARTH TWIN BROTHER', age: `${oldAge}+`, badge: 'AGED FASTER ⏳', col: '#d93829', bg: '#d93829' },
+        ].map((c, i) => (
+          <g key={i} transform={`translate(${c.x} 620) scale(${enter})`}>
+            <rect x="-185" y="-300" width="370" height="600" rx="24" fill="#fbf8f1" stroke={c.col} strokeWidth="5" />
+            <rect x="-140" y="-265" width="280" height="46" rx="12" fill={c.col} />
+            <text x="0" y="-235" fill="#ffffff" textAnchor="middle" fontSize="20" fontWeight="800">
+              {c.title}
+            </text>
+            <circle cx="0" cy="-120" r="42" fill={c.col} />
+            <path d="M -56 30 C -56 -45 56 -45 56 30 Z" fill={c.col} />
+            <text x="0" y="145" fill={c.col} textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="90" fontWeight="900">
+              {c.age}
+            </text>
+            <text x="0" y="190" fill="#625745" textAnchor="middle" fontSize="22" fontWeight="800">
+              YEARS OLD
+            </text>
+            <rect x="-115" y="215" width="230" height="48" rx="24" fill={c.bg} />
+            <text x="0" y="247" fill={i === 0 ? '#24211d' : '#ffffff'} textAnchor="middle" fontSize="21" fontWeight="900">
+              {c.badge}
+            </text>
+          </g>
+        ))}
+      </svg>
+    );
+  }
+
+  if (scene.id === 3) {
+    const cards = [
+      { title: 'HIGH GRAVITY', sub: 'WARPS SPACE', at: 9.8, col: '#00e5ff', x: 205 },
+      { title: 'EXTREME SPEED', sub: '28,000 KM/H', at: 11.0, col: '#ff9f43', x: 540 },
+      { title: 'TIME SLOWS', sub: 'EINSTEIN LAW', at: 12.6, col: '#ffd166', x: 875 },
+    ];
+    return (
+      <svg width={WIDTH} height={1160} viewBox={`0 0 ${WIDTH} 1160`}>
+        <g transform="translate(540 285)">
+          {[-140, -70, 0, 70, 140].map((y, i) => (
+            <path key={i} d={`M -420 ${y} Q 0 ${y + 130} 420 ${y}`} fill="none" stroke="#00e5ff" strokeWidth="2.5" strokeOpacity="0.45" />
+          ))}
+          <circle cx="0" cy="35" r="56" fill="#ff9f43" />
+        </g>
+        {cards.map((c, i) => {
+          const lit = sec >= c.at;
+          return (
+            <g key={i} transform={`translate(${c.x} 790) scale(${lit ? 1.04 : 0.92})`} opacity={lit ? 1 : 0.35}>
+              <rect x="-145" y="-190" width="290" height="380" rx="24" fill="rgba(16,24,48,0.9)" stroke={lit ? c.col : '#33415c'} strokeWidth={lit ? 5 : 2} />
+              <circle cx="0" cy="-60" r="46" fill="none" stroke={c.col} strokeWidth="5" />
+              <text x="0" y="55" fill="#ffffff" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="25" fontWeight="900">
+                {c.title}
+              </text>
+              <text x="0" y="95" fill={c.col} textAnchor="middle" fontSize="18" fontWeight="800">
+                {c.sub}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  }
+
+  if (scene.id === 4) {
+    const ang = local * 0.04;
+    const yr = Math.round(clamp(local, [240, 510], [2026, 2075]));
+    const dotX = ease(local, [240, 510], [180, 900]);
+
+    return (
+      <svg width={WIDTH} height={1160} viewBox={`0 0 ${WIDTH} 1160`}>
+        <g transform="translate(540 210)">
+          <ellipse rx="380" ry="90" fill="none" stroke="#24211d" strokeWidth="3.5" strokeDasharray="12 10" />
+          <circle r="52" fill="#274c6b" stroke="#24211d" strokeWidth="4" />
+          <ISS x={Math.cos(ang) * 380} y={Math.sin(ang) * 90} scale={0.32} />
+        </g>
+        {[
+          { x: 300, t: 'ISS ASTRONAUT CLOCK', sub: 'RUNS SLOWER', rot: local * 0.9, col: '#e59f24' },
+          { x: 780, t: 'EARTH SURFACE CLOCK', sub: 'RUNS FASTER', rot: local * 9.5, col: '#d93829' },
+        ].map((ck, i) => (
+          <g key={i} transform={`translate(${ck.x} 580)`}>
+            <circle r="140" fill="#fbf8f1" stroke={ck.col} strokeWidth="8" />
+            <line
+              x1="0"
+              y1="0"
+              x2={Math.cos(((ck.rot - 90) * Math.PI) / 180) * 95}
+              y2={Math.sin(((ck.rot - 90) * Math.PI) / 180) * 95}
+              stroke={ck.col}
+              strokeWidth="8"
+              strokeLinecap="round"
+            />
+            <circle r="11" fill="#24211d" />
+            <text x="0" y="190" fill="#24211d" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="22" fontWeight="900">
+              {ck.t}
+            </text>
+            <text x="0" y="220" fill={ck.col} textAnchor="middle" fontSize="18" fontWeight="800">
+              {ck.sub}
+            </text>
+          </g>
+        ))}
+        <g transform="translate(0 950)">
+          <rect x="95" y="-60" width="890" height="140" rx="22" fill="#fbf8f1" stroke="#24211d" strokeWidth="4" />
+          <line x1="180" y1="15" x2="900" y2="15" stroke="#24211d" strokeWidth="6" />
+          <circle cx={dotX} cy="15" r="18" fill="#d93829" />
+          <text x={dotX} y="-20" fill="#d93829" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="34" fontWeight="900">
+            {yr}
+          </text>
+        </g>
+      </svg>
+    );
+  }
+
+  if (scene.id === 5) {
+    return (
+      <svg width={WIDTH} height={1160} viewBox={`0 0 ${WIDTH} 1160`}>
+        <g transform="translate(540 520)">
+          {[330, 260, 190, 120].map((r, i) => (
+            <circle
+              key={i}
+              r={r}
+              fill="none"
+              stroke={i % 2 === 0 ? '#ffd166' : '#00e5ff'}
+              strokeWidth={i === 0 ? 8 : 4}
+              strokeDasharray={i % 2 === 0 ? 'none' : '18 14'}
+              transform={`rotate(${local * (i % 2 === 0 ? 0.8 : -1.2)})`}
+            />
+          ))}
+          <line x1="0" y1="0" x2={Math.cos(local * 0.08) * 200} y2={Math.sin(local * 0.08) * 200} stroke="#ffd166" strokeWidth="10" strokeLinecap="round" />
+          <Rocket x={0} y={0} scale={1.15} flame={1} />
+        </g>
+        <g transform="translate(540 980)">
+          <rect x="-290" y="-38" width="580" height="76" rx="38" fill="rgba(255,209,102,0.15)" stroke="#ffd166" strokeWidth="3" />
+          <text x="0" y="10" fill="#ffd166" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="28" fontWeight="900">
+            SPACECRAFT = REAL TIME MACHINE
+          </text>
+        </g>
+      </svg>
+    );
+  }
+
+  const cta = spring({ frame: Math.max(0, local - 180), fps: FPS, config: { damping: 14, stiffness: 150 } });
   return (
-    <Stage>
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-        <svg width={WIDTH} height={1160} viewBox={`0 0 ${WIDTH} 1160`}>
-          <g transform={`translate(0 ${cameraY})`}>
-            {/* Deep Space Layer with Curved Earth Horizon & ISS */}
-            <g opacity={spaceOpacity}>
-              <circle cx="540" cy="2150" r="1320" fill="#0d2b52" stroke="#00e5ff" strokeWidth="8" opacity="0.65" />
-              <ISS x={580} y={760} scale={0.88} rotate={-6} />
-              <g transform="translate(580 650)">
-                <rect x="-150" y="-26" width="300" height="48" rx="12" fill="rgba(6,12,26,0.88)" stroke="#00e5ff" strokeWidth="2" />
-                <text x="0" y="5" fill="#00e5ff" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="800" letterSpacing="2">
-                  ISS ORBIT // 408 KM
+    <svg width={WIDTH} height={1160} viewBox={`0 0 ${WIDTH} 1160`}>
+      <line x1="80" y1="650" x2="1000" y2="650" stroke="#24211d" strokeWidth="5" />
+      {[-320, -160, 0, 160, 320].map((dx, i) => {
+        const mid = i === 2;
+        const col = mid ? '#d93829' : '#3a342b';
+        return (
+          <g key={i} transform={`translate(${540 + dx} 650) scale(${mid ? 1.18 : 0.95})`}>
+            <circle cx="0" cy="-215" r="34" fill={col} />
+            <path d="M -42 -165 H 42 L 54 -45 H 28 L 20 -120 H 14 V 0 H -14 V -95 H -20 V 0 H -28 L -28 -120 H -36 L -54 -45 Z" fill={col} />
+            {mid && (
+              <g transform="translate(0 -295)">
+                <circle r="32" fill="#d93829" />
+                <text x="0" y="12" fill="#ffffff" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="36" fontWeight="900">
+                  ?
                 </text>
               </g>
-            </g>
-
-            {/* Atmospheric Cloud Layers */}
-            <g opacity={cloudOpacity} fill="#d7e7f4">
-              <ellipse cx="280" cy="1620" rx="260" ry="48" opacity="0.24" />
-              <ellipse cx="780" cy="1480" rx="310" ry="55" opacity="0.2" />
-              <ellipse cx="520" cy="1340" rx="340" ry="45" opacity="0.18" />
-            </g>
-
-            {/* Earth Twilight Skyline & Suspension Bridge Silhouette */}
-            <g opacity={cityOpacity} transform="translate(0 2280)">
-              <rect x="0" y="340" width={WIDTH} height="480" fill="#070a14" />
-              {/* Bridge Silhouette */}
-              <path d="M 80 340 L 220 210 L 360 340 M 680 340 L 820 210 L 960 340 M 220 210 H 820" fill="none" stroke="#ff9f43" strokeWidth="5" opacity="0.55" />
-              {/* City Buildings */}
-              {[120, 210, 310, 420, 640, 740, 860].map((bx, i) => (
-                <rect key={i} x={bx} y={240 - (i % 3) * 35} width="65" height={120 + (i % 3) * 35} fill="#0c1122" stroke="#24304d" strokeWidth="2" />
-              ))}
-              {/* Launchpad Tower */}
-              <path d="M 485 340 V 170 H 515 V 340" fill="none" stroke="#ff9f43" strokeWidth="4" />
-            </g>
-
-            {/* Ascending Rocket */}
-            <Rocket x={540} y={rocketY} scale={1.15} flame={rocketFlame} />
+            )}
           </g>
+        );
+      })}
+      <g transform={`translate(540 905) scale(${cta})`} opacity={cta}>
+        <rect x="-390" y="-75" width="780" height="150" rx="28" fill="#24211d" stroke="#d93829" strokeWidth="5" />
+        <text x="0" y="-10" fill="#f4efe4" textAnchor="middle" fontFamily="Arial Black, sans-serif" fontSize="30" fontWeight="900">
+          COMMENT THEIR NAME BELOW 👇
+        </text>
+        <text x="0" y="38" fill="#ffb142" textAnchor="middle" fontFamily="monospace" fontSize="26" fontWeight="800">
+          @tag_your_time_travel_partner
+        </text>
+      </g>
+    </svg>
+  );
+}
 
-          {/* Left Altitude Ruler Overlay */}
-          <g transform="translate(76 0)">
-            <line x1="0" y1="160" x2="0" y2="950" stroke="#00e5ff"
+const Reel: React.FC = () => {
+  const frame = useCurrentFrame();
+  const safe = Math.min(frame, DURATION - 1);
+  const active = SCENES.find((s) => safe >= sFrame(s) && safe < eFrame(s)) ?? SCENES[SCENES.length - 1];
+
+  return (
+    <AbsoluteFill style={{ width: WIDTH, height: HEIGHT, overflow: 'hidden' }}>
+      <Audio src={staticFile('voice.mp3')} />
+      <Background theme={active.theme} frame={safe} />
+      <EditorialHeader scene={active} frame={safe} />
+      <div style={{ position: 'absolute', left: 0, top: 350, width: WIDTH, height: 1160, overflow: 'hidden', zIndex: 3 }}>
+        <SceneStage scene={active} frame={safe} />
+      </div>
+      <CaptionPill scene={active} frame={safe} />
+    </AbsoluteFill>
+  );
+};
+
+export const RemotionRoot: React.FC = () => (
+  <Composition id="Reel" component={Reel} durationInFrames={DURATION} fps={FPS} width={WIDTH} height={HEIGHT} />
+);
+
+export default RemotionRoot;
+
