@@ -22,7 +22,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y ffmpeg
           npm install
 
-      - name: Generate Stable Multi-Synced SFX Track (No TTS)
+      - name: Generate Stable Multi-Synced SFX Track (No Voice)
         run: |
           mkdir -p public
           ffmpeg -y -f lavfi -i "anullsrc=r=44100:cl=stereo:d=33.5" \
@@ -33,7 +33,7 @@ jobs:
             -f lavfi -i "sine=f=160:d=0.55,afade=t=out:st=0.20:d=0.35,volume=0.40,adelay=19600|19600" \
             -f lavfi -i "sine=f=660:d=0.15,afade=t=out:st=0.04:d=0.11,volume=0.30,adelay=25200|25200" \
             -filter_complex "[0][1][2][3][4][5][6]amix=inputs=7:normalize=0,alimiter=limit=0.9" \
-            -ar 44100 -ac 2 public/sfx.wav
+            -ar 44100 -ac 2 public/voice.mp3
 
       - name: Render 1080p 60FPS MP4
         run: npx remotion render Reel Out.mp4 --codec=h264
