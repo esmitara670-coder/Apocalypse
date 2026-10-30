@@ -22,17 +22,19 @@ jobs:
           sudo apt-get update && sudo apt-get install -y ffmpeg
           npm install
 
-      - name: Generate Stable Multi-Synced SFX Track (No Voice)
+      - name: Generate 47s Multi-Synced SFX Track (No TTS)
         run: |
           mkdir -p public
-          ffmpeg -y -f lavfi -i "anullsrc=r=44100:cl=stereo:d=33.5" \
+          ffmpeg -y -f lavfi -i "anullsrc=r=44100:cl=stereo:d=47.0" \
             -f lavfi -i "sine=f=880:d=0.18,afade=t=out:st=0.05:d=0.13,volume=0.25,adelay=200|200" \
-            -f lavfi -i "sine=f=220:d=0.45,afade=t=out:st=0.15:d=0.30,volume=0.35,adelay=5300|5300" \
-            -f lavfi -i "sine=f=520:d=0.60,afade=t=in:st=0:d=0.15,afade=t=out:st=0.30:d=0.30,volume=0.22,adelay=8500|8500" \
-            -f lavfi -i "sine=f=120:d=0.25,afade=t=out:st=0.04:d=0.21,volume=0.45,adelay=15200|15200" \
-            -f lavfi -i "sine=f=160:d=0.55,afade=t=out:st=0.20:d=0.35,volume=0.40,adelay=19600|19600" \
-            -f lavfi -i "sine=f=660:d=0.15,afade=t=out:st=0.04:d=0.11,volume=0.30,adelay=25200|25200" \
-            -filter_complex "[0][1][2][3][4][5][6]amix=inputs=7:normalize=0,alimiter=limit=0.9" \
+            -f lavfi -i "sine=f=540:d=0.35,afade=t=out:st=0.10:d=0.25,volume=0.28,adelay=3100|3100" \
+            -f lavfi -i "sine=f=440:d=0.45,afade=t=out:st=0.15:d=0.30,volume=0.32,adelay=8500|8500" \
+            -f lavfi -i "sine=f=720:d=0.25,afade=t=out:st=0.05:d=0.20,volume=0.35,adelay=13200|13200" \
+            -f lavfi -i "sine=f=180:d=0.45,afade=t=out:st=0.15:d=0.30,volume=0.40,adelay=20700|20700" \
+            -f lavfi -i "sine=f=140:d=0.50,afade=t=out:st=0.15:d=0.35,volume=0.42,adelay=28600|28600" \
+            -f lavfi -i "sine=f=620:d=0.30,afade=t=out:st=0.08:d=0.22,volume=0.30,adelay=32000|32000" \
+            -f lavfi -i "sine=f=660:d=0.20,afade=t=out:st=0.05:d=0.15,volume=0.30,adelay=39700|39700" \
+            -filter_complex "[0][1][2][3][4][5][6][7][8]amix=inputs=9:normalize=0,alimiter=limit=0.9" \
             -ar 44100 -ac 2 public/voice.mp3
 
       - name: Render 1080p 60FPS MP4
