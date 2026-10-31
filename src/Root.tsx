@@ -11,18 +11,17 @@ import {
 } from 'remotion';
 
 // ============================================================================
-// 01. GLOBAL CONFIGURATION & STORY TIMELINE (41.56s / 2494 FRAMES @ 60 FPS)
+// 01. GLOBAL CONFIG & 4 MAIN NARRATION SCENES (WITH 12 RAPID VISUAL CUTS)
 // ============================================================================
 
 const FPS = 60;
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const DURATION = 2494; // 41.566 seconds
+const DURATION = 2494; // 41.566 seconds @ 60 FPS
 
 const SCENES = [
   {
     id: 1,
-    theme: 'dark',
     start: 0.0,
     end: 8.0,
     speechStart: 0.10,
@@ -38,7 +37,14 @@ const SCENES = [
         accent: '#00e5ff',
       },
       {
-        at: 3.8,
+        at: 2.6,
+        tag: 'GAME ENGINE OPTIMIZATION',
+        line1: 'FOV RADAR',
+        line2: 'CHUNK LOADING ⚡',
+        accent: '#d93829',
+      },
+      {
+        at: 5.2,
         tag: 'OBSERVER RENDERING RULE',
         line1: 'NOT SEEN =',
         line2: 'DOES NOT EXIST!',
@@ -48,7 +54,6 @@ const SCENES = [
   },
   {
     id: 2,
-    theme: 'paper',
     start: 8.0,
     end: 22.5,
     speechStart: 8.10,
@@ -58,22 +63,36 @@ const SCENES = [
     heroBeats: [
       {
         at: 8.0,
-        tag: 'QUANTUM PHYSICS // FIG 02',
+        tag: 'QUANTUM LAB // FIG 01',
         line1: 'DOUBLE-SLIT',
         line2: 'EXPERIMENT 🔬',
         accent: '#d93829',
       },
       {
         at: 11.5,
-        tag: 'UNOBSERVED STATE',
+        tag: 'NO OBSERVER WATCHING',
         line1: 'SPREADS LIKE',
-        line2: 'WAVES 🌊',
-        accent: '#008b9b',
+        line2: 'WATER WAVES 🌊',
+        accent: '#00e5ff',
+      },
+      {
+        at: 14.8,
+        tag: 'INTERFERENCE FRINGES',
+        line1: 'MULTI-STRIPE',
+        line2: 'WAVE PATTERN 📊',
+        accent: '#d93829',
       },
       {
         at: 17.8,
+        tag: 'QUANTUM SENSOR ACTIVE',
+        line1: 'CAMERA DROPS',
+        line2: 'ON THE SLITS! 🚨',
+        accent: '#ff5252',
+      },
+      {
+        at: 20.2,
         tag: 'WAVEFUNCTION COLLAPSE',
-        line1: 'BECOMES SOLID',
+        line1: 'BECOMES 2 SOLID',
         line2: 'PARTICLES! ⚡',
         accent: '#d93829',
       },
@@ -81,7 +100,6 @@ const SCENES = [
   },
   {
     id: 3,
-    theme: 'dark',
     start: 22.5,
     end: 30.0,
     speechStart: 22.60,
@@ -101,13 +119,12 @@ const SCENES = [
         tag: 'CLASSIFIED QUANTUM FILE',
         line1: 'SECRET IN',
         line2: 'PART 2 🔓',
-        accent: '#ffd166',
+        accent: '#d93829',
       },
     ],
   },
   {
     id: 4,
-    theme: 'paper',
     start: 30.0,
     end: 41.56,
     speechStart: 30.10,
@@ -120,20 +137,13 @@ const SCENES = [
         tag: 'PARALLEL REALITY // FIG 04',
         line1: 'WHO IS YOUR',
         line2: 'LOST FRIEND?',
-        accent: '#d93829',
+        accent: '#00e5ff',
       },
       {
-        at: 36.2,
-        tag: 'ZERO GROUND CONNECTION',
+        at: 35.8,
+        tag: 'TAG THEM IN COMMENTS',
         line1: 'NO CLUE ABOUT',
-        line2: 'REAL DUNIYA 🌌',
-        accent: '#008b9b',
-      },
-      {
-        at: 39.0,
-        tag: 'EXPOSE THEM NOW',
-        line1: 'DROP NAME IN',
-        line2: 'COMMENTS 👇',
+        line2: 'REAL DUNIYA 👇',
         accent: '#d93829',
       },
     ],
@@ -141,11 +151,28 @@ const SCENES = [
 ] as const;
 
 type Scene = (typeof SCENES)[number];
-type Theme = Scene['theme'];
 type HeroBeat = Scene['heroBeats'][number];
 
+// Rapid visual cutaways every ~2.6s - 3.5s so background & stage constantly change!
+const CUTS = [
+  { cutId: 1, start: 0.0, end: 2.6, theme: 'dark' as const, code: 'CUT 01 // GAME ENGINE' },
+  { cutId: 2, start: 2.6, end: 5.2, theme: 'paper' as const, code: 'CUT 02 // FOV CULLING' },
+  { cutId: 3, start: 5.2, end: 8.0, theme: 'dark' as const, code: 'CUT 03 // EYE TEST' },
+  { cutId: 4, start: 8.0, end: 11.5, theme: 'paper' as const, code: 'CUT 04 // ELECTRON GUN' },
+  { cutId: 5, start: 11.5, end: 14.8, theme: 'dark' as const, code: 'CUT 05 // WAVE TANK' },
+  { cutId: 6, start: 14.8, end: 17.8, theme: 'paper' as const, code: 'CUT 06 // WAVE GRAPH' },
+  { cutId: 7, start: 17.8, end: 20.2, theme: 'dark' as const, code: 'CUT 07 // SENSOR ALARM' },
+  { cutId: 8, start: 20.2, end: 22.5, theme: 'paper' as const, code: 'CUT 08 // 2 SOLID BARS' },
+  { cutId: 9, start: 22.5, end: 26.5, theme: 'dark' as const, code: 'CUT 09 // RENDER CARDS' },
+  { cutId: 10, start: 26.5, end: 30.0, theme: 'paper' as const, code: 'CUT 10 // PART 2 VAULT' },
+  { cutId: 11, start: 30.0, end: 35.8, theme: 'dark' as const, code: 'CUT 11 // FRIEND LINEUP' },
+  { cutId: 12, start: 35.8, end: 41.6, theme: 'paper' as const, code: 'CUT 12 // TAG FRIEND' },
+] as const;
+
+type Theme = 'dark' | 'paper';
+
 // ============================================================================
-// 02. MATHEMATICAL & ANIMATION UTILITIES
+// 02. MATH & SPRING HELPERS
 // ============================================================================
 
 const clamp = (val: number, min = 0, max = 1) => Math.min(max, Math.max(min, val));
@@ -165,1016 +192,1072 @@ const polar = (cx: number, cy: number, r: number, deg: number) => {
   };
 };
 
-const fastSpring = (frame: number, delayFrames = 0, damping = 13, stiffness = 160) =>
+const popSpring = (frame: number, startSec: number, damping = 13, stiffness = 170) =>
   spring({
-    frame: Math.max(0, frame - delayFrames),
+    frame: Math.max(0, frame - Math.round(startSec * FPS)),
     fps: FPS,
     config: { damping, stiffness, mass: 0.7 },
   });
 
-const STARS = Array.from({ length: 90 }, (_, i) => ({
+const STARS = Array.from({ length: 75 }, (_, i) => ({
   x: (i * 137.5) % WIDTH,
-  y: (i * 89.3) % 1350,
-  r: 0.8 + (i % 4) * 0.45,
-  phase: i * 0.9,
+  y: (i * 89.3) % 1340,
+  r: 1 + (i % 3) * 0.6,
+  phase: i * 0.8,
 }));
 
 // ============================================================================
-// 03. SHARED SVG FILTERS & GRADIENTS
+// 03. LAYER 1 (zIndex: 1): DYNAMIC BACKDROPS
 // ============================================================================
 
-const GlobalSvgDefs: React.FC = () => (
-  <defs>
-    <linearGradient id="twilightSky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stopColor="#070916" />
-      <stop offset="55%" stopColor="#141833" />
-      <stop offset="82%" stopColor="#2c2442" />
-      <stop offset="100%" stopColor="#070a14" />
-    </linearGradient>
-
-    <linearGradient id="waterReflect" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stopColor="#1a2642" stopOpacity="0.95" />
-      <stop offset="100%" stopColor="#05070f" stopOpacity="1" />
-    </linearGradient>
-
-    <linearGradient id="cyanBeam" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.45" />
-      <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.0" />
-    </linearGradient>
-
-    <linearGradient id="crimsonBeam" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stopColor="#d93829" stopOpacity="0.5" />
-      <stop offset="100%" stopColor="#d93829" stopOpacity="0.03" />
-    </linearGradient>
-
-    <pattern id="blueprintGridSmall" width="36" height="36" patternUnits="userSpaceOnUse">
-      <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#8c806e" strokeWidth="0.7" opacity="0.24" />
-    </pattern>
-
-    <pattern id="blueprintGridLarge" width="180" height="180" patternUnits="userSpaceOnUse">
-      <path d="M 180 0 L 0 0 0 180" fill="none" stroke="#756958" strokeWidth="1.3" opacity="0.28" />
-    </pattern>
-
-    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="6" result="blur" />
-      <feMerge>
-        <feMergeNode in="blur" />
-        <feMergeNode in="SourceGraphic" />
-      </feMerge>
-    </filter>
-
-    <filter id="cardShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" floodColor="#000000" floodOpacity="0.35" />
-    </filter>
-  </defs>
-);
-
-// ============================================================================
-// 04. TECHDE-STYLE BACKDROPS (TWILIGHT SKYLINE & ARCHITECTURAL BLUEPRINT PAPER)
-// ============================================================================
-
-const DarkTwilightBackdrop: React.FC<{ sec: number }> = ({ sec }) => (
-  <AbsoluteFill>
+const DarkBackdropLayer: React.FC<{ sec: number; code: string }> = ({ sec, code }) => (
+  <AbsoluteFill style={{ zIndex: 1 }}>
     <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
-      <GlobalSvgDefs />
-      <rect width={WIDTH} height={HEIGHT} fill="url(#twilightSky)" />
+      <defs>
+        <linearGradient id="bgDarkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#060916" />
+          <stop offset="55%" stopColor="#111936" />
+          <stop offset="82%" stopColor="#231f3d" />
+          <stop offset="100%" stopColor="#060812" />
+        </linearGradient>
+        <linearGradient id="bgWaterGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#15223d" />
+          <stop offset="100%" stopColor="#05070f" />
+        </linearGradient>
+      </defs>
 
-      {/* Twinkling Deep Space Stars */}
+      <rect width={WIDTH} height={HEIGHT} fill="url(#bgDarkGrad)" />
+
       {STARS.map((s, idx) => (
         <circle
           key={idx}
           cx={s.x}
           cy={s.y}
           r={s.r}
-          fill="#e2f7ff"
-          opacity={0.25 + 0.55 * Math.abs(Math.sin(sec * 1.8 + s.phase))}
+          fill="#d9f7ff"
+          opacity={0.25 + 0.6 * Math.abs(Math.sin(sec * 2 + s.phase))}
         />
       ))}
 
-      {/* Subtle Twilight Horizon Glow */}
-      <ellipse cx="540" cy="1340" rx="620" ry="110" fill="#ff9f43" opacity="0.12" filter="url(#neonGlow)" />
-
-      {/* Techde-inspired Minimalist City & Lab Skyline Silhouette at y=1340 */}
-      <g fill="#090c18">
-        {Array.from({ length: 28 }, (_, i) => {
-          const bw = 34 + (i % 3) * 12;
-          const bh = 35 + ((i * 29) % 85);
-          const bx = i * 40 - 10;
-          return <rect key={i} x={bx} y={1340 - bh} width={bw} height={bh} />;
-        })}
-      </g>
-
-      {/* Water / Horizon Reflection Floor */}
-      <rect x="0" y="1340" width={WIDTH} height="580" fill="url(#waterReflect)" />
-      <line x1="0" y1="1340" x2={WIDTH} y2="1340" stroke="#00e5ff" strokeWidth="1.5" opacity="0.35" />
-
-      {/* Perspective Floor Grid Lines */}
-      <g stroke="#00e5ff" strokeWidth="0.9" opacity="0.14">
-        {Array.from({ length: 11 }, (_, i) => (
-          <line key={`p${i}`} x1="540" y1="1340" x2={-300 + i * 168} y2="1920" />
-        ))}
-        {[1390, 1450, 1525, 1620, 1740].map((y, i) => (
-          <line key={`h${i}`} x1="0" y1={y} x2={WIDTH} y2={y} />
-        ))}
-      </g>
-    </svg>
-  </AbsoluteFill>
-);
-
-const PaperBlueprintBackdrop: React.FC<{ figCode: string }> = ({ figCode }) => (
-  <AbsoluteFill style={{ background: 'linear-gradient(135deg, #f6f1e5 0%, #ece4d3 55%, #e1d6c0 100%)' }}>
-    <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
-      <GlobalSvgDefs />
-      <rect width={WIDTH} height={HEIGHT} fill="url(#blueprintGridSmall)" />
-      <rect width={WIDTH} height={HEIGHT} fill="url(#blueprintGridLarge)" />
-
-      {/* Outer Architectural Border & Corner Crosshairs */}
+      {/* Center Stage Frame Box so visuals pop clearly */}
       <rect
         x="46"
         y="400"
         width="988"
         height="1120"
-        fill="none"
-        stroke="#4a4235"
+        rx="28"
+        fill="rgba(7, 13, 29, 0.55)"
+        stroke="rgba(0, 229, 255, 0.28)"
         strokeWidth="2"
-        opacity="0.55"
-      />
-      <rect
-        x="58"
-        y="412"
-        width="964"
-        height="1096"
-        fill="none"
-        stroke="#8c7f6a"
-        strokeWidth="1"
-        strokeDasharray="6 6"
-        opacity="0.5"
       />
 
-      {/* Precision Measurement Ruler Ticks Left & Right */}
-      <g stroke="#4a4235" strokeWidth="1.4" opacity="0.5">
-        {Array.from({ length: 42 }, (_, i) => {
-          const y = 430 + i * 26;
+      {/* Horizon Skyline at bottom of stage */}
+      <g fill="#080c18" opacity="0.85">
+        {Array.from({ length: 24 }, (_, i) => {
+          const bh = 30 + ((i * 29) % 70);
+          return <rect key={i} x={56 + i * 40} y={1360 - bh} width="34" height={bh} />;
+        })}
+      </g>
+      <rect x="48" y="1360" width="984" height="158" rx="18" fill="url(#bgWaterGrad)" opacity="0.85" />
+      <line x1="48" y1="1360" x2="1032" y2="1360" stroke="#00e5ff" strokeWidth="1.5" opacity="0.4" />
+
+      {/* Top Metadata Strip */}
+      <rect x="76" y="424" width="270" height="32" rx="6" fill="rgba(0, 229, 255, 0.14)" />
+      <text x="211" y="445" fill="#00e5ff" fontSize="14" fontWeight="900" textAnchor="middle" letterSpacing="2">
+        {code}
+      </text>
+      <text x="995" y="445" fill="#7fa6c4" fontSize="14" fontWeight="800" textAnchor="end" letterSpacing="2">
+        60 FPS // QUANTUM HUD
+      </text>
+    </svg>
+  </AbsoluteFill>
+);
+
+const PaperBackdropLayer: React.FC<{ code: string }> = ({ code }) => (
+  <AbsoluteFill
+    style={{
+      zIndex: 1,
+      background: 'linear-gradient(135deg, #f6f1e5 0%, #ece4d3 55%, #e1d6c0 100%)',
+    }}
+  >
+    <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
+      <defs>
+        <pattern id="paperGridS" width="36" height="36" patternUnits="userSpaceOnUse">
+          <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#8c806e" strokeWidth="0.7" opacity="0.25" />
+        </pattern>
+        <pattern id="paperGridL" width="180" height="180" patternUnits="userSpaceOnUse">
+          <path d="M 180 0 L 0 0 0 180" fill="none" stroke="#756958" strokeWidth="1.4" opacity="0.3" />
+        </pattern>
+      </defs>
+
+      <rect width={WIDTH} height={HEIGHT} fill="url(#paperGridS)" />
+      <rect width={WIDTH} height={HEIGHT} fill="url(#paperGridL)" />
+
+      <rect
+        x="46"
+        y="400"
+        width="988"
+        height="1120"
+        rx="20"
+        fill="rgba(255, 252, 245, 0.45)"
+        stroke="#3d352a"
+        strokeWidth="2.5"
+      />
+
+      {/* Ruler ticks on left & right */}
+      <g stroke="#4a4235" strokeWidth="1.5" opacity="0.55">
+        {Array.from({ length: 40 }, (_, i) => {
+          const y = 435 + i * 26;
           const major = i % 5 === 0;
           return (
             <React.Fragment key={i}>
-              <line x1="46" y1={y} x2={46 + (major ? 18 : 8)} y2={y} />
-              <line x1="1034" y1={y} x2={1034 - (major ? 18 : 8)} y2={y} />
+              <line x1="46" y1={y} x2={46 + (major ? 20 : 9)} y2={y} />
+              <line x1="1034" y1={y} x2={1034 - (major ? 20 : 9)} y2={y} />
             </React.Fragment>
           );
         })}
       </g>
 
-      {/* Blueprint Header Metadata Stamp */}
-      <g transform="translate(82 442)">
-        <rect x="0" y="-20" width="250" height="30" rx="4" fill="#26211b" />
-        <text x="125" y="0" fill="#f6f1e5" fontSize="13" fontWeight="800" textAnchor="middle" letterSpacing="2.5">
-          {figCode}
-        </text>
-      </g>
-
-      <text x="995" y="442" fill="#5c5243" fontSize="13" fontWeight="800" textAnchor="end" letterSpacing="2">
-        SCALE 1 : 10⁻⁹ QUANTUM
+      <rect x="76" y="424" width="270" height="32" rx="6" fill="#26211b" />
+      <text x="211" y="445" fill="#f6f1e5" fontSize="14" fontWeight="900" textAnchor="middle" letterSpacing="2">
+        {code}
+      </text>
+      <text x="995" y="445" fill="#5c5243" fontSize="14" fontWeight="800" textAnchor="end" letterSpacing="2">
+        SCALE 1 : 10⁻⁹ NANOMETER
       </text>
     </svg>
   </AbsoluteFill>
 );
 
 // ============================================================================
-// 05. REUSABLE UI BADGES (DEVMONK & TECHDE HYBRID CARDS)
+// 04. SHARED VECTOR BADGES FOR THE STAGE
 // ============================================================================
 
-const TelemetryPill: React.FC<{
+const StageBadge: React.FC<{
   x: number;
   y: number;
   w: number;
   h?: number;
-  label: string;
-  sublabel?: string;
+  title: string;
+  sub?: string;
   accent?: string;
   dark?: boolean;
-  scale?: number;
-}> = ({ x, y, w, h = 68, label, sublabel, accent = '#00e5ff', dark = true, scale = 1 }) => (
-  <g transform={`translate(${x} ${y}) scale(${scale})`} filter="url(#cardShadow)">
+}> = ({ x, y, w, h = 76, title, sub, accent = '#00e5ff', dark = true }) => (
+  <g transform={`translate(${x} ${y})`}>
     <rect
       x={-w / 2}
       y={-h / 2}
       width={w}
       height={h}
       rx="16"
-      fill={dark ? '#091122' : '#231f1a'}
+      fill={dark ? '#081226' : '#241f19'}
       stroke={accent}
-      strokeWidth="2.5"
+      strokeWidth="3"
     />
     <text
       x="0"
-      y={sublabel ? -4 : 8}
+      y={sub ? -4 : 8}
       fill="#ffffff"
-      fontSize="24"
+      fontSize="25"
       fontWeight="900"
       fontFamily="Arial, sans-serif"
       textAnchor="middle"
       letterSpacing="1"
     >
-      {label}
+      {title}
     </text>
-    {sublabel && (
+    {sub && (
       <text
         x="0"
-        y={22}
+        y={23}
         fill={accent}
-        fontSize="14"
+        fontSize="15"
         fontWeight="800"
         fontFamily="Arial, sans-serif"
         textAnchor="middle"
         letterSpacing="2"
       >
-        {sublabel}
+        {sub}
       </text>
     )}
   </g>
 );
 
-const RedProhibitionIcon: React.FC<{ cx: number; cy: number; r: number; scale?: number }> = ({
-  cx,
-  cy,
-  r,
-  scale = 1,
-}) => (
-  <g transform={`translate(${cx} ${cy}) scale(${scale})`}>
-    <circle r={r} fill="rgba(217, 56, 41, 0.14)" stroke="#ff3b30" strokeWidth="8" />
+const BanCircle: React.FC<{ cx: number; cy: number; r: number }> = ({ cx, cy, r }) => (
+  <g transform={`translate(${cx} ${cy})`}>
+    <circle r={r} fill="rgba(217, 56, 41, 0.18)" stroke="#ff3b30" strokeWidth="10" />
     <line
       x1={-r * 0.68}
       y1={-r * 0.68}
       x2={r * 0.68}
       y2={r * 0.68}
       stroke="#ff3b30"
-      strokeWidth="8"
+      strokeWidth="10"
       strokeLinecap="round"
     />
   </g>
 );
 
 // ============================================================================
-// 06. SCENE 1 VISUALS (0.0s - 8.0s): VIDEO GAME ENGINE & OBSERVER FOV CONE
+// 05. LAYER 2 (zIndex: 10): 12 RAPID VISUAL CUTAWAYS (100% VISIBLE ON TOP!)
 // ============================================================================
 
-const SceneOneVisual: React.FC<{ sec: number; frame: number }> = ({ sec, frame }) => {
-  const isBeatB = sec >= 3.8;
-  const beatASpring = fastSpring(frame, 4);
-  const beatBSpring = fastSpring(frame, Math.round(3.8 * FPS));
-
-  // Rotating Observer Cone angle for Beat B
-  const coneDeg = -25 + Math.sin(sec * 2.1) * 32;
-
+const AnimatedStageLayer: React.FC<{ cutId: number; sec: number; frame: number }> = ({
+  cutId,
+  sec,
+  frame,
+}) => {
   return (
-    <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
-      <GlobalSvgDefs />
+    <AbsoluteFill style={{ zIndex: 10, pointerEvents: 'none' }}>
+      <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
+        {/* =================================================================
+            CUT 1 (0.0s - 2.6s): 3D ISOMETRIC GAME ENGINE & VOXEL CUBE
+           ================================================================= */}
+        {cutId === 1 && (
+          <g transform={`translate(540 940) scale(${0.85 + popSpring(frame, 0.0) * 0.15})`}>
+            <circle r="330" fill="none" stroke="#00e5ff" strokeWidth="2" strokeDasharray="10 12" opacity="0.45" />
+            <circle r="275" fill="none" stroke="#00e5ff" strokeWidth="3" opacity="0.75" />
 
-      {/* --- SUB-SCENE 1A (0.0s - 3.8s): UNIVERSE VIDEO GAME SIMULATION ENGINE --- */}
-      {!isBeatB && (
-        <g transform={`translate(540 940) scale(${0.88 + beatASpring * 0.12})`}>
-          {/* Outer HUD Ring */}
-          <circle r="330" fill="none" stroke="#00e5ff" strokeWidth="1.5" strokeDasharray="8 12" opacity="0.4" />
-          <circle r="285" fill="none" stroke="#00e5ff" strokeWidth="2.5" opacity="0.65" />
-
-          {/* Isometric Wireframe Terrain Patch */}
-          <g transform="translate(0 75)" stroke="#00e5ff" strokeWidth="1.6" fill="none" opacity="0.55">
-            {[-4, -3, -2, -1, 0, 1, 2, 3, 4].map((i) => (
-              <React.Fragment key={i}>
-                <line x1={i * 55} y1="-110" x2={i * 75} y2="110" />
-                <line x1="-260" y1={i * 26} x2="260" y2={i * 26} />
-              </React.Fragment>
-            ))}
-          </g>
-
-          {/* Floating Isometric 3D Voxel / Quantum Cube */}
-          <g transform={`translate(0 ${-45 + Math.sin(sec * 4) * 14})`}>
-            {/* Top Face */}
-            <polygon
-              points="0,-130 115,-65 0,0 -115,-65"
-              fill="rgba(0, 229, 255, 0.28)"
-              stroke="#00e5ff"
-              strokeWidth="4"
-            />
-            {/* Left Face */}
-            <polygon
-              points="-115,-65 0,0 0,130 -115,65"
-              fill="rgba(0, 140, 180, 0.35)"
-              stroke="#00e5ff"
-              strokeWidth="4"
-            />
-            {/* Right Face */}
-            <polygon
-              points="115,-65 0,0 0,130 115,65"
-              fill="rgba(0, 75, 120, 0.5)"
-              stroke="#00e5ff"
-              strokeWidth="4"
-            />
-            <circle cx="0" cy="0" r="14" fill="#ffffff" filter="url(#neonGlow)" />
-          </g>
-
-          {/* Game Controller / Engine Telemetry Badges */}
-          <TelemetryPill
-            x={-250}
-            y={-275}
-            w={310}
-            h={64}
-            label="ENGINE: UNIVERSE v1.0"
-            sublabel="60.0 FPS // QUANTUM GPU"
-            accent="#00e5ff"
-          />
-          <TelemetryPill
-            x={250}
-            y={-275}
-            w={290}
-            h={64}
-            label="RENDER MODE: LAZY"
-            sublabel="SAVE MEMORY ⚡"
-            accent="#00ff9d"
-          />
-
-          <TelemetryPill
-            x={0}
-            y={295}
-            w={620}
-            h={78}
-            label="GAMING OPTIMIZATION: ON 🎮"
-            sublabel="ONLY RENDER WHAT THE PLAYER SEES"
-            accent="#00e5ff"
-          />
-        </g>
-      )}
-
-      {/* --- SUB-SCENE 1B (3.8s - 8.0s): OBSERVER VISION CONE vs UNRENDERED VOID --- */}
-      {isBeatB && (
-        <g transform={`translate(540 930) scale(${0.9 + beatBSpring * 0.1})`}>
-          {/* Split Comparison Arena Box */}
-          <rect
-            x="-440"
-            y="-360"
-            width="880"
-            height="680"
-            rx="28"
-            fill="rgba(8, 15, 32, 0.85)"
-            stroke="rgba(0, 229, 255, 0.35)"
-            strokeWidth="2.5"
-          />
-          <line
-            x1="0"
-            y1="-360"
-            x2="0"
-            y2="320"
-            stroke="#ff9f43"
-            strokeWidth="3"
-            strokeDasharray="10 10"
-          />
-
-          {/* LEFT SIDE: OBSERVED = SOLID RENDERED */}
-          <g transform="translate(-220 -30)">
-            <text y="-255" fill="#00ff9d" fontSize="22" fontWeight="900" textAnchor="middle" letterSpacing="2">
-              WHEN YOU LOOK 👀
-            </text>
-
-            {/* Observer Eye Firing Cyan FOV Cone */}
-            <g transform="translate(0 -150)">
-              <polygon points="0,20 -135,230 135,230" fill="rgba(0, 229, 255, 0.16)" />
-              <line x1="0" y1="20" x2="-135" y2="230" stroke="#00e5ff" strokeWidth="2.5" strokeDasharray="6 6" />
-              <line x1="0" y1="20" x2="135" y2="230" stroke="#00e5ff" strokeWidth="2.5" strokeDasharray="6 6" />
-              <path
-                d="M -65 0 Q 0 -48 65 0 Q 0 48 -65 0 Z"
-                fill="#071529"
-                stroke="#00e5ff"
-                strokeWidth="4"
-              />
-              <circle r="18" fill="#00e5ff" />
-            </g>
-
-            {/* Crisp Rendered Solid Planet/Atom */}
-            <g transform="translate(0 75)">
-              <circle r="76" fill="#00e5ff" filter="url(#neonGlow)" />
-              <ellipse
-                rx="125"
-                ry="36"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="4"
-                transform={`rotate(${-18 + Math.sin(sec * 3) * 6})`}
-              />
-              <text y="135" fill="#00ff9d" fontSize="23" fontWeight="900" textAnchor="middle">
-                100% RENDERED ✅
-              </text>
-            </g>
-          </g>
-
-          {/* RIGHT SIDE: NOT SEEN = DOES NOT EXIST (Techde Red Ban Icon!) */}
-          <g transform="translate(220 -30)">
-            <text y="-255" fill="#ff5252" fontSize="22" fontWeight="900" textAnchor="middle" letterSpacing="2">
-              WHEN NOT SEEN 🙈
-            </text>
-
-            {/* Closed Eye */}
-            <g transform="translate(0 -150)">
-              <path d="M -65 0 Q 0 38 65 0" fill="none" stroke="#7c8da6" strokeWidth="5" strokeLinecap="round" />
-              <line x1="-40" y1="15" x2="-52" y2="34" stroke="#7c8da6" strokeWidth="4" />
-              <line x1="0" y1="22" x2="0" y2="44" stroke="#7c8da6" strokeWidth="4" />
-              <line x1="40" y1="15" x2="52" y2="34" stroke="#7c8da6" strokeWidth="4" />
-            </g>
-
-            {/* Ghost Dotted Outline + Giant Techde Prohibition Circle */}
-            <g transform="translate(0 75)">
-              <circle
-                r="76"
-                fill="none"
-                stroke="#7c8da6"
-                strokeWidth="3"
-                strokeDasharray="8 10"
-                opacity="0.5"
-              />
-              <RedProhibitionIcon cx={0} cy={0} r={88} scale={0.95 + Math.sin(sec * 7) * 0.05} />
-              <text y="135" fill="#ff5252" fontSize="23" fontWeight="900" textAnchor="middle">
-                DOES NOT EXIST ❌
-              </text>
-            </g>
-          </g>
-
-          {/* Bottom Summary Pill */}
-          <TelemetryPill
-            x={0}
-            y={305}
-            w={680}
-            h={74}
-            label="OBSERVER EFFECT: NO EYE = NO REALITY"
-            sublabel="QUANTUM PROBABILITY RULE"
-            accent="#ff9f43"
-          />
-        </g>
-      )}
-    </svg>
-  );
-};
-
-// ============================================================================
-// 07. SCENE 2 VISUALS (8.0s - 22.5s): PAPER BLUEPRINT DOUBLE-SLIT EXPERIMENT
-// ============================================================================
-
-const SceneTwoVisual: React.FC<{ sec: number; frame: number }> = ({ sec, frame }) => {
-  // 3 distinct stages on the blueprint canvas:
-  // Stage A (8.0 - 11.5s): Setup & Electron Gun Firing
-  // Stage B (11.5 - 17.8s): Unobserved Wave Interference Pattern
-  // Stage C (17.8 - 22.5s): Observer Camera Drops -> Collapse to 2 Solid Particle Bars
-  const stage = sec < 11.5 ? 'setup' : sec < 17.8 ? 'waves' : 'collapse';
-  const collapseSpring = fastSpring(frame, Math.round(17.8 * FPS), 11, 180);
-
-  return (
-    <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
-      <GlobalSvgDefs />
-
-      {/* Blueprint Technical Title Strip */}
-      <g transform="translate(540 505)">
-        <text fill="#241f19" fontSize="22" fontWeight="900" textAnchor="middle" letterSpacing="3">
-          {stage === 'setup'
-            ? 'LABORATORY APPARATUS // ELECTRON BEAM SETUP'
-            : stage === 'waves'
-              ? 'MODE 01: NO OBSERVER ➔ WAVE INTERFERENCE PATTERN'
-              : 'MODE 02: CAMERA ACTIVE ➔ WAVEFUNCTION COLLAPSE!'}
-        </text>
-        <line x1="-380" y1="16" x2="380" y2="16" stroke="#241f19" strokeWidth="2" opacity="0.4" />
-      </g>
-
-      {/* --- 1. ELECTRON / PHOTON CANNON (LEFT: x=175, y=950) --- */}
-      <g transform="translate(175 950)">
-        {/* Base Tripod */}
-        <path d="M -35 95 L 0 35 L 35 95" fill="none" stroke="#241f19" strokeWidth="6" strokeLinecap="round" />
-        <line x1="-55" y1="95" x2="55" y2="95" stroke="#241f19" strokeWidth="6" />
-        {/* Cannon Body */}
-        <rect x="-75" y="-48" width="130" height="96" rx="14" fill="#241f19" stroke="#d93829" strokeWidth="4" />
-        <rect x="55" y="-20" width="48" height="40" rx="6" fill="#d93829" />
-        {/* Glowing Core */}
-        <circle cx="-10" cy="0" r="22" fill="#ff9f43" />
-        <text x="0" y="135" fill="#241f19" fontSize="19" fontWeight="900" textAnchor="middle" letterSpacing="1.5">
-          ELECTRON GUN
-        </text>
-      </g>
-
-      {/* Animated Electrons Firing from Cannon to Slits (x=280 to x=495) */}
-      {[0, 0.33, 0.66].map((offset, idx) => {
-        const p = (sec * 1.9 + offset) % 1;
-        const ex = mix(285, 495, p);
-        const ey = 950 + (idx - 1) * 45 * p;
-        return (
-          <g key={idx}>
-            <circle cx={ex} cy={ey} r="9" fill="#d93829" />
-            <circle cx={ex} cy={ey} r="16" fill="none" stroke="#d93829" strokeWidth="2" opacity={1 - p} />
-          </g>
-        );
-      })}
-
-      {/* --- 2. DOUBLE-SLIT TITANIUM BARRIER PLATE (CENTER: x=510, y=950) --- */}
-      <g transform="translate(510 950)">
-        {/* Top Plate */}
-        <rect x="-14" y="-330" width="28" height="210" rx="4" fill="#241f19" />
-        {/* Center Divider Between Slits */}
-        <rect x="-14" y="-50" width="28" height="100" rx="4" fill="#241f19" />
-        {/* Bottom Plate */}
-        <rect x="-14" y="120" width="28" height="210" rx="4" fill="#241f19" />
-
-        {/* Glowing Slit Openings (Slit 1 at y=-85, Slit 2 at y=+85) */}
-        <rect x="-10" y="-120" width="20" height="70" fill="#00e5ff" opacity="0.55" />
-        <rect x="-10" y="50" width="20" height="70" fill="#00e5ff" opacity="0.55" />
-
-        {/* Engineering Callouts */}
-        <text x="-32" y="-80" fill="#d93829" fontSize="18" fontWeight="900" textAnchor="end">
-          SLIT 1 ➔
-        </text>
-        <text x="-32" y="92" fill="#d93829" fontSize="18" fontWeight="900" textAnchor="end">
-          SLIT 2 ➔
-        </text>
-        <text x="0" y="368" fill="#241f19" fontSize="19" fontWeight="900" textAnchor="middle" letterSpacing="1.5">
-          2-SLIT BARRIER
-        </text>
-      </g>
-
-      {/* --- 3. DETECTOR BACK SCREEN (RIGHT: x=865, y=950) --- */}
-      <g transform="translate(865 950)">
-        <rect x="-14" y="-330" width="28" height="660" rx="6" fill="#dfd5c0" stroke="#241f19" strokeWidth="4" />
-        <text x="0" y="368" fill="#241f19" fontSize="19" fontWeight="900" textAnchor="middle" letterSpacing="1.5">
-          SCREEN WALL
-        </text>
-      </g>
-
-      {/* =====================================================================
-          STAGE A (8.0s - 11.5s): QUESTION MARK MYSTERY ON SCREEN
-         ===================================================================== */}
-      {stage === 'setup' && (
-        <g transform="translate(690 950)">
-          <circle r="72" fill="#d93829" />
-          <text y="26" fill="#ffffff" fontSize="82" fontWeight="900" textAnchor="middle">
-            ?
-          </text>
-          <TelemetryPill
-            x={0}
-            y={255}
-            w={520}
-            h={66}
-            label="WAVE OR SOLID PARTICLE?"
-            sublabel="THE ULTIMATE QUANTUM PUZZLE"
-            accent="#d93829"
-            dark={false}
-          />
-        </g>
-      )}
-
-      {/* =====================================================================
-          STAGE B (11.5s - 17.8s): UNOBSERVED -> HUYGENS WAVES & 9 FRINGE BANDS
-         ===================================================================== */}
-      {stage === 'waves' && (
-        <g>
-          {/* "NO OBSERVER / CAMERA OFF" Badge at Top Center */}
-          <g transform="translate(510 575)">
-            <rect x="-155" y="-28" width="310" height="52" rx="26" fill="#241f19" />
-            <text x="0" y="6" fill="#00e5ff" fontSize="18" fontWeight="900" textAnchor="middle" letterSpacing="2">
-              📵 NO CAMERA LOOKING
-            </text>
-          </g>
-
-          {/* Expanding Circular Wavefronts from Slit 1 (y=865) & Slit 2 (y=1035) */}
-          <g fill="none" stroke="#008b9b">
-            {[0, 1, 2, 3, 4, 5].map((i) => {
-              const r = ((sec * 110 + i * 58) % 340) + 15;
-              const alpha = clamp(1 - r / 350, 0.1, 0.85);
-              return (
+            {/* Isometric Floor Grid */}
+            <g transform="translate(0 95)" stroke="#00e5ff" strokeWidth="2" opacity="0.5">
+              {[-4, -3, -2, -1, 0, 1, 2, 3, 4].map((i) => (
                 <React.Fragment key={i}>
-                  <path
-                    d={`M 524 ${865 - r} A ${r} ${r} 0 0 1 524 ${865 + r}`}
-                    strokeWidth="3.2"
-                    opacity={alpha}
-                  />
-                  <path
-                    d={`M 524 ${1035 - r} A ${r} ${r} 0 0 1 524 ${1035 + r}`}
-                    strokeWidth="3.2"
-                    opacity={alpha}
-                  />
+                  <line x1={i * 55} y1="-110" x2={i * 80} y2="110" />
+                  <line x1="-280" y1={i * 26} x2="280" y2={i * 26} />
                 </React.Fragment>
+              ))}
+            </g>
+
+            {/* Floating 3D Isometric Cube */}
+            <g transform={`translate(0 ${-45 + Math.sin(sec * 5) * 16})`}>
+              <polygon
+                points="0,-145 130,-72 0,0 -130,-72"
+                fill="#00e5ff"
+                fillOpacity="0.35"
+                stroke="#00e5ff"
+                strokeWidth="5"
+              />
+              <polygon
+                points="-130,-72 0,0 0,145 -130,72"
+                fill="#009db3"
+                fillOpacity="0.45"
+                stroke="#00e5ff"
+                strokeWidth="5"
+              />
+              <polygon
+                points="130,-72 0,0 0,145 130,72"
+                fill="#074f6b"
+                fillOpacity="0.65"
+                stroke="#00e5ff"
+                strokeWidth="5"
+              />
+              <circle cx="0" cy="0" r="18" fill="#ffffff" />
+            </g>
+
+            <StageBadge
+              x={-235}
+              y={-285}
+              w={330}
+              title="ENGINE: UNIVERSE"
+              sub="60 FPS // SIMULATION"
+              accent="#00e5ff"
+            />
+            <StageBadge
+              x={235}
+              y={-285}
+              w={330}
+              title="GRAPHICS: QUANTUM"
+              sub="ON-DEMAND RENDER ⚡"
+              accent="#00ff9d"
+            />
+            <StageBadge
+              x={0}
+              y={310}
+              w={680}
+              title="REALITY WORKS LIKE A VIDEO GAME 🎮"
+              sub="OBJECTS LOAD ONLY WHEN PLAYER LOOKS"
+              accent="#00e5ff"
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 2 (2.6s - 5.2s): RADAR FOV FRUSTUM CULLING (CHUNK LOADING)
+           ================================================================= */}
+        {cutId === 2 && (
+          <g transform={`translate(540 930) scale(${0.86 + popSpring(frame, 2.6) * 0.14})`}>
+            <circle r="335" fill="#f2ead9" stroke="#241f19" strokeWidth="5" />
+            <circle r="250" fill="none" stroke="#786d5c" strokeWidth="2" strokeDasharray="8 8" />
+            <circle r="155" fill="none" stroke="#786d5c" strokeWidth="2" strokeDasharray="8 8" />
+
+            {/* Rotating Player FOV Radar Cone */}
+            {(() => {
+              const angle = -90 + Math.sin((sec - 2.6) * 2.6) * 55;
+              const pLeft = polar(0, 0, 330, angle - 38);
+              const pRight = polar(0, 0, 330, angle + 38);
+              return (
+                <g>
+                  <path
+                    d={`M 0 0 L ${pLeft.x} ${pLeft.y} A 330 330 0 0 1 ${pRight.x} ${pRight.y} Z`}
+                    fill="rgba(0, 168, 150, 0.26)"
+                    stroke="#008b9b"
+                    strokeWidth="4"
+                  />
+                  {/* Objects around map: solid inside cone, ghost outside */}
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const objDeg = i * 30 - 150;
+                    const pos = polar(0, 0, 215, objDeg);
+                    const inView = Math.abs(objDeg - angle) < 40;
+                    return (
+                      <g key={i} transform={`translate(${pos.x} ${pos.y})`}>
+                        {inView ? (
+                          <g>
+                            <rect
+                              x="-24"
+                              y="-24"
+                              width="48"
+                              height="48"
+                              rx="10"
+                              fill="#d93829"
+                              stroke="#241f19"
+                              strokeWidth="3"
+                            />
+                            <text y="6" fill="#ffffff" fontSize="20" fontWeight="900" textAnchor="middle">
+                              3D
+                            </text>
+                          </g>
+                        ) : (
+                          <circle
+                            r="18"
+                            fill="none"
+                            stroke="#8c7f6a"
+                            strokeWidth="2.5"
+                            strokeDasharray="4 4"
+                          />
+                        )}
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            })()}
+
+            <circle r="34" fill="#241f19" stroke="#d93829" strokeWidth="5" />
+            <text y="8" fill="#ffffff" fontSize="22" fontWeight="900" textAnchor="middle">
+              👀
+            </text>
+
+            <StageBadge
+              x={0}
+              y={-355}
+              w={640}
+              title="FRUSTUM CULLING: SAVING MEMORY"
+              sub="GREEN CONE = RENDERED // OUTSIDE = UNLOADED"
+              accent="#d93829"
+              dark={false}
+            />
+            <StageBadge
+              x={0}
+              y={365}
+              w={700}
+              title="JAB TAK NAHI DEKHTE = UNRENDERED! ⚡"
+              sub="EXACTLY LIKE GTA OR MINECRAFT CHUNKS"
+              accent="#008b9b"
+              dark={false}
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 3 (5.2s - 8.0s): SPLIT-SCREEN EYE TEST (SEEN VS NOT SEEN)
+           ================================================================= */}
+        {cutId === 3 && (
+          <g transform={`translate(540 935) scale(${0.86 + popSpring(frame, 5.2) * 0.14})`}>
+            <rect
+              x="-440"
+              y="-340"
+              width="420"
+              height="620"
+              rx="26"
+              fill="#0a162e"
+              stroke="#00ff9d"
+              strokeWidth="4"
+            />
+            <rect
+              x="20"
+              y="-340"
+              width="420"
+              height="620"
+              rx="26"
+              fill="#170d1c"
+              stroke="#ff5252"
+              strokeWidth="4"
+            />
+
+            {/* LEFT CARD: EYE OPEN = SOLID */}
+            <g transform="translate(-230 0)">
+              <text y="-265" fill="#00ff9d" fontSize="26" fontWeight="900" textAnchor="middle">
+                EYE OPEN 👀
+              </text>
+              <path
+                d="M -85 -150 Q 0 -210 85 -150 Q 0 -90 -85 -150 Z"
+                fill="#061224"
+                stroke="#00e5ff"
+                strokeWidth="5"
+              />
+              <circle cx="0" cy="-150" r="24" fill="#00e5ff" />
+              <polygon points="0,-120 -130,60 130,60" fill="rgba(0, 229, 255, 0.18)" />
+              <circle cx="0" cy="60" r="82" fill="#00e5ff" stroke="#ffffff" strokeWidth="5" />
+              <text y="68" fill="#061224" fontSize="26" fontWeight="900" textAnchor="middle">
+                SOLID
+              </text>
+              <text y="210" fill="#00ff9d" fontSize="28" fontWeight="900" textAnchor="middle">
+                EXISTS ✅
+              </text>
+            </g>
+
+            {/* RIGHT CARD: EYE CLOSED = DOES NOT EXIST */}
+            <g transform="translate(230 0)">
+              <text y="-265" fill="#ff5252" fontSize="26" fontWeight="900" textAnchor="middle">
+                EYE CLOSED 🙈
+              </text>
+              <path
+                d="M -85 -150 Q 0 -95 85 -150"
+                fill="none"
+                stroke="#ff5252"
+                strokeWidth="6"
+                strokeLinecap="round"
+              />
+              <circle
+                cx="0"
+                cy="60"
+                r="82"
+                fill="none"
+                stroke="#8e9bb0"
+                strokeWidth="4"
+                strokeDasharray="10 10"
+              />
+              <BanCircle cx={0} cy={60} r={96} />
+              <text y="210" fill="#ff5252" fontSize="28" fontWeight="900" textAnchor="middle">
+                NO EXISTENCE ❌
+              </text>
+            </g>
+
+            <StageBadge
+              x={0}
+              y={355}
+              w={760}
+              title="WOH CHEEZ EXIST HI NAHI KARTI! 🤯"
+              sub="QUANTUM OBSERVER PARADOX"
+              accent="#ff9f43"
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 4 (8.0s - 11.5s): PAPER BLUEPRINT ELECTRON CANNON & 2 SLITS
+           ================================================================= */}
+        {cutId === 4 && (
+          <g transform={`translate(0 0) scale(${0.92 + popSpring(frame, 8.0) * 0.08})`} style={{ transformOrigin: '540px 950px' }}>
+            <StageBadge
+              x={540}
+              y={525}
+              w={740}
+              title="YOUNG'S DOUBLE-SLIT APPARATUS"
+              sub="FIRING ELECTRONS & LIGHT PHOTONS"
+              accent="#d93829"
+              dark={false}
+            />
+
+            {/* Giant Detailed Electron Cannon on Left */}
+            <g transform="translate(230 960)">
+              <path d="M -60 140 L 0 40 L 60 140" fill="none" stroke="#241f19" strokeWidth="10" />
+              <line x1="-90" y1="140" x2="90" y2="140" stroke="#241f19" strokeWidth="10" />
+              <rect x="-120" y="-75" width="210" height="150" rx="22" fill="#241f19" stroke="#d93829" strokeWidth="6" />
+              <rect x="90" y="-32" width="75" height="64" rx="10" fill="#d93829" />
+              <circle cx="-15" cy="0" r="38" fill="#ff9f43" />
+              <text x="-15" y="8" fill="#241f19" fontSize="24" fontWeight="900" textAnchor="middle">
+                e⁻
+              </text>
+              <text x="0" y="195" fill="#241f19" fontSize="24" fontWeight="900" textAnchor="middle">
+                ELECTRON GUN
+              </text>
+            </g>
+
+            {/* Firing Particle Stream */}
+            {[0, 0.25, 0.5, 0.75].map((off, i) => {
+              const p = ((sec - 8.0) * 1.8 + off) % 1;
+              const px = mix(410, 740, p);
+              const py = 960 + (i % 2 === 0 ? -95 : 95) * p;
+              return (
+                <g key={i}>
+                  <circle cx={px} cy={py} r="14" fill="#d93829" />
+                  <circle cx={px} cy={py} r="24" fill="none" stroke="#d93829" strokeWidth="3" opacity={1 - p} />
+                </g>
               );
             })}
+
+            {/* Double-Slit Titanium Barrier on Right */}
+            <g transform="translate(770 960)">
+              <rect x="-22" y="-330" width="44" height="190" rx="6" fill="#241f19" />
+              <rect x="-22" y="-50" width="44" height="100" rx="6" fill="#241f19" />
+              <rect x="-22" y="140" width="44" height="190" rx="6" fill="#241f19" />
+              <rect x="-16" y="-140" width="32" height="90" fill="#00e5ff" opacity="0.7" />
+              <rect x="-16" y="50" width="32" height="90" fill="#00e5ff" opacity="0.7" />
+              <text x="85" y="-85" fill="#d93829" fontSize="25" fontWeight="900">
+                ⬅ SLIT 1
+              </text>
+              <text x="85" y="105" fill="#d93829" fontSize="25" fontWeight="900">
+                ⬅ SLIT 2
+              </text>
+              <text x="0" y="380" fill="#241f19" fontSize="24" fontWeight="900" textAnchor="middle">
+                2-SLIT WALL
+              </text>
+            </g>
           </g>
+        )}
 
-          {/* 9 Interference Intensity Bands on Detector Screen + Probability Curve */}
-          {[-260, -195, -130, -65, 0, 65, 130, 195, 260].map((dy, idx) => {
-            const intensity = 1 - Math.abs(idx - 4) * 0.18;
-            const barW = 28 + intensity * 48;
-            return (
-              <rect
-                key={idx}
-                x={882}
-                y={950 + dy - 20}
-                width={barW}
-                height="40"
-                rx="6"
-                fill="#008b9b"
-                opacity={0.35 + intensity * 0.65}
-              />
-            );
-          })}
-
-          <TelemetryPill
-            x={540}
-            y={1425}
-            w={720}
-            h={74}
-            label="INTERFERENCE PATTERN: BEHAVES LIKE WAVES 🌊"
-            sublabel="SINGLE ELECTRON PASSES THROUGH BOTH SLITS AT ONCE!"
-            accent="#00e5ff"
-            dark={false}
-          />
-        </g>
-      )}
-
-      {/* =====================================================================
-          STAGE C (17.8s - 22.5s): OBSERVER CAMERA DROPS -> 2 SOLID BARS!
-         ===================================================================== */}
-      {stage === 'collapse' && (
-        <g>
-          {/* Robotic Quantum Observer Camera Dropping Down at x=510 */}
-          <g transform={`translate(510 ${mix(440, 625, collapseSpring)})`}>
-            {/* Mounting Arm */}
-            <line x1="0" y1="-160" x2="0" y2="-45" stroke="#241f19" strokeWidth="10" />
-            {/* Camera Housing */}
-            <rect x="-85" y="-48" width="170" height="86" rx="18" fill="#d93829" stroke="#241f19" strokeWidth="4" />
-            <circle cx="0" cy="-5" r="26" fill="#241f19" />
-            <circle cx="0" cy="-5" r="12" fill="#ffeb3b" />
-
-            {/* Red Laser Scanning Cone Hitting Slits */}
-            <polygon points="-55,38 55,38 95,290 -95,290" fill="url(#crimsonBeam)" />
-            <line x1="-55" y1="38" x2="-85" y2="290" stroke="#d93829" strokeWidth="3" strokeDasharray="6 6" />
-            <line x1="55" y1="38" x2="85" y2="290" stroke="#d93829" strokeWidth="3" strokeDasharray="6 6" />
-
-            <rect x="-130" y="-92" width="260" height="36" rx="8" fill="#241f19" />
-            <text x="0" y="-68" fill="#ffeb3b" fontSize="16" fontWeight="900" textAnchor="middle" letterSpacing="2">
-              🚨 OBSERVER CAMERA ON
-            </text>
-          </g>
-
-          {/* 2 Straight Ballistic Particle Trajectories */}
-          <line x1="525" y1="865" x2="855" y2="865" stroke="#d93829" strokeWidth="9" strokeDasharray="16 12" />
-          <line x1="525" y1="1035" x2="855" y2="1035" stroke="#d93829" strokeWidth="9" strokeDasharray="16 12" />
-
-          {/* Strictly TWO Solid Particle Bars on the Screen Wall */}
-          <rect x="884" y="820" width="72" height="90" rx="8" fill="#d93829" stroke="#241f19" strokeWidth="3" />
-          <rect x="884" y="990" width="72" height="90" rx="8" fill="#d93829" stroke="#241f19" strokeWidth="3" />
-
-          <TelemetryPill
-            x={540}
-            y={1425}
-            w={740}
-            h={76}
-            label="WAVES VANISH ➔ ONLY 2 SOLID PARTICLE BARS! ⚡"
-            sublabel="PARTICLES KNOW YOU ARE WATCHING THEM"
-            accent="#d93829"
-            dark={false}
-          />
-        </g>
-      )}
-    </svg>
-  );
-};
-
-// ============================================================================
-// 08. SCENE 3 VISUALS (22.5s - 30.0s): TECHDE 3-CARD GRID & PART 2 CLOCK VAULT
-// ============================================================================
-
-const SceneThreeVisual: React.FC<{ sec: number; frame: number }> = ({ sec, frame }) => {
-  const isVaultPhase = sec >= 26.5;
-
-  const cards = [
-    {
-      title: 'NO OBSERVER',
-      sub: 'WAVES EVERYWHERE',
-      icon: '🌊',
-      color: '#ff5252',
-      delay: Math.round(22.6 * FPS),
-      crossed: true,
-    },
-    {
-      title: 'EYES OPEN',
-      sub: 'CAMERA DETECTS',
-      icon: '👁️',
-      color: '#00e5ff',
-      delay: Math.round(23.2 * FPS),
-      crossed: false,
-    },
-    {
-      title: 'SOLID REALITY',
-      sub: 'INSTANT RENDER',
-      icon: '🧱',
-      color: '#00ff9d',
-      delay: Math.round(23.8 * FPS),
-      crossed: false,
-    },
-  ];
-
-  const vaultSpring = fastSpring(frame, Math.round(26.5 * FPS), 12, 150);
-  const unlockProgress = clamp((sec - 27.6) / 0.6);
-
-  return (
-    <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
-      <GlobalSvgDefs />
-
-      {/* --- SUB-SCENE 3A (22.5s - 26.5s): TECHDE-STYLE 3 GLASSMORPHIC CARDS --- */}
-      {!isVaultPhase && (
-        <g transform="translate(0 40)">
-          {cards.map((c, idx) => {
-            const pop = fastSpring(frame, c.delay, 13, 165);
-            const cx = 210 + idx * 330;
-            const cy = 910;
-
-            return (
-              <g
-                key={idx}
-                transform={`translate(${cx} ${cy}) scale(${0.75 + pop * 0.25})`}
-                opacity={clamp((frame - c.delay) / 10)}
-              >
-                <rect
-                  x="-145"
-                  y="-210"
-                  width="290"
-                  height="420"
-                  rx="26"
-                  fill="rgba(12, 22, 46, 0.9)"
-                  stroke={c.color}
-                  strokeWidth="3.5"
-                  filter="url(#cardShadow)"
-                />
-                <circle cx="0" cy="-55" r="74" fill="rgba(255,255,255,0.06)" stroke={c.color} strokeWidth="2.5" />
-                <text x="0" y="-30" fontSize="68" textAnchor="middle">
-                  {c.icon}
-                </text>
-
-                {c.crossed && <RedProhibitionIcon cx={0} cy={-55} r={78} />}
-
-                <text x="0" y="95" fill="#ffffff" fontSize="28" fontWeight="900" textAnchor="middle">
-                  {c.title}
-                </text>
-                <text x="0" y="135" fill={c.color} fontSize="18" fontWeight="800" textAnchor="middle" letterSpacing="1.5">
-                  {c.sub}
-                </text>
-              </g>
-            );
-          })}
-
-          <TelemetryPill
-            x={540}
-            y={1285}
-            w={780}
-            h={82}
-            label="UNIVERSE RENDERS ONLY ON OBSERVATION ⚡"
-            sublabel="QUANTUM COPENHAGEN INTERPRETATION"
-            accent="#00ff9d"
-          />
-        </g>
-      )}
-
-      {/* --- SUB-SCENE 3B (26.5s - 30.0s): TECHDE QUANTUM CLOCK & PART 2 VAULT --- */}
-      {isVaultPhase && (
-        <g transform={`translate(540 930) scale(${0.86 + vaultSpring * 0.14})`}>
-          {/* Outer Glowing Quantum Clock / Vault Ring */}
-          <circle r="270" fill="#081226" stroke="#ffd166" strokeWidth="6" filter="url(#cardShadow)" />
-          <circle r="235" fill="none" stroke="#00e5ff" strokeWidth="2" strokeDasharray="8 10" />
-
-          {/* 12 Clock / Vault Hour Ticks */}
-          {Array.from({ length: 12 }, (_, i) => {
-            const p1 = polar(0, 0, 195, i * 30);
-            const p2 = polar(0, 0, 222, i * 30);
-            return (
-              <line
-                key={i}
-                x1={p1.x}
-                y1={p1.y}
-                x2={p2.x}
-                y2={p2.y}
-                stroke="#ffd166"
-                strokeWidth={i % 3 === 0 ? 5 : 2.5}
-              />
-            );
-          })}
-
-          {/* Rotating Clock Hands */}
-          <line
-            x1="0"
-            y1="0"
-            x2={polar(0, 0, 145, (sec - 26.5) * 260).x}
-            y2={polar(0, 0, 145, (sec - 26.5) * 260).y}
-            stroke="#00ff9d"
-            strokeWidth="7"
-            strokeLinecap="round"
-          />
-          <line
-            x1="0"
-            y1="0"
-            x2={polar(0, 0, 105, (sec - 26.5) * 80).x}
-            y2={polar(0, 0, 105, (sec - 26.5) * 80).y}
-            stroke="#ffd166"
-            strokeWidth="9"
-            strokeLinecap="round"
-          />
-          <circle r="22" fill="#ffd166" />
-
-          {/* Classified Part 2 Banner */}
-          <TelemetryPill
-            x={0}
-            y={355}
-            w={720}
-            h={88}
-            label={unlockProgress > 0.5 ? 'PART 2: THE QUANTUM RAAZ 🔓' : 'CLASSIFIED QUANTUM MYSTERY 🔒'}
-            sublabel="HOW DO PARTICLES KNOW YOU'RE WATCHING?"
-            accent="#ffd166"
-          />
-        </g>
-      )}
-    </svg>
-  );
-};
-
-// ============================================================================
-// 09. SCENE 4 VISUALS (30.0s - 41.56s): TECHDE HUMAN SILHOUETTES & COMMENT BOX
-// ============================================================================
-
-const HumanFigure: React.FC<{
-  x: number;
-  y: number;
-  color: string;
-  scale?: number;
-  isFloating?: boolean;
-  sec?: number;
-}> = ({ x, y, color, scale = 1, isFloating = false, sec = 0 }) => (
-  <g transform={`translate(${x} ${y}) scale(${scale})`}>
-    {/* Head */}
-    <circle cx="0" cy="-115" r="28" fill={color} />
-    {/* Torso & Arms & Legs (Clean Techde Architectural Silhouette) */}
-    <path
-      d="M -32 -78 C -32 -84 32 -84 32 -78 L 48 -5 L 30 0 L 22 -52 L 16 -52 L 26 75 L 4 75 L 0 5 L -4 75 L -26 75 L -16 -52 L -22 -52 L -30 0 L -48 -5 Z"
-      fill={color}
-    />
-    {isFloating && (
-      <g>
-        {/* VR / Parallel Reality Visor */}
-        <rect x="-24" y="-124" width="48" height="16" rx="5" fill="#00e5ff" />
-        {/* Orbiting Parallel Reality Rings */}
-        <ellipse
-          cx="0"
-          cy="-40"
-          rx="72"
-          ry="22"
-          fill="none"
-          stroke="#d93829"
-          strokeWidth="3"
-          strokeDasharray="6 6"
-          transform={`rotate(${-15 + Math.sin(sec * 4) * 8})`}
-        />
-      </g>
-    )}
-  </g>
-);
-
-const SceneFourVisual: React.FC<{ sec: number; frame: number }> = ({ sec, frame }) => {
-  const showStamps = sec >= 36.2;
-  const showComment = sec >= 38.8;
-  const commentT = clamp((sec - 39.0) / 2.1);
-  const typedText = '@tag_your_parallel_friend 😂🌌'.slice(
-    0,
-    Math.floor(commentT * '@tag_your_parallel_friend 😂🌌'.length)
-  );
-
-  return (
-    <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
-      <GlobalSvgDefs />
-
-      {/* Ground Reality Baseline */}
-      <line x1="90" y1="1085" x2="990" y2="1085" stroke="#26211b" strokeWidth="4" />
-      <text x="540" y="1128" fill="#5c5243" fontSize="18" fontWeight="900" textAnchor="middle" letterSpacing="4">
-        REAL DUNIYA // NORMAL HUMANS ON EARTH
-      </text>
-
-      {/* Row of 7 Human Silhouettes (Exact Techde "আমরা নিজেরাই!" Aesthetic) */}
-      {[-3, -2, -1, 0, 1, 2, 3].map((idx) => {
-        const x = 540 + idx * 125;
-        const isLostFriend = idx === 0;
-        const floatOffset = isLostFriend ? -185 + Math.sin(sec * 4.2) * 18 : 0;
-
-        return (
-          <React.Fragment key={idx}>
-            {/* Shadow on ground when floating */}
-            {isLostFriend && (
-              <ellipse cx={x} cy="1085" rx="34" ry="8" fill="rgba(0,0,0,0.22)" />
-            )}
-            <HumanFigure
-              x={x}
-              y={1010 + floatOffset}
-              color={isLostFriend ? '#d93829' : '#3a332a'}
-              scale={isLostFriend ? 1.18 : 0.96}
-              isFloating={isLostFriend}
-              sec={sec}
+        {/* =================================================================
+            CUT 5 (11.5s - 14.8s): DARK QUANTUM RIPPLE TANK (WAVES SPREADING)
+           ================================================================= */}
+        {cutId === 5 && (
+          <g transform={`translate(0 0) scale(${0.92 + popSpring(frame, 11.5) * 0.08})`} style={{ transformOrigin: '540px 950px' }}>
+            <StageBadge
+              x={540}
+              y={525}
+              w={700}
+              title="NO CAMERA // NO OBSERVER 📵"
+              sub="ELECTRONS TRANSFORM INTO PROBABILITY WAVES"
+              accent="#00e5ff"
             />
-          </React.Fragment>
-        );
-      })}
 
-      {/* Floating Friend Callout Arrow */}
-      <g transform={`translate(540 ${645 + Math.sin(sec * 4.2) * 14})`}>
-        <rect x="-185" y="-36" width="370" height="54" rx="12" fill="#d93829" />
-        <text x="0" y="-2" fill="#ffffff" fontSize="21" fontWeight="900" textAnchor="middle" letterSpacing="1.5">
-          PARALLEL REALITY FRIEND 🛸
-        </text>
-      </g>
+            {/* Barrier at Left (x=230) */}
+            <g transform="translate(230 960)">
+              <rect x="-16" y="-320" width="32" height="190" fill="#00e5ff" />
+              <rect x="-16" y="-50" width="32" height="100" fill="#00e5ff" />
+              <rect x="-16" y="130" width="32" height="190" fill="#00e5ff" />
+            </g>
 
-      {/* --- SUB-SCENE 4B (36.2s+): 3 DIAGNOSTIC STAMPS AROUND LOST FRIEND --- */}
-      {showStamps && (
-        <g>
-          <TelemetryPill
-            x={250}
-            y={760}
-            w={290}
-            h={62}
-            label="HOSH: 0% LOST 🪐"
-            sublabel="OWN DIMENSION"
-            accent="#d93829"
-            dark={false}
-          />
-          <TelemetryPill
-            x={830}
-            y={760}
-            w={290}
-            h={62}
-            label="CALLS: IGNORED 📵"
-            sublabel="OUT OF NETWORK"
-            accent="#008b9b"
-            dark={false}
-          />
-        </g>
-      )}
+            {/* Expanding Dual Circular Wavefronts from Slit 1 (y=870) and Slit 2 (y=1050) */}
+            <g fill="none">
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                const r = (((sec - 11.5) * 140 + i * 75) % 540) + 20;
+                const op = clamp(1 - r / 550, 0.12, 0.95);
+                return (
+                  <React.Fragment key={i}>
+                    <path
+                      d={`M 248 ${870 - r} A ${r} ${r} 0 0 1 248 ${870 + r}`}
+                      stroke="#00e5ff"
+                      strokeWidth="4.5"
+                      opacity={op}
+                    />
+                    <path
+                      d={`M 248 ${1050 - r} A ${r} ${r} 0 0 1 248 ${1050 + r}`}
+                      stroke="#00ff9d"
+                      strokeWidth="4.5"
+                      opacity={op}
+                    />
+                  </React.Fragment>
+                );
+              })}
+            </g>
 
-      {/* --- LIVE YOUTUBE COMMENT DRAWER (38.8s - 41.56s) --- */}
-      {showComment && (
-        <g
-          transform={`translate(540 1335) scale(${0.86 + fastSpring(frame, Math.round(38.8 * FPS)) * 0.14})`}
-          filter="url(#cardShadow)"
-        >
-          <rect x="-380" y="-85" width="760" height="170" rx="24" fill="#1e1b17" stroke="#d93829" strokeWidth="3.5" />
-          <circle cx="-315" cy="-22" r="24" fill="#d93829" />
-          <text x="-315" y="-14" fill="#ffffff" fontSize="22" fontWeight="900" textAnchor="middle">
-            💬
-          </text>
-          <text x="-270" y="-15" fill="#c7bca9" fontSize="18" fontWeight="800" letterSpacing="1.5">
-            YouTube · TAG THAT FRIEND IN COMMENTS 👇
-          </text>
-          <line x1="-340" y1="12" x2="340" y2="12" stroke="#423b32" strokeWidth="2" />
-          <text x="-335" y="56" fill="#ffffff" fontSize="29" fontWeight="900">
-            {typedText}
-            <tspan fill="#00e5ff">{commentT < 1 ? '▍' : ''}</tspan>
-          </text>
-        </g>
-      )}
-    </svg>
+            {/* Detector Screen on Right (x=860) */}
+            <rect x="850" y="640" width="30" height="640" rx="8" fill="#102542" stroke="#00e5ff" strokeWidth="4" />
+
+            <StageBadge
+              x={540}
+              y={1415}
+              w={760}
+              title="WAVES KI TARAH PHAIL JAATE HAIN! 🌊"
+              sub="PASSING THROUGH BOTH SLITS AT THE SAME TIME"
+              accent="#00ff9d"
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 6 (14.8s - 17.8s): PAPER INTERFERENCE ZEBRA BANDS & GRAPH
+           ================================================================= */}
+        {cutId === 6 && (
+          <g transform={`translate(540 940) scale(${0.88 + popSpring(frame, 14.8) * 0.12})`}>
+            <StageBadge
+              x={0}
+              y={-390}
+              w={740}
+              title="DETECTOR WALL: WAVE INTERFERENCE"
+              sub="MULTIPLE BRIGHT & DARK ZEBRA BANDS"
+              accent="#d93829"
+              dark={false}
+            />
+
+            {/* Detector Wall Zebra Pattern */}
+            <rect x="-410" y="-260" width="820" height="240" rx="18" fill="#1e1b17" stroke="#d93829" strokeWidth="5" />
+            {[-330, -248, -165, -82, 0, 82, 165, 248, 330].map((bx, i) => {
+              const dist = Math.abs(i - 4);
+              const alpha = 1 - dist * 0.18;
+              return (
+                <rect
+                  key={i}
+                  x={bx - 24}
+                  y="-235"
+                  width="48"
+                  height="190"
+                  rx="8"
+                  fill={i % 2 === 0 ? '#00e5ff' : '#d93829'}
+                  opacity={alpha}
+                />
+              );
+            })}
+
+            {/* Live Oscillating Wave Intensity Curve Below */}
+            <path
+              d={Array.from({ length: 85 }, (_, i) => {
+                const x = -390 + (i / 84) * 780;
+                const env = Math.cos(((i - 42) / 42) * (Math.PI / 2));
+                const y =
+                  160 -
+                  Math.abs(Math.cos(i * 0.38 + sec * 6)) * 165 * env * env;
+                return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+              }).join(' ')}
+              fill="none"
+              stroke="#d93829"
+              strokeWidth="6"
+            />
+            <line x1="-400" y1="165" x2="400" y2="165" stroke="#241f19" strokeWidth="4" />
+
+            <StageBadge
+              x={0}
+              y={330}
+              w={740}
+              title="9+ INTERFERENCE STRIPES = WAVE PROOF 📊"
+              sub="P(x) = |Ψ₁ + Ψ₂|² SUPERPOSITION"
+              accent="#008b9b"
+              dark={false}
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 7 (17.8s - 20.2s): DARK ROBOTIC CAMERA DROP & WAVE SHATTER!
+           ================================================================= */}
+        {cutId === 7 && (
+          <g transform={`translate(540 930) scale(${0.86 + popSpring(frame, 17.8) * 0.14})`}>
+            {/* Giant Robotic Eye Sensor Dropping from Top */}
+            <line x1="0" y1="-480" x2="0" y2="-180" stroke="#ff5252" strokeWidth="14" />
+            <rect
+              x="-190"
+              y="-210"
+              width="380"
+              height="190"
+              rx="38"
+              fill="#141d33"
+              stroke="#ff5252"
+              strokeWidth="6"
+            />
+            <circle cx="0" cy="-115" r="68" fill="#060a14" stroke="#ff5252" strokeWidth="5" />
+            <circle cx="0" cy="-115" r="28" fill="#ff5252" />
+
+            {/* Red Laser Scanning Cone */}
+            <polygon points="-130,-20 130,-20 340,320 -340,320" fill="rgba(255, 82, 82, 0.24)" />
+            <line x1="-130" y1="-20" x2="-340" y2="320" stroke="#ff5252" strokeWidth="4" strokeDasharray="10 10" />
+            <line x1="130" y1="-20" x2="340" y2="320" stroke="#ff5252" strokeWidth="4" strokeDasharray="10 10" />
+
+            {/* Shattered Wave Fragments Disappearing */}
+            <BanCircle cx={0} cy={145} r={115} />
+
+            <StageBadge
+              x={0}
+              y={-360}
+              w={680}
+              title="🚨 OBSERVER CAMERA ACTIVATED!"
+              sub="WATCHING WHICH SLIT THE ELECTRON TAKES"
+              accent="#ff5252"
+            />
+            <StageBadge
+              x={0}
+              y={355}
+              w={740}
+              title="WAVES INSTANTLY VANISH / COLLAPSE! 💥"
+              sub="QUANTUM MEASUREMENT DISTURBANCE"
+              accent="#ffd166"
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 8 (20.2s - 22.5s): PAPER BALLISTIC COLLAPSE TO 2 SOLID BARS!
+           ================================================================= */}
+        {cutId === 8 && (
+          <g transform={`translate(540 940) scale(${0.86 + popSpring(frame, 20.2) * 0.14})`}>
+            <StageBadge
+              x={0}
+              y={-390}
+              w={740}
+              title="WAVEFUNCTION COLLAPSED! ⚡"
+              sub="ELECTRONS ACT LIKE SOLID MARBLE BULLETS"
+              accent="#d93829"
+              dark={false}
+            />
+
+            {/* Detector Wall with ONLY TWO SOLID BARS */}
+            <rect x="-410" y="-230" width="820" height="340" rx="22" fill="#1e1b17" stroke="#241f19" strokeWidth="6" />
+
+            {/* Left Solid Bar (Slit 1) */}
+            <rect x="-215" y="-185" width="95" height="250" rx="12" fill="#d93829" stroke="#ffffff" strokeWidth="4" />
+            <text x="-167" y="110" fill="#d93829" fontSize="26" fontWeight="900" textAnchor="middle">
+              BAR 01
+            </text>
+
+            {/* Right Solid Bar (Slit 2) */}
+            <rect x="120" y="-185" width="95" height="250" rx="12" fill="#d93829" stroke="#ffffff" strokeWidth="4" />
+            <text x="167" y="110" fill="#d93829" fontSize="26" fontWeight="900" textAnchor="middle">
+              BAR 02
+            </text>
+
+            {/* Incoming Solid Bullet Lines */}
+            <line x1="-167" y1="270" x2="-167" y2="65" stroke="#d93829" strokeWidth="12" strokeDasharray="18 12" />
+            <line x1="167" y1="270" x2="167" y2="65" stroke="#d93829" strokeWidth="12" strokeDasharray="18 12" />
+
+            <StageBadge
+              x={0}
+              y={340}
+              w={760}
+              title="ACHANAK 2 SOLID PARTICLES BAN JATE HAIN!"
+              sub="NO WAVES // STRICTLY 2 PARTICLE BANDS"
+              accent="#d93829"
+              dark={false}
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 9 (22.5s - 26.5s): TECHDE 3 GLASSMORPHIC CARDS & GPU BAR
+           ================================================================= */}
+        {cutId === 9 && (
+          <g transform="translate(0 25)">
+            {[
+              { title: 'NO OBSERVER', sub: 'WAVES SPREAD', icon: '🌊', col: '#ff5252', t: 22.55, ban: true },
+              { title: 'CAMERA ON', sub: 'PARTICLE LOCK', icon: '📹', col: '#00e5ff', t: 23.0, ban: false },
+              { title: 'SOLID WORLD', sub: '100% RENDERED', icon: '🧱', col: '#00ff9d', t: 23.45, ban: false },
+            ].map((c, idx) => {
+              const s = popSpring(frame, c.t);
+              const cx = 210 + idx * 330;
+              return (
+                <g key={idx} transform={`translate(${cx} 860) scale(${0.75 + s * 0.25})`}>
+                  <rect
+                    x="-145"
+                    y="-210"
+                    width="290"
+                    height="420"
+                    rx="28"
+                    fill="#0b162e"
+                    stroke={c.col}
+                    strokeWidth="4"
+                  />
+                  <circle cx="0" cy="-55" r="76" fill="rgba(255,255,255,0.06)" stroke={c.col} strokeWidth="3" />
+                  <text x="0" y="-30" fontSize="70" textAnchor="middle">
+                    {c.icon}
+                  </text>
+                  {c.ban && <BanCircle cx={0} cy={-55} r={82} />}
+                  <text x="0" y="95" fill="#ffffff" fontSize="28" fontWeight="900" textAnchor="middle">
+                    {c.title}
+                  </text>
+                  <text x="0" y="135" fill={c.col} fontSize="19" fontWeight="800" textAnchor="middle">
+                    {c.sub}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Live Reality Render Progress Bar */}
+            {(() => {
+              const pct = Math.round(interp(sec, [22.8, 25.8], [12, 100]));
+              return (
+                <g transform="translate(540 1265)">
+                  <rect x="-410" y="-55" width="820" height="110" rx="20" fill="#081226" stroke="#00ff9d" strokeWidth="3" />
+                  <rect x="-380" y="8" width={7.6 * pct} height="24" rx="12" fill="#00ff9d" />
+                  <text x="0" y="-12" fill="#ffffff" fontSize="26" fontWeight="900" textAnchor="middle">
+                    UNIVERSE REALITY RENDERING: {pct}% ⚡
+                  </text>
+                </g>
+              );
+            })()}
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 10 (26.5s - 30.0s): PAPER QUANTUM CLOCK & PART 2 VAULT
+           ================================================================= */}
+        {cutId === 10 && (
+          <g transform={`translate(540 935) scale(${0.86 + popSpring(frame, 26.5) * 0.14})`}>
+            <circle r="275" fill="#241f19" stroke="#d93829" strokeWidth="8" />
+            <circle r="235" fill="none" stroke="#ffcf74" strokeWidth="3" strokeDasharray="10 10" />
+
+            {Array.from({ length: 12 }, (_, i) => {
+              const p1 = polar(0, 0, 195, i * 30);
+              const p2 = polar(0, 0, 225, i * 30);
+              return <line key={i} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke="#ffcf74" strokeWidth="5" />;
+            })}
+
+            {/* Rotating Vault / Clock Hands */}
+            <line
+              x1="0"
+              y1="0"
+              x2={polar(0, 0, 155, (sec - 26.5) * 240).x}
+              y2={polar(0, 0, 155, (sec - 26.5) * 240).y}
+              stroke="#00e5ff"
+              strokeWidth="8"
+              strokeLinecap="round"
+            />
+            <line
+              x1="0"
+              y1="0"
+              x2={polar(0, 0, 110, (sec - 26.5) * 75).x}
+              y2={polar(0, 0, 110, (sec - 26.5) * 75).y}
+              stroke="#d93829"
+              strokeWidth="10"
+              strokeLinecap="round"
+            />
+            <circle r="36" fill="#d93829" />
+            <text y="12" fontSize="34" textAnchor="middle">
+              🔓
+            </text>
+
+            <StageBadge
+              x={0}
+              y={-365}
+              w={660}
+              title="MIND-BENDING QUANTUM MYSTERY"
+              sub="HOW DO PARTICLES KNOW WE ARE WATCHING?"
+              accent="#d93829"
+              dark={false}
+            />
+            <StageBadge
+              x={0}
+              y={365}
+              w={740}
+              title="ISKA RAAZ BATAYENGE PART 2 MEIN! 🔥"
+              sub="SUBSCRIBE & STAY TUNED FOR PART 2"
+              accent="#d93829"
+              dark={false}
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 11 (30.0s - 35.8s): TECHDE 7 HUMAN SILHOUETTES LINEUP
+           ================================================================= */}
+        {cutId === 11 && (
+          <g transform={`translate(0 20) scale(${0.9 + popSpring(frame, 30.0) * 0.1})`} style={{ transformOrigin: '540px 950px' }}>
+            {/* Earth Horizon Floor */}
+            <line x1="90" y1="1120" x2="990" y2="1120" stroke="#00e5ff" strokeWidth="4" />
+            <text x="540" y="1168" fill="#9bc2de" fontSize="20" fontWeight="900" textAnchor="middle" letterSpacing="4">
+              REAL DUNIYA // NORMAL FRIENDS ON EARTH
+            </text>
+
+            {/* 7 Friends Lineup: Middle Friend Levitating in Parallel Portal! */}
+            {[-3, -2, -1, 0, 1, 2, 3].map((idx) => {
+              const x = 540 + idx * 122;
+              const isLost = idx === 0;
+              const y = isLost ? 810 + Math.sin(sec * 5) * 20 : 1040;
+              const col = isLost ? '#ff5252' : '#3b5278';
+
+              return (
+                <g key={idx} transform={`translate(${x} ${y}) scale(${isLost ? 1.22 : 0.95})`}>
+                  {isLost && (
+                    <ellipse
+                      cx="0"
+                      cy="-35"
+                      rx="78"
+                      ry="125"
+                      fill="rgba(0, 229, 255, 0.14)"
+                      stroke="#00e5ff"
+                      strokeWidth="3"
+                      strokeDasharray="8 8"
+                    />
+                  )}
+                  <circle cx="0" cy="-115" r="28" fill={col} />
+                  <path
+                    d="M -32 -78 C -32 -84 32 -84 32 -78 L 48 -5 L 30 0 L 22 -52 L 16 -52 L 26 75 L 4 75 L 0 5 L -4 75 L -26 75 L -16 -52 L -22 -52 L -30 0 L -48 -5 Z"
+                    fill={col}
+                  />
+                  {isLost && <rect x="-24" y="-124" width="48" height="16" rx="5" fill="#00e5ff" />}
+                </g>
+              );
+            })}
+
+            <StageBadge
+              x={540}
+              y={540}
+              w={680}
+              title="PARALLEL REALITY FRIEND 🛸"
+              sub="FLOATING IN ANOTHER DIMENSION"
+              accent="#ff5252"
+            />
+            <StageBadge
+              x={540}
+              y={1315}
+              w={740}
+              title="JISE REAL DUNIYA KI KOI KHABAR NAHI! 😂"
+              sub="ALWAYS LOST IN THEIR OWN MULTIVERSE"
+              accent="#00e5ff"
+            />
+          </g>
+        )}
+
+        {/* =================================================================
+            CUT 12 (35.8s - 41.56s): LOST FRIEND RADAR & YOUTUBE COMMENT BOX
+           ================================================================= */}
+        {cutId === 12 && (
+          <g transform={`translate(540 920) scale(${0.88 + popSpring(frame, 35.8) * 0.12})`}>
+            {/* Radar Target Around Lost Friend */}
+            <circle cy="-120" r="175" fill="#241f19" stroke="#d93829" strokeWidth="6" />
+            <circle cy="-120" r="135" fill="none" stroke="#00e5ff" strokeWidth="2.5" strokeDasharray="8 8" />
+
+            {/* Floating Lost Friend Inside Radar */}
+            <g transform={`translate(0 ${-95 + Math.sin(sec * 6) * 10})`}>
+              <circle cx="0" cy="-85" r="32" fill="#d93829" />
+              <rect x="-26" y="-95" width="52" height="18" rx="6" fill="#00e5ff" />
+              <path d="M -42 -42 C -42 -42 42 -42 42 -42 L 55 45 L -55 45 Z" fill="#d93829" />
+            </g>
+
+            <StageBadge
+              x={-275}
+              y={-240}
+              w={310}
+              title="REAL WORLD: 0%"
+              sub="NO AWARENESS"
+              accent="#d93829"
+              dark={false}
+            />
+            <StageBadge
+              x={275}
+              y={-240}
+              w={310}
+              title="BRAIN: SPACE 🪐"
+              sub="PARALLEL UNIVERSE"
+              accent="#008b9b"
+              dark={false}
+            />
+
+            {/* Live Typing YouTube Comment Box */}
+            {(() => {
+              const t = clamp((sec - 36.2) / 3.2);
+              const text = '@tag_your_parallel_friend 😂👇'.slice(
+                0,
+                Math.floor(t * '@tag_your_parallel_friend 😂👇'.length)
+              );
+              return (
+                <g transform="translate(0 225)">
+                  <rect
+                    x="-410"
+                    y="-95"
+                    width="820"
+                    height="190"
+                    rx="26"
+                    fill="#1e1b17"
+                    stroke="#d93829"
+                    strokeWidth="5"
+                  />
+                  <circle cx="-340" cy="-30" r="26" fill="#d93829" />
+                  <text x="-340" y="-21" fontSize="24" textAnchor="middle">
+                    💬
+                  </text>
+                  <text x="-290" y="-20" fill="#e0d4be" fontSize="20" fontWeight="900" letterSpacing="1.5">
+                    YouTube Comments · Tag Your Lost Friend!
+                  </text>
+                  <line x1="-365" y1="10" x2="365" y2="10" stroke="#4a4135" strokeWidth="2" />
+                  <text x="-360" y="62" fill="#ffffff" fontSize="32" fontWeight="900">
+                    {text}
+                    <tspan fill="#00e5ff">{t < 1 ? '▍' : ''}</tspan>
+                  </text>
+                </g>
+              );
+            })()}
+          </g>
+        )}
+      </svg>
+    </AbsoluteFill>
   );
 };
 
 // ============================================================================
-// 10. TOP DYNAMIC EDITORIAL HEADLINES (HERO OVERLAY)
+// 06. LAYER 3 (zIndex: 20): TOP TIMELINE & HERO HEADLINES
 // ============================================================================
 
-const HeroOverlay: React.FC<{
+const TopHeroLayer: React.FC<{
   beat: HeroBeat;
   beatAt: number;
   theme: Theme;
   frame: number;
-}> = ({ beat, beatAt, theme, frame }) => {
+  sec: number;
+}> = ({ beat, beatAt, theme, frame, sec }) => {
   const age = Math.max(0, frame - Math.round(beatAt * FPS));
-  const pop = fastSpring(age, 0, 13, 165);
-  const opacity = interp(age, [0, 7, 16], [0, 0.92, 1]);
+  const pop = spring({
+    frame: age,
+    fps: FPS,
+    config: { damping: 13, stiffness: 165, mass: 0.7 },
+  });
   const isPaper = theme === 'paper';
 
   return (
-    <AbsoluteFill style={{ pointerEvents: 'none' }}>
+    <AbsoluteFill style={{ zIndex: 20, pointerEvents: 'none' }}>
+      {/* Top 12-Cut Progress Bar */}
       <div
         style={{
           position: 'absolute',
-          top: 96,
+          top: 32,
+          left: 46,
+          right: 46,
+          display: 'flex',
+          gap: 6,
+          height: 6,
+        }}
+      >
+        {CUTS.map((c) => {
+          const fill =
+            sec >= c.end ? 1 : sec <= c.start ? 0 : clamp((sec - c.start) / (c.end - c.start));
+          return (
+            <div
+              key={c.cutId}
+              style={{
+                flex: 1,
+                background: isPaper ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.2)',
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${fill * 100}%`,
+                  height: '100%',
+                  background: isPaper ? '#d93829' : '#00e5ff',
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Dynamic Hero Title */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 86,
           left: 44,
           right: 44,
-          opacity,
           transform: `scale(${0.86 + pop * 0.14})`,
           textAlign: 'center',
         }}
       >
-        {/* Top Tag Pill */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             gap: 14,
-            marginBottom: 14,
+            marginBottom: 12,
           }}
         >
           <span style={{ width: 38, height: 3, background: beat.accent }} />
@@ -1182,9 +1265,9 @@ const HeroOverlay: React.FC<{
             style={{
               padding: '6px 18px',
               borderRadius: 100,
-              background: isPaper ? 'rgba(36,31,25,0.08)' : 'rgba(0,229,255,0.1)',
-              border: `1.5px solid ${beat.accent}`,
-              color: isPaper ? '#3a3227' : '#d8f3ff',
+              background: isPaper ? 'rgba(36,31,25,0.1)' : 'rgba(0,229,255,0.14)',
+              border: `2px solid ${beat.accent}`,
+              color: isPaper ? '#241f19' : '#e2f7ff',
               fontFamily: 'Arial, sans-serif',
               fontSize: 15,
               letterSpacing: 3.5,
@@ -1196,7 +1279,6 @@ const HeroOverlay: React.FC<{
           <span style={{ width: 38, height: 3, background: beat.accent }} />
         </div>
 
-        {/* Two-Line Hero Impact Title */}
         <div
           style={{
             fontFamily: 'Arial Black, Impact, Arial, sans-serif',
@@ -1205,18 +1287,11 @@ const HeroOverlay: React.FC<{
             letterSpacing: -3,
             textTransform: 'uppercase',
             color: isPaper ? '#1e1a15' : '#ffffff',
-            textShadow: isPaper ? '0 2px 0 rgba(255,255,255,0.4)' : '0 8px 28px rgba(0,0,0,0.65)',
+            textShadow: isPaper ? '0 2px 0 rgba(255,255,255,0.4)' : '0 8px 28px rgba(0,0,0,0.75)',
           }}
         >
           <div style={{ fontSize: 70, whiteSpace: 'nowrap' }}>{beat.line1}</div>
-          <div
-            style={{
-              fontSize: 72,
-              whiteSpace: 'nowrap',
-              color: beat.accent,
-              marginTop: 6,
-            }}
-          >
+          <div style={{ fontSize: 72, whiteSpace: 'nowrap', color: beat.accent, marginTop: 6 }}>
             {beat.line2}
           </div>
         </div>
@@ -1226,7 +1301,7 @@ const HeroOverlay: React.FC<{
 };
 
 // ============================================================================
-// 11. WORD-BY-WORD SYNCED KARAOKE CAPTIONS (BOTTOM OVERLAY)
+// 07. LAYER 4 (zIndex: 30): SYNCED BOTTOM KARAOKE CAPTIONS
 // ============================================================================
 
 type WordTiming = { word: string; start: number; end: number };
@@ -1254,7 +1329,11 @@ function getWordTimings(scene: Scene): WordTiming[] {
   });
 }
 
-const CaptionOverlay: React.FC<{ scene: Scene; sec: number }> = ({ scene, sec }) => {
+const BottomCaptionLayer: React.FC<{ scene: Scene; theme: Theme; sec: number }> = ({
+  scene,
+  theme,
+  sec,
+}) => {
   const timings = getWordTimings(scene);
   const activeIndex = timings.findIndex((t) => sec >= t.start && sec < t.end);
   const safeIndex =
@@ -1266,23 +1345,22 @@ const CaptionOverlay: React.FC<{ scene: Scene; sec: number }> = ({ scene, sec })
 
   const chunkStart = Math.floor(safeIndex / 5) * 5;
   const visibleWords = timings.slice(chunkStart, chunkStart + 5);
-  const isPaper = scene.theme === 'paper';
-
+  const isPaper = theme === 'paper';
   const sceneProgress = clamp((sec - scene.speechStart) / (scene.speechEnd - scene.speechStart));
 
   return (
-    <AbsoluteFill style={{ pointerEvents: 'none' }}>
+    <AbsoluteFill style={{ zIndex: 30, pointerEvents: 'none' }}>
       <div
         style={{
           position: 'absolute',
-          left: 50,
-          right: 50,
-          top: 1585,
+          left: 48,
+          right: 48,
+          top: 1580,
           minHeight: 175,
           borderRadius: 26,
-          background: isPaper ? 'rgba(28, 24, 20, 0.96)' : 'rgba(7, 13, 28, 0.95)',
-          border: `2px solid ${isPaper ? 'rgba(217,56,41,0.45)' : 'rgba(0,229,255,0.4)'}`,
-          boxShadow: '0 20px 55px rgba(0,0,0,0.45)',
+          background: isPaper ? 'rgba(28, 24, 20, 0.97)' : 'rgba(7, 13, 28, 0.96)',
+          border: `2.5px solid ${isPaper ? '#d93829' : '#00e5ff'}`,
+          boxShadow: '0 20px 55px rgba(0,0,0,0.5)',
           padding: '22px 28px 26px',
           display: 'flex',
           flexDirection: 'column',
@@ -1318,7 +1396,6 @@ const CaptionOverlay: React.FC<{ scene: Scene; sec: number }> = ({ scene, sec })
                   borderRadius: 9,
                   padding: isActive ? '4px 11px 6px' : '2px 0',
                   transform: isActive ? 'translateY(-2px) scale(1.06)' : 'none',
-                  boxShadow: isActive ? '0 0 18px rgba(0,229,255,0.65)' : 'none',
                 }}
               >
                 {item.word}
@@ -1327,15 +1404,14 @@ const CaptionOverlay: React.FC<{ scene: Scene; sec: number }> = ({ scene, sec })
           })}
         </div>
 
-        {/* Bottom Progress Bar */}
         <div
           style={{
             position: 'absolute',
             bottom: 0,
             left: 24,
             right: 24,
-            height: 4,
-            background: 'rgba(255,255,255,0.12)',
+            height: 5,
+            background: 'rgba(255,255,255,0.14)',
             borderRadius: 10,
             overflow: 'hidden',
           }}
@@ -1354,51 +1430,7 @@ const CaptionOverlay: React.FC<{ scene: Scene; sec: number }> = ({ scene, sec })
 };
 
 // ============================================================================
-// 12. TOP STORY SEGMENT PROGRESS BAR
-// ============================================================================
-
-const TopTimelineBar: React.FC<{ sec: number; activeScene: Scene }> = ({ sec, activeScene }) => (
-  <AbsoluteFill style={{ pointerEvents: 'none' }}>
-    <div
-      style={{
-        position: 'absolute',
-        top: 34,
-        left: 48,
-        right: 48,
-        display: 'flex',
-        gap: 8,
-        height: 5,
-      }}
-    >
-      {SCENES.map((s) => {
-        const fill =
-          sec >= s.end ? 1 : sec <= s.start ? 0 : clamp((sec - s.start) / (s.end - s.start));
-        return (
-          <div
-            key={s.id}
-            style={{
-              flex: 1,
-              background: activeScene.theme === 'paper' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)',
-              borderRadius: 10,
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${fill * 100}%`,
-                height: '100%',
-                background: activeScene.theme === 'paper' ? '#d93829' : '#00e5ff',
-              }}
-            />
-          </div>
-        );
-      })}
-    </div>
-  </AbsoluteFill>
-);
-
-// ============================================================================
-// 13. MAIN REEL COMPOSITION
+// 08. MAIN REEL COMPOSITION
 // ============================================================================
 
 const ReelVideo: React.FC = () => {
@@ -1407,34 +1439,36 @@ const ReelVideo: React.FC = () => {
   const sec = frame / fps;
 
   const scene = SCENES.find((s) => sec >= s.start && sec < s.end) ?? SCENES[SCENES.length - 1];
+  const currentCut = CUTS.find((c) => sec >= c.start && sec < c.end) ?? CUTS[CUTS.length - 1];
+
   const activeBeatIdx = scene.heroBeats.reduce((acc, b, idx) => (sec >= b.at ? idx : acc), 0);
   const beat = scene.heroBeats[activeBeatIdx] ?? scene.heroBeats[0];
 
   return (
     <AbsoluteFill style={{ backgroundColor: '#050814', overflow: 'hidden' }}>
-      {/* 1. Dynamic Theme Backdrop */}
-      {scene.theme === 'dark' ? (
-        <DarkTwilightBackdrop sec={sec} />
+      {/* LAYER 1 (zIndex: 1): Alternating Dark & Paper Backdrops */}
+      {currentCut.theme === 'dark' ? (
+        <DarkBackdropLayer sec={sec} code={currentCut.code} />
       ) : (
-        <PaperBlueprintBackdrop
-          figCode={scene.id === 2 ? 'FIG 02 // DOUBLE-SLIT LAB' : 'FIG 04 // PARALLEL REALITY'}
-        />
+        <PaperBackdropLayer code={currentCut.code} />
       )}
 
-      {/* 2. Story-Synced 2D Vector Motion Graphics Stage */}
-      {scene.id === 1 && <SceneOneVisual sec={sec} frame={frame} />}
-      {scene.id === 2 && <SceneTwoVisual sec={sec} frame={frame} />}
-      {scene.id === 3 && <SceneThreeVisual sec={sec} frame={frame} />}
-      {scene.id === 4 && <SceneFourVisual sec={sec} frame={frame} />}
+      {/* LAYER 2 (zIndex: 10): 12 Animated Vector Cutaways (Guaranteed On Top!) */}
+      <AnimatedStageLayer cutId={currentCut.cutId} sec={sec} frame={frame} />
 
-      {/* 3. Top Story Progress Bar & Hero Headlines */}
-      <TopTimelineBar sec={sec} activeScene={scene} />
-      <HeroOverlay beat={beat} beatAt={beat.at} theme={scene.theme} frame={frame} />
+      {/* LAYER 3 (zIndex: 20): Top Progress Bar & Dynamic Hero Headlines */}
+      <TopHeroLayer
+        beat={beat}
+        beatAt={beat.at}
+        theme={currentCut.theme}
+        frame={frame}
+        sec={sec}
+      />
 
-      {/* 4. Bottom Word-Synced Karaoke Captions */}
-      <CaptionOverlay scene={scene} sec={sec} />
+      {/* LAYER 4 (zIndex: 30): Bottom Word-Synced Captions */}
+      <BottomCaptionLayer scene={scene} theme={currentCut.theme} sec={sec} />
 
-      {/* 5. Audio Track */}
+      {/* Audio Track */}
       <Audio src={staticFile('voice.mp3')} />
     </AbsoluteFill>
   );
