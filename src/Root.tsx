@@ -6,7 +6,6 @@ import {
   Easing,
   Sequence,
   interpolate,
-  registerRoot,
   spring,
   useCurrentFrame,
   useVideoConfig,
@@ -1682,7 +1681,7 @@ const Reel: React.FC = () => {
    REMOTION ROOT
 ===================================================== */
 
-const RemotionRoot: React.FC = () => {
+export const RemotionRoot: React.FC = () => {
   return (
     <Composition
       id="Reel"
@@ -1695,4 +1694,4 @@ const RemotionRoot: React.FC = () => {
   );
 };
 
-registerRoot(RemotionRoot);
+export default RemotionRoot;
