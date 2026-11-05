@@ -29,7 +29,9 @@ const GOLD_LIGHT = "#FFF3C4";
 const CRIMSON = "#FF3B30";
 const EMERALD = "#2CE59B";
 const CYAN = "#00E5FF";
-const INK = "#141118";
+
+// Math helper function (fixes the Frame 606 ReferenceError!)
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /* =========================================================================
    01. CONTEXT-SPECIFIC PROCEDURAL SFX GENERATOR (NO EXTERNAL FILES)
@@ -90,19 +92,16 @@ function generateStorySfx(kind: SfxKind): string {
     let env = 1;
 
     if (kind === "snap") {
-      // Sharp whip/rope fiber snap
       const crack = Math.sin(i * 37.2) * Math.cos(i * 4.1);
       wave = crack * 0.75 + Math.sin(2 * Math.PI * (950 - p * 700) * t) * 0.4;
       env = Math.exp(-p * 14);
     } else if (kind === "thud") {
-      // Body landing on wooden gallows deck
       const f = 110 * Math.pow(1 - p, 1.8) + 32;
       wave =
         Math.sin(2 * Math.PI * f * t) * 0.85 +
         Math.sin(2 * Math.PI * f * 1.9 * t) * 0.3;
       env = Math.pow(1 - p, 2.4);
     } else if (kind === "chime") {
-      // Heavenly divine chord shimmer
       wave =
         Math.sin(2 * Math.PI * 528 * t) * 0.4 +
         Math.sin(2 * Math.PI * 660 * t) * 0.35 +
@@ -110,12 +109,10 @@ function generateStorySfx(kind: SfxKind): string {
         Math.sin(2 * Math.PI * 1056 * t) * 0.15;
       env = Math.sin(Math.PI * p) * Math.exp(-p * 2.2);
     } else if (kind === "pop") {
-      // Comic speech/thought bubble pop
       const f = 340 + p * 520;
       wave = Math.sin(2 * Math.PI * f * t);
       env = Math.sin(Math.PI * p) * Math.pow(1 - p, 1.4);
     } else if (kind === "tear") {
-      // Royal pardon paper ripping sound
       const friction =
         Math.sin(i * 53.7) *
         Math.cos(i * 9.3) *
@@ -123,21 +120,18 @@ function generateStorySfx(kind: SfxKind): string {
       wave = friction * 0.8 + Math.sin(2 * Math.PI * 420 * t) * 0.15;
       env = Math.sin(Math.PI * p);
     } else if (kind === "angerBass") {
-      // Deep royal wrath rumble
       const f = 82 * (1 - p * 0.45);
       wave =
         Math.sin(2 * Math.PI * f * t) * 0.85 +
         Math.sin(2 * Math.PI * f * 2 * t) * 0.25;
       env = Math.pow(1 - p, 1.5);
     } else if (kind === "chain") {
-      // Heavy new rope / iron pulley clank
       wave =
         Math.sin(2 * Math.PI * 1420 * t) * 0.5 +
         Math.sin(2 * Math.PI * 2180 * t) * 0.4 +
         Math.sin(i * 29.1) * 0.3;
       env = Math.exp(-p * 10);
     } else if (kind === "lockClick") {
-      // Metallic padlock click on mouth
       wave =
         Math.sin(2 * Math.PI * 1950 * t) * 0.6 +
         Math.sin(2 * Math.PI * 2900 * t) * 0.4;
@@ -205,7 +199,7 @@ const SELECTIVE_KEYWORDS: FloatingKeyword[] = [
     startSec: 13.5,
     endSec: 20.8,
     topText: "BHAGWAN KA ISHARA",
-    mainText: " SAZA MAAF! 🕊️",
+    mainText: "SAZA MAAF! 🕊️",
     color: EMERALD,
   },
   {
@@ -264,7 +258,6 @@ const RiggedRebelCharacter: React.FC<{
   isTalking?: boolean;
   frame: number;
 }> = ({ x, y, rotation = 0, pose, isTalking = false, frame }) => {
-  // Joint angles based on pose
   const leftArmDeg =
     pose === "falling"
       ? -135 + Math.sin(frame * 0.6) * 25
@@ -278,7 +271,7 @@ const RiggedRebelCharacter: React.FC<{
     pose === "falling"
       ? 135 - Math.sin(frame * 0.6) * 25
       : pose === "mocking"
-        ? -125 + Math.sin(frame * 0.25) * 12 // Pointing up at broken rope!
+        ? -125 + Math.sin(frame * 0.25) * 12
         : pose === "sitting"
           ? 30
           : -12;
@@ -294,7 +287,6 @@ const RiggedRebelCharacter: React.FC<{
 
   return (
     <g transform={`translate(${x} ${y}) rotate(${rotation})`}>
-      {/* Shadow under feet when on ground */}
       {(pose === "sitting" || pose === "mocking") && (
         <ellipse cx="0" cy="185" rx="68" ry="16" fill="rgba(0,0,0,0.45)" />
       )}
@@ -311,7 +303,7 @@ const RiggedRebelCharacter: React.FC<{
         <ellipse cx="4" cy="92" rx="20" ry="11" fill="#1C1613" />
       </g>
 
-      {/* Torso (1825 Prisoner Coat & Shirt) */}
+      {/* Torso */}
       <path
         d="M-48 -28 C-54 20 -50 68 -44 95 L44 95 C50 68 54 20 48 -28 Z"
         fill="#5C4938"
@@ -326,7 +318,7 @@ const RiggedRebelCharacter: React.FC<{
         <circle cx="0" cy="82" r="14" fill="#D9A17C" stroke="#8C5B3C" strokeWidth="3" />
       </g>
 
-      {/* Right Arm (Points up at broken rope when mocking!) */}
+      {/* Right Arm */}
       <g transform={`translate(46 -18) rotate(${rightArmDeg})`}>
         <rect x="-13" y="0" width="26" height="78" rx="12" fill="#4E3D2E" stroke="#2B2118" strokeWidth="3" />
         <circle cx="0" cy="82" r="14" fill="#D9A17C" stroke="#8C5B3C" strokeWidth="3" />
@@ -335,22 +327,19 @@ const RiggedRebelCharacter: React.FC<{
         )}
       </g>
 
-      {/* Broken Rope Noose Loop Around Neck */}
+      {/* Rope Loop Around Neck */}
       <ellipse cx="0" cy="-30" rx="26" ry="10" fill="none" stroke="#C8A97E" strokeWidth="9" />
 
       {/* Head */}
       <g transform={`translate(0 -72) rotate(${pose === "mocking" ? -8 : 0})`}>
         <ellipse cx="0" cy="0" rx="42" ry="48" fill="#DFA682" stroke="#8C5B3C" strokeWidth="3.5" />
-        {/* Messy Rebel Hair */}
         <path
           d="M-44 -15 C-52 -55 12 -65 44 -30 C52 -15 44 0 36 -8 C12 -24 -22 -22 -44 -15 Z"
           fill="#2B221E"
         />
 
-        {/* Eyes & Eyebrows */}
         {pose === "hanging" || pose === "falling" ? (
           <g>
-            {/* Wide shocked eyes */}
             <circle cx="-15" cy="-6" r="8" fill="#FFFFFF" stroke="#1E1614" strokeWidth="2.5" />
             <circle cx="15" cy="-6" r="8" fill="#FFFFFF" stroke="#1E1614" strokeWidth="2.5" />
             <circle cx="-15" cy="-6" r="3.5" fill="#1E1614" />
@@ -360,7 +349,6 @@ const RiggedRebelCharacter: React.FC<{
           </g>
         ) : pose === "mocking" ? (
           <g>
-            {/* Smug over-smart eyebrows & eyes */}
             <path d="M-26 -18 Q-15 -26 -5 -16" fill="none" stroke="#1E1614" strokeWidth="4.5" strokeLinecap="round" />
             <path d="M5 -16 Q15 -26 26 -18" fill="none" stroke="#1E1614" strokeWidth="4.5" strokeLinecap="round" />
             <circle cx="-15" cy="-5" r="5" fill="#1E1614" />
@@ -368,7 +356,6 @@ const RiggedRebelCharacter: React.FC<{
           </g>
         ) : (
           <g>
-            {/* Relief / Calm eyes */}
             <circle cx="-15" cy="-5" r="5" fill="#1E1614" />
             <circle cx="15" cy="-5" r="5" fill="#1E1614" />
             <path d="M-24 -16 Q-15 -22 -6 -16" fill="none" stroke="#1E1614" strokeWidth="3.5" />
@@ -376,7 +363,6 @@ const RiggedRebelCharacter: React.FC<{
           </g>
         )}
 
-        {/* Mouth (Animated Talking or Locked) */}
         {pose === "locked" ? (
           <g transform="translate(0 22)">
             <rect x="-24" y="-10" width="48" height="22" rx="6" fill={GOLD} stroke="#FFFFFF" strokeWidth="2.5" />
@@ -401,7 +387,7 @@ const RiggedRebelCharacter: React.FC<{
 const RiggedTsarCharacter: React.FC<{
   x: number;
   y: number;
-  tearProgress: number; // 0 = holding intact pardon paper, 0..1 = ripping it apart!
+  tearProgress: number;
   isTalking: boolean;
   frame: number;
 }> = ({ x, y, tearProgress, isTalking, frame }) => {
@@ -414,7 +400,6 @@ const RiggedTsarCharacter: React.FC<{
 
   return (
     <g transform={`translate(${x} ${y + breathe})`}>
-      {/* Ornate Golden Imperial Throne Backrest */}
       <path
         d="M-110 -150 L-125 180 L125 180 L110 -150 Q0 -210 -110 -150 Z"
         fill="#4A121B"
@@ -424,7 +409,6 @@ const RiggedTsarCharacter: React.FC<{
       <circle cx="-95" cy="-145" r="16" fill={GOLD} />
       <circle cx="95" cy="-145" r="16" fill={GOLD} />
 
-      {/* Royal Crimson Velvet Mantle & Ermine Fur */}
       <path
         d="M-95 10 C-120 75 -130 140 -135 195 L135 195 C130 140 120 75 95 10 Z"
         fill="#7C1324"
@@ -441,24 +425,19 @@ const RiggedTsarCharacter: React.FC<{
         <circle key={d} cx={d} cy="30" r="4" fill="#1D181A" />
       ))}
 
-      {/* Tsar Head & Beard */}
       <g transform="translate(0 -52)">
         <ellipse cx="0" cy="0" rx="48" ry="54" fill="#DBA17C" stroke="#8C5B3C" strokeWidth="3.5" />
-        {/* Full Royal Beard */}
         <path
           d="M-46 8 C-48 52 -22 76 0 82 C22 76 48 52 46 8 C30 24 14 26 0 26 C-14 26 -30 24 -46 8 Z"
           fill="#22191C"
         />
-        {/* Angry Furrowed Eyebrows & Glowing Eyes */}
         <line x1="-34" y1="-22" x2="-8" y2="-10" stroke="#181012" strokeWidth="6.5" strokeLinecap="round" />
         <line x1="34" y1="-22" x2="8" y2="-10" stroke="#181012" strokeWidth="6.5" strokeLinecap="round" />
         <circle cx="-18" cy="-4" r="6" fill={CRIMSON} />
         <circle cx="18" cy="-4" r="6" fill={CRIMSON} />
 
-        {/* Animated Talking Mouth */}
         <ellipse cx="0" cy="30" rx="13" ry={mouthH} fill="#3D0C11" stroke={GOLD} strokeWidth="2" />
 
-        {/* Russian Imperial Crown */}
         <path
           d="M-54 -34 L-66 -98 L-26 -68 L0 -115 L26 -68 L66 -98 L54 -34 Z"
           fill={GOLD}
@@ -470,7 +449,6 @@ const RiggedTsarCharacter: React.FC<{
         <circle cx="38" cy="-78" r="6" fill={CRIMSON} />
       </g>
 
-      {/* Left & Right Hands Holding & Ripping the "MAAFI PAPER" */}
       {/* Left Half of Pardon Scroll */}
       <g
         transform={`translate(${-26 - armPull} ${85 + tearProgress * 18}) rotate(${
@@ -486,7 +464,6 @@ const RiggedTsarCharacter: React.FC<{
         <text x="-32" y="6" textAnchor="middle" fill={CRIMSON} fontSize="16" fontWeight="900">
           MAAFI
         </text>
-        {/* Left Hand */}
         <circle cx="-58" cy="0" r="16" fill="#DBA17C" stroke="#8C5B3C" strokeWidth="3" />
       </g>
 
@@ -505,11 +482,9 @@ const RiggedTsarCharacter: React.FC<{
         <text x="32" y="6" textAnchor="middle" fill={CRIMSON} fontSize="16" fontWeight="900">
           PAPER
         </text>
-        {/* Right Hand */}
         <circle cx="58" cy="0" r="16" fill="#DBA17C" stroke="#8C5B3C" strokeWidth="3" />
       </g>
 
-      {/* Paper Scraps Fluttering Down When Ripped */}
       {tearProgress > 0.15 &&
         [-28, -10, 12, 30].map((sx, idx) => (
           <rect
@@ -519,7 +494,7 @@ const RiggedTsarCharacter: React.FC<{
             width="14"
             height="18"
             fill="#F7EFE0"
-            opacity={1 - tearProgress * 0.7}
+            opacity={Math.max(0, 1 - tearProgress * 0.7)}
             transform={`rotate(${frame * 4 + idx * 40})`}
           />
         ))}
@@ -545,11 +520,10 @@ const InWorldBubble: React.FC<{
 
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      {/* Tail pointing to character */}
       {kind === "speech" ? (
         <polygon
           points={
-            tailDir === "down-left" || tailDir === "left"
+            tailDir === "left"
               ? "-60,75 -20,75 -85,135"
               : "20,75 60,75 85,135"
           }
@@ -564,7 +538,6 @@ const InWorldBubble: React.FC<{
         </g>
       )}
 
-      {/* Main Bubble Card */}
       <rect
         x="-275"
         y="-85"
@@ -611,7 +584,6 @@ const ContinuousStoryWorld: React.FC = () => {
   const { fps } = useVideoConfig();
   const sec = frame / fps;
 
-  // Snowflakes across the 2400px wide Russian Courtyard
   const snowflakes = useMemo(
     () =>
       Array.from({ length: 65 }, (_, i) => ({
@@ -623,31 +595,25 @@ const ContinuousStoryWorld: React.FC = () => {
     []
   );
 
-  // =======================================================================
-  // SMOOTH CAMERA PANNING & ZOOM KEYFRAMES ACROSS THE SAME 2D ENVIRONMENT
-  // World Coordinates:
-  //   - Tsar's Royal Balcony is at World X = 560, Y = 960
-  //   - Gallows & Rebel is at World X = 1580, Y = 980
-  //   - Center Courtyard is at World X = 1080, Y = 960
-  // =======================================================================
+  // Smooth Camera Panning & Zoom Keyframes across the same 2D world
   const camX = interpolate(
     sec,
     [
-      0.0,  // Hook on Rebel
+      0.0,
       4.8,
-      5.6,  // Wide shot of Gallows
+      5.6,
       9.4,
-      10.0, // Zoom in on Rope Snap & Fall
+      10.0,
       13.2,
-      14.0, // Divine Light on Rebel
+      14.0,
       21.2,
-      22.0, // Close-up on Oversmart Rebel talking
+      22.0,
       28.6,
-      29.6, // SMOOTH PAN LEFT TO THE KING (TSAR) ON BALCONY!
+      29.6, // Pan Left to Tsar on Royal Balcony
       37.6,
-      38.5, // SMOOTH PAN RIGHT BACK TO GALLOWS FOR NEW ROPE!
+      38.5, // Pan Right back to Gallows for New Rope
       41.5,
-      42.5, // Center wide courtyard for Law 04 & CTA
+      42.5,
       60.0,
     ],
     [
@@ -661,14 +627,18 @@ const ContinuousStoryWorld: React.FC = () => {
       1540,
       1580,
       1580,
-      560,  // Focused on King!
       560,
-      1580, // Back to Gallows!
+      560,
+      1580,
       1580,
       1120,
       1120,
     ],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) }
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.inOut(Easing.cubic),
+    }
   );
 
   const camY = interpolate(
@@ -685,18 +655,13 @@ const ContinuousStoryWorld: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Subtle single thud impact ONLY at 10.85s when Rebel hits the floor!
   const landingImpact =
     sec >= 10.75 && sec <= 11.25
       ? Math.sin((sec - 10.75) * 55) * Math.exp(-(sec - 10.75) * 10) * 18
       : 0;
 
-  // =======================================================================
-  // CHARACTER & OBJECT ANIMATION STATES
-  // =======================================================================
   const isRopeBroken = sec >= 10.1;
 
-  // Rebel Y position: hanging at y=860, falls at 10.1s..10.85s to y=1115 (on platform)
   const rebelFallProgress = interpolate(sec, [10.1, 10.85], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -725,45 +690,55 @@ const ContinuousStoryWorld: React.FC = () => {
         ? rebelFallProgress * 14
         : 0;
 
-  // Divine Light Opacity (13.2s - 21.5s)
   const divineOpacity = interpolate(sec, [13.2, 14.2, 20.6, 21.5], [0, 0.9, 0.9, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Bubble Scales
-  const mercyBubbleScale = spring({
-    frame: Math.max(0, frame - Math.round(14.0 * FPS)),
-    fps,
-    config: { damping: 12, stiffness: 150 },
-  }) * interpolate(sec, [20.5, 21.3], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const mercyBubbleScale =
+    spring({
+      frame: Math.max(0, frame - Math.round(14.0 * FPS)),
+      fps,
+      config: { damping: 12, stiffness: 150 },
+    }) *
+    interpolate(sec, [20.5, 21.3], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
 
-  const rebelSpeechScale = spring({
-    frame: Math.max(0, frame - Math.round(22.2 * FPS)),
-    fps,
-    config: { damping: 11, stiffness: 170 },
-  }) * interpolate(sec, [28.2, 28.9], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const rebelSpeechScale =
+    spring({
+      frame: Math.max(0, frame - Math.round(22.2 * FPS)),
+      fps,
+      config: { damping: 11, stiffness: 170 },
+    }) *
+    interpolate(sec, [28.2, 28.9], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
 
-  const tsarSpeechScale = spring({
-    frame: Math.max(0, frame - Math.round(33.8 * FPS)),
-    fps,
-    config: { damping: 11, stiffness: 170 },
-  }) * interpolate(sec, [37.3, 37.9], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const tsarSpeechScale =
+    spring({
+      frame: Math.max(0, frame - Math.round(33.8 * FPS)),
+      fps,
+      config: { damping: 11, stiffness: 170 },
+    }) *
+    interpolate(sec, [37.3, 37.9], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
 
-  // Tsar Paper Rip Progress (happens at 31.5s - 33.2s)
   const paperRipProgress = interpolate(sec, [31.4, 32.8], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // New Reinforced Rope Drop (happens at 38.2s - 41.5s)
   const newRopeDrop = interpolate(sec, [38.2, 39.4], [-350, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.bounce),
   });
 
-  // Convert Camera Target (camX, camY, camScale) to SVG ViewBox Transform
   const translateX = WIDTH / 2 - camX * camScale;
   const translateY = HEIGHT / 2 - (camY + landingImpact) * camScale;
 
@@ -789,21 +764,20 @@ const ContinuousStoryWorld: React.FC = () => {
           </filter>
         </defs>
 
-        {/* Fixed Sky Backdrop */}
         <rect width={WIDTH} height={HEIGHT} fill="url(#nightSky)" />
 
-        {/* =================================================================
-            WORLD CAMERA TRANSFORM GROUP (PANS & ZOOMS SMOOTHLY!)
-           ================================================================= */}
+        {/* WORLD CAMERA TRANSFORM GROUP */}
         <g transform={`translate(${translateX} ${translateY}) scale(${camScale})`}>
-          {/* 1. DISTANT ST. PETERSBURG PALACE SILHOUETTE (PARALLAX BACKDROP) */}
+          {/* 1. DISTANT ST. PETERSBURG PALACE SILHOUETTE */}
           <g fill="#0B1020" opacity="0.85">
             <rect x="-200" y="680" width="2600" height="700" />
-            {/* Russian Onion Domes & Spires */}
             {[250, 680, 1080, 1450, 1920].map((dx, i) => (
               <g key={i} transform={`translate(${dx} 680)`}>
                 <rect x="-45" y="-160" width="90" height="160" />
-                <path d="M-55 -160 C-55 -230 0 -260 0 -310 C0 -260 55 -230 55 -160 Z" fill="#151E36" />
+                <path
+                  d="M-55 -160 C-55 -230 0 -260 0 -310 C0 -260 55 -230 55 -160 Z"
+                  fill="#151E36"
+                />
                 <line x1="0" y1="-310" x2="0" y2="-365" stroke={GOLD} strokeWidth="4" />
               </g>
             ))}
@@ -816,19 +790,14 @@ const ContinuousStoryWorld: React.FC = () => {
             fill="#28334A"
           />
 
-          {/* ===============================================================
-              LEFT ZONE (World X: 200..900): TSAR'S IMPERIAL PALACE BALCONY
-             =============================================================== */}
+          {/* LEFT ZONE: TSAR'S IMPERIAL PALACE BALCONY */}
           <g transform="translate(560 960)">
-            {/* Stone Palace Wall & Arch */}
             <rect x="-340" y="-420" width="680" height="780" rx="18" fill="#1C1926" stroke={GOLD} strokeWidth="6" />
             <path d="M-260 360 V-260 Q0 -410 260 -260 V360 Z" fill="#120E1A" stroke={GOLD} strokeWidth="5" />
 
-            {/* Red Velvet Royal Curtains */}
             <path d="M-260 -260 Q-140 -120 -220 180 L-260 180 Z" fill="#6E1222" stroke={GOLD} strokeWidth="3" />
             <path d="M260 -260 Q140 -120 220 180 L260 180 Z" fill="#6E1222" stroke={GOLD} strokeWidth="3" />
 
-            {/* THE TSAR (RAJA) RIGGED CHARACTER */}
             <RiggedTsarCharacter
               x={0}
               y={-10}
@@ -837,14 +806,12 @@ const ContinuousStoryWorld: React.FC = () => {
               frame={frame}
             />
 
-            {/* Imperial Balcony Balustrade */}
             <rect x="-360" y="165" width="720" height="36" rx="8" fill={GOLD} />
             <rect x="-340" y="201" width="680" height="160" fill="#2A2433" stroke={GOLD} strokeWidth="4" />
             {[-260, -195, -130, -65, 0, 65, 130, 195, 260].map((bx) => (
               <rect key={bx} x={bx - 10} y="212" width="20" height="135" rx="6" fill="#D5C7B2" />
             ))}
 
-            {/* Tsar's Speech Bubble (33.8s - 37.8s) */}
             <InWorldBubble
               x={40}
               y={-335}
@@ -857,11 +824,8 @@ const ContinuousStoryWorld: React.FC = () => {
             />
           </g>
 
-          {/* ===============================================================
-              RIGHT ZONE (World X: 1150..1950): THE EXECUTION GALLOWS (MONCHO)
-             =============================================================== */}
+          {/* RIGHT ZONE: THE EXECUTION GALLOWS (MONCHO) */}
           <g transform="translate(1580 0)">
-            {/* DIVINE GOLDEN GOD-RAY FROM SKY (13.2s - 21.5s) */}
             {divineOpacity > 0.01 && (
               <g opacity={divineOpacity}>
                 <polygon
@@ -872,18 +836,13 @@ const ContinuousStoryWorld: React.FC = () => {
               </g>
             )}
 
-            {/* Wooden Gallows Deck & Support Pillars */}
             <rect x="-360" y="1290" width="720" height="42" rx="6" fill="#5A3E28" stroke="#2E1E12" strokeWidth="5" />
             <rect x="-320" y="1332" width="44" height="160" fill="#3E2A1B" />
             <rect x="276" y="1332" width="44" height="160" fill="#3E2A1B" />
-            {/* Left Upright Timber Post */}
             <rect x="-260" y="450" width="48" height="840" fill="#4E3522" stroke="#2B1C10" strokeWidth="4" />
-            {/* Top Horizontal Crossbeam */}
             <rect x="-290" y="420" width="580" height="52" rx="8" fill="#5A3E28" stroke="#2B1C10" strokeWidth="5" />
-            {/* Diagonal Corner Brace */}
             <polygon points="-212,610 -212,550 -60,472 -120,472" fill="#3E2A1B" />
 
-            {/* Trapdoor under Rebel */}
             <rect
               x="-110"
               y="1292"
@@ -893,11 +852,7 @@ const ContinuousStoryWorld: React.FC = () => {
               transform={isRopeBroken ? "rotate(65 -110 1292)" : undefined}
             />
 
-            {/* =============================================================
-                THE HANGING ROPE (INTACT -> SNAPS AT 10.1s -> NEW ROPE AT 38.2s)
-               ============================================================= */}
             {!isRopeBroken ? (
-              /* Intact Taut Rope */
               <line
                 x1="0"
                 y1="472"
@@ -907,7 +862,6 @@ const ContinuousStoryWorld: React.FC = () => {
                 strokeWidth="12"
               />
             ) : (
-              /* Snapped Upper Rope Frayed Stub */
               <g>
                 <path
                   d={`M 0 472 Q ${Math.sin(frame * 0.25) * 28} 560 ${
@@ -918,10 +872,15 @@ const ContinuousStoryWorld: React.FC = () => {
                   strokeWidth="12"
                   strokeLinecap="round"
                 />
-                {/* Snap Spark Burst right at 10.1s..10.6s */}
                 {sec >= 10.1 && sec <= 10.65 && (
                   <g transform="translate(0 640)">
-                    <circle r={(sec - 10.1) * 220} fill="none" stroke={CRIMSON} strokeWidth="8" opacity={1 - (sec - 10.1) * 1.8} />
+                    <circle
+                      r={(sec - 10.1) * 220}
+                      fill="none"
+                      stroke={CRIMSON}
+                      strokeWidth="8"
+                      opacity={Math.max(0, 1 - (sec - 10.1) * 1.8)}
+                    />
                     {[-45, 0, 45, 90, 135, -120].map((deg, idx) => (
                       <line
                         key={idx}
@@ -938,7 +897,6 @@ const ContinuousStoryWorld: React.FC = () => {
               </g>
             )}
 
-            {/* NEW REINFORCED GOLDEN-STEEL ROPE DROPPING AT 38.2s */}
             {sec >= 38.0 && (
               <g transform={`translate(115 ${newRopeDrop})`}>
                 <line x1="0" y1="472" x2="0" y2="830" stroke={GOLD} strokeWidth="18" />
@@ -951,9 +909,6 @@ const ContinuousStoryWorld: React.FC = () => {
               </g>
             )}
 
-            {/* =============================================================
-                THE RIGGED REBEL CHARACTER
-               ============================================================= */}
             <RiggedRebelCharacter
               x={0}
               y={rebelY}
@@ -963,16 +918,14 @@ const ContinuousStoryWorld: React.FC = () => {
               frame={frame}
             />
 
-            {/* Snow/Dust Puff when Rebel hits the deck at 10.85s */}
             {sec >= 10.8 && sec <= 11.7 && (
-              <g transform="translate(0 1285)" opacity={1 - (sec - 10.8)}>
+              <g transform="translate(0 1285)" opacity={Math.max(0, 1 - (sec - 10.8))}>
                 <circle cx={-(sec - 10.8) * 180} cy="-10" r="42" fill="#DCE6F7" opacity="0.6" />
                 <circle cx={(sec - 10.8) * 180} cy="-10" r="42" fill="#DCE6F7" opacity="0.6" />
                 <circle cx="0" cy={-(sec - 10.8) * 95} r="52" fill="#DCE6F7" opacity="0.5" />
               </g>
             )}
 
-            {/* THOUGHT BUBBLE 1: DIVINE MERCY RULE (14.0s - 21.2s) */}
             <InWorldBubble
               x={-30}
               y={740}
@@ -984,7 +937,6 @@ const ContinuousStoryWorld: React.FC = () => {
               scale={mercyBubbleScale}
             />
 
-            {/* SPEECH BUBBLE 2: REBEL'S OVERSMART MOCKERY (22.2s - 28.8s) */}
             <InWorldBubble
               x={-20}
               y={730}
@@ -997,7 +949,6 @@ const ContinuousStoryWorld: React.FC = () => {
             />
           </g>
 
-          {/* Falling Snowflakes Across Entire Courtyard */}
           {snowflakes.map((s, i) => {
             const sy = (s.y + frame * s.speed) % 1920;
             return (
@@ -1013,10 +964,7 @@ const ContinuousStoryWorld: React.FC = () => {
           })}
         </g>
 
-        {/* =================================================================
-            FOREGROUND STORY OVERLAYS FOR LAW #04 & FRIEND CTA (41.5s - 60.0s)
-            (Appears smoothly over the courtyard so environment stays cohesive!)
-           ================================================================= */}
+        {/* FOREGROUND OVERLAY FOR LAW #04 (41.5s - 48.0s) */}
         {sec >= 41.5 && sec < 48.0 && (
           <g
             transform={`translate(540 1020) scale(${spring({
@@ -1042,7 +990,7 @@ const ContinuousStoryWorld: React.FC = () => {
           </g>
         )}
 
-        {/* TALKATIVE FRIEND BUBBLE OVERLOAD + COMMENT CTA (53.5s - 60.0s) */}
+        {/* TALKATIVE FRIEND CTA OVERLAY (53.5s - 60.0s) */}
         {sec >= 53.5 && (
           <g
             transform={`translate(540 1050) scale(${spring({
@@ -1052,7 +1000,6 @@ const ContinuousStoryWorld: React.FC = () => {
             })})`}
           >
             <rect x="-390" y="-250" width="780" height="500" rx="36" fill="rgba(16,14,26,0.95)" stroke={GOLD} strokeWidth="7" />
-            {/* Chaotic Speech Bubbles popping around */}
             <rect x="-320" y="-185" width="260" height="70" rx="20" fill="#2B1638" stroke={CYAN} strokeWidth="3.5" />
             <text x="-190" y="-140" textAnchor="middle" fill={CYAN} fontSize="26" fontWeight="900">
               “Bina soche bolna!” 🗣️
@@ -1075,9 +1022,7 @@ const ContinuousStoryWorld: React.FC = () => {
         )}
       </svg>
 
-      {/* ===================================================================
-          SELECTIVE TOP HINGLISH POWER PHRASE (CLEAN & NON-INTRUSIVE!)
-         =================================================================== */}
+      {/* SELECTIVE TOP HINGLISH POWER PHRASE */}
       {(() => {
         const activeKw = SELECTIVE_KEYWORDS.find(
           (k) => sec >= k.startSec && sec <= k.endSec
@@ -1137,15 +1082,11 @@ const ContinuousStoryWorld: React.FC = () => {
         );
       })()}
 
-      {/* ===================================================================
-          STORY-MATCHED SFX CUES (NO REPETITIVE NOISE!)
-         =================================================================== */}
-      {/* 1. Initial Hook Pop */}
+      {/* STORY-MATCHED SFX CUES */}
       <Sequence from={15} durationInFrames={30} layout="none">
         <Audio src={SFX.pop} volume={0.6} />
       </Sequence>
 
-      {/* 2. Rope Snap (10.1s) + Body Thud on Platform (10.85s) */}
       <Sequence from={Math.round(10.1 * FPS)} durationInFrames={30} layout="none">
         <Audio src={SFX.snap} volume={0.85} />
       </Sequence>
@@ -1153,17 +1094,14 @@ const ContinuousStoryWorld: React.FC = () => {
         <Audio src={SFX.thud} volume={0.85} />
       </Sequence>
 
-      {/* 3. Divine Mercy Light & Thought Bubble (13.6s) */}
       <Sequence from={Math.round(13.6 * FPS)} durationInFrames={55} layout="none">
         <Audio src={SFX.chime} volume={0.7} />
       </Sequence>
 
-      {/* 4. Rebel Oversmart Speech Bubble Pop (22.2s) */}
       <Sequence from={Math.round(22.2 * FPS)} durationInFrames={25} layout="none">
         <Audio src={SFX.pop} volume={0.75} />
       </Sequence>
 
-      {/* 5. Tsar Anger Rumble (29.4s) + Paper Tear (31.5s) + Tsar Speech Bubble (33.8s) */}
       <Sequence from={Math.round(29.4 * FPS)} durationInFrames={45} layout="none">
         <Audio src={SFX.angerBass} volume={0.8} />
       </Sequence>
@@ -1174,12 +1112,10 @@ const ContinuousStoryWorld: React.FC = () => {
         <Audio src={SFX.pop} volume={0.7} />
       </Sequence>
 
-      {/* 6. New Strong Rope Drop Clank (38.3s) */}
       <Sequence from={Math.round(38.3 * FPS)} durationInFrames={35} layout="none">
         <Audio src={SFX.chain} volume={0.75} />
       </Sequence>
 
-      {/* 7. Mouth Lock Click (48.3s) */}
       <Sequence from={Math.round(48.3 * FPS)} durationInFrames={25} layout="none">
         <Audio src={SFX.lockClick} volume={0.8} />
       </Sequence>
