@@ -12,19 +12,16 @@ import {
 } from "remotion";
 
 /* =========================================================================
-   VOICEOVER-SYNCED EDITION — THE DOPAMINE SLOT MACHINE (16 RAPID UI CUTS)
-   1080 x 1920 | 60 FPS | 46 Seconds (2760 Frames) | New Cut Every ~2.8s
-   Synced to User's Uploaded ElevenLabs Voiceover:
-   - 3D Perspective UI Cards, Camera Shake Keyframes & Shockwave Rings
-   - Notification Flood (1 -> 99+), Casino Slot Machine, Dopamine ECG Graph
-   - Live Color-to-Grayscale Screen Filter & Daily Screen-Time Bar Chart
-   Zero External Assets Required. Built-in Procedural Tech & Glitch SFX.
+   THE DECOY EFFECT — 18 SUB-3-SECOND VOICEOVER-SYNCED CUTS EDITION
+   1080 x 1920 | 60 FPS | 43.0 Seconds (2580 Frames)
+   Every 4s-5s sentence is split into 2.0s - 2.9s rapid visual micro-scenes!
+   Zero External Assets Required. Built-in Procedural UI, Cash & Glitch SFX.
    ========================================================================= */
 
 const FPS = 60;
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const DURATION = 2760; // 46.0 Seconds @ 60 FPS
+const DURATION = 2580; // 43.0 Seconds @ 60 FPS
 
 const CYAN = "#00F0FF";
 const NEON_GREEN = "#00FF87";
@@ -32,47 +29,45 @@ const CRIMSON = "#FF2A54";
 const GOLD = "#FFD166";
 const PURPLE = "#A855F7";
 const DARK_BG = "#05070E";
-const CARD_BG = "rgba(14, 20, 36, 0.90)";
+const CARD_BG = "rgba(14, 20, 36, 0.92)";
 
 const clamp = (v: number, min = 0, max = 1) => Math.max(min, Math.min(max, v));
 
 /* =========================================================================
-   01. PROCEDURAL UI, GLITCH & CASINO SFX ENGINE (ZERO EXTERNAL FILES)
+   01. PROCEDURAL SOUND EFFECTS ENGINE (NO EXTERNAL AUDIO FILES)
    ========================================================================= */
 
-type SfxType =
-  | "uiWhoosh"
-  | "notifPing"
+type SfxKind =
+  | "whoosh"
+  | "pop"
   | "glitchSlam"
-  | "slotTick"
-  | "jackpot"
-  | "dopamineUp"
-  | "powerDown"
-  | "toggleClick"
-  | "vaultUnlock";
+  | "kaching"
+  | "buzzer"
+  | "ding"
+  | "stampSlam"
+  | "radarPing";
 
-function buildTechSfx(type: SfxType): string {
+function buildDecoySfx(kind: SfxKind): string {
   const sampleRate = 22050;
-  const durationMap: Record<SfxType, number> = {
-    uiWhoosh: 0.22,
-    notifPing: 0.26,
-    glitchSlam: 0.38,
-    slotTick: 0.08,
-    jackpot: 0.65,
-    dopamineUp: 0.45,
-    powerDown: 0.5,
-    toggleClick: 0.16,
-    vaultUnlock: 0.32,
+  const durations: Record<SfxKind, number> = {
+    whoosh: 0.2,
+    pop: 0.15,
+    glitchSlam: 0.36,
+    kaching: 0.52,
+    buzzer: 0.28,
+    ding: 0.35,
+    stampSlam: 0.32,
+    radarPing: 0.38,
   };
 
-  const duration = durationMap[type];
+  const duration = durations[kind];
   const totalSamples = Math.floor(sampleRate * duration);
   const buffer = new ArrayBuffer(44 + totalSamples * 2);
   const view = new DataView(buffer);
 
-  const writeStr = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
+  const writeStr = (offset: number, s: string) => {
+    for (let i = 0; i < s.length; i++) {
+      view.setUint8(offset + i, s.charCodeAt(i));
     }
   };
 
@@ -93,56 +88,53 @@ function buildTechSfx(type: SfxType): string {
   for (let i = 0; i < totalSamples; i++) {
     const t = i / sampleRate;
     const p = i / totalSamples;
-    let wave = 0;
+    let w = 0;
     let env = 1;
 
-    if (type === "uiWhoosh") {
-      const noise = Math.sin(i * 12.9898) * Math.cos(i * 0.21);
-      wave =
+    if (kind === "whoosh") {
+      const noise = Math.sin(i * 12.9898) * Math.cos(i * 0.22);
+      w =
         noise * 0.35 +
-        Math.sin(2 * Math.PI * (180 + Math.sin(p * Math.PI) * 440) * t) * 0.45;
+        Math.sin(2 * Math.PI * (190 + Math.sin(p * Math.PI) * 440) * t) * 0.45;
       env = Math.sin(Math.PI * p) * 0.85;
-    } else if (type === "notifPing") {
-      const freq = p < 0.32 ? 1046.5 : 1567.98;
-      wave =
-        Math.sin(2 * Math.PI * freq * t) * 0.65 +
-        Math.sin(2 * Math.PI * freq * 2 * t) * 0.25;
-      env = Math.exp(-p * 6.5);
-    } else if (type === "glitchSlam") {
-      const f = 145 * Math.pow(1 - p, 1.8) + 38;
-      const bitcrush = Math.sign(Math.sin(2 * Math.PI * 580 * t)) * 0.38;
-      wave = Math.sin(2 * Math.PI * f * t) * 0.8 + bitcrush * Math.exp(-p * 7);
+    } else if (kind === "pop") {
+      const f = 360 + p * 560;
+      w = Math.sin(2 * Math.PI * f * t);
+      env = Math.sin(Math.PI * p) * Math.pow(1 - p, 1.4);
+    } else if (kind === "glitchSlam") {
+      const f = 140 * Math.pow(1 - p, 1.8) + 36;
+      const crush = Math.sign(Math.sin(2 * Math.PI * 540 * t)) * 0.35;
+      w = Math.sin(2 * Math.PI * f * t) * 0.8 + crush * Math.exp(-p * 7);
       env = Math.pow(1 - p, 2.0);
-    } else if (type === "slotTick") {
-      wave = Math.sin(2 * Math.PI * 1950 * t) * 0.75;
-      env = Math.exp(-p * 22);
-    } else if (type === "jackpot") {
-      const f = p < 0.25 ? 587 : p < 0.5 ? 784 : p < 0.75 ? 987 : 1174;
-      wave =
-        Math.sin(2 * Math.PI * f * t) * 0.65 +
-        Math.sin(2 * Math.PI * f * 2 * t) * 0.25;
-      env = Math.exp(-(p % 0.25) * 8);
-    } else if (type === "dopamineUp") {
-      const sweepF = 280 + p * p * 1150;
-      wave = Math.sin(2 * Math.PI * sweepF * t) * 0.75;
-      env = Math.sin(Math.PI * p);
-    } else if (type === "powerDown") {
-      const dropF = 680 * Math.pow(1 - p * 0.82, 1.6);
-      wave = Math.sin(2 * Math.PI * dropF * t) * 0.75;
-      env = Math.pow(1 - p, 1.4);
-    } else if (type === "toggleClick") {
-      wave =
-        Math.sin(2 * Math.PI * 2400 * t) * 0.65 +
-        Math.sin(2 * Math.PI * 820 * t) * 0.4;
-      env = Math.exp(-p * 24);
-    } else if (type === "vaultUnlock") {
-      const f = p < 0.5 ? 640 : 1280;
-      wave = Math.sin(2 * Math.PI * f * t) * 0.7;
-      env = Math.exp(-((p % 0.5) * 14));
+    } else if (kind === "kaching") {
+      // Crisp metallic coin + cash register bell
+      const f1 = p < 0.22 ? 1318.5 : 2637;
+      w =
+        Math.sin(2 * Math.PI * f1 * t) * 0.6 +
+        Math.sin(2 * Math.PI * (f1 * 1.5) * t) * 0.3;
+      env = Math.exp(-((p % 0.22) * 11));
+    } else if (kind === "buzzer") {
+      w =
+        Math.sign(Math.sin(2 * Math.PI * 145 * t)) * 0.45 +
+        Math.sin(2 * Math.PI * 290 * t) * 0.35;
+      env = Math.pow(1 - p, 1.3);
+    } else if (kind === "ding") {
+      w =
+        Math.sin(2 * Math.PI * 1174.6 * t) * 0.65 +
+        Math.sin(2 * Math.PI * 2349.3 * t) * 0.25;
+      env = Math.exp(-p * 6.5);
+    } else if (kind === "stampSlam") {
+      const f = 115 * Math.pow(1 - p, 2.1) + 32;
+      w = Math.sin(2 * Math.PI * f * t) * 0.9;
+      env = Math.pow(1 - p, 2.3);
+    } else if (kind === "radarPing") {
+      const f = p < 0.4 ? 880 : 1320;
+      w = Math.sin(2 * Math.PI * f * t) * 0.65;
+      env = Math.exp(-p * 5.5);
     }
 
-    const sample = clamp(wave * env * 0.75, -1, 1);
-    view.setInt16(44 + i * 2, sample * 32767, true);
+    const out = clamp(w * env * 0.74, -1, 1);
+    view.setInt16(44 + i * 2, out * 32767, true);
   }
 
   const bytes = new Uint8Array(buffer);
@@ -153,20 +145,19 @@ function buildTechSfx(type: SfxType): string {
   return `data:audio/wav;base64,${btoa(bin)}`;
 }
 
-const SFX: Record<SfxType, string> = {
-  uiWhoosh: buildTechSfx("uiWhoosh"),
-  notifPing: buildTechSfx("notifPing"),
-  glitchSlam: buildTechSfx("glitchSlam"),
-  slotTick: buildTechSfx("slotTick"),
-  jackpot: buildTechSfx("jackpot"),
-  dopamineUp: buildTechSfx("dopamineUp"),
-  powerDown: buildTechSfx("powerDown"),
-  toggleClick: buildTechSfx("toggleClick"),
-  vaultUnlock: buildTechSfx("vaultUnlock"),
+const SFX: Record<SfxKind, string> = {
+  whoosh: buildDecoySfx("whoosh"),
+  pop: buildDecoySfx("pop"),
+  glitchSlam: buildDecoySfx("glitchSlam"),
+  kaching: buildDecoySfx("kaching"),
+  buzzer: buildDecoySfx("buzzer"),
+  ding: buildDecoySfx("ding"),
+  stampSlam: buildDecoySfx("stampSlam"),
+  radarPing: buildDecoySfx("radarPing"),
 };
 
 /* =========================================================================
-   02. 16 VOICEOVER-SYNCED RAPID UI CUTS (~2.8s PER CUT)
+   02. 18 RAPID SUB-3-SECOND VISUAL CUTS (SPLIT 2s + 2s / 2s + 3s)
    ========================================================================= */
 
 type CutSpec = {
@@ -178,224 +169,244 @@ type CutSpec = {
   titleMain: string;
   subTag: string;
   accent: string;
-  heavyShake?: boolean;
+  shake?: boolean;
 };
 
-const UI_CUTS: CutSpec[] = [
-  // 0.0s - 2.5s: "Kya aapko lagta hai ki aap apna phone chalate ho?"
+const RAPID_CUTS: CutSpec[] = [
+  // 1 (0.0s - 2.2s | 2.2s): "Chalo aaj dekhte hain, badi companies aapki kaise leti hain..."
   {
     id: 1,
     startSec: 0.0,
-    endSec: 2.5,
-    badge: "SYSTEM QUESTION // 01",
-    titleTop: "KYA AAPKO LAGTA HAI",
-    titleMain: "AAP PHONE CHALATE HO? 📱",
-    subTag: "USER CONTROL ILLUSION",
-    accent: CYAN,
+    endSec: 2.2,
+    badge: "HOOK // 01",
+    titleTop: "CHALO AAJ DEKHTE HAIN...",
+    titleMain: "COMPANIES KAISE LETI HAIN?! 👀",
+    subTag: "WAIT FOR IT...",
+    accent: GOLD,
   },
-  // 2.5s - 5.8s: "Bilkul galat! Asal mein aapka phone aapko chala raha hai!"
+  // 2 (2.2s - 4.3s | 2.1s): "...Mera matlab hai, aapki jeb kaise khaali karti hain!"
   {
     id: 2,
-    startSec: 2.5,
-    endSec: 5.8,
-    badge: "REALITY ALERT // 02",
-    titleTop: "BILKUL GALAT! ❌",
-    titleMain: "PHONE AAPKO CHALA RAHA HAI!",
-    subTag: "ATTENTION HIJACKED: 99.8%",
+    startSec: 2.2,
+    endSec: 4.3,
+    badge: "POCKET DRAIN // 02",
+    titleTop: "MERA MATLAB HAI...",
+    titleMain: "JEB KAISE KHAALI KARTI HAIN! 💸",
+    subTag: "WALLET BALANCE: ₹0",
     accent: CRIMSON,
-    heavyShake: true,
+    shake: true,
   },
-  // 5.8s - 8.2s: "Instagram aur YouTube jaisi badi tech companies..."
+  // 3 (4.3s - 6.2s | 1.9s): "Ise dark psychology mein kehte hain..."
   {
     id: 3,
-    startSec: 5.8,
-    endSec: 8.2,
-    badge: "BIG TECH MATRIX // 03",
-    titleTop: "INSTAGRAM & YOUTUBE",
-    titleMain: "TECH GIANTS KA JAAL 🌐",
-    subTag: "BILLION-DOLLAR ALGORITHMS",
+    startSec: 4.3,
+    endSec: 6.2,
+    badge: "SECRET FILE // 03",
+    titleTop: "ISE DARK PSYCHOLOGY MEIN",
+    titleMain: "KYA KEHTE HAIN? 🕵️‍♂️",
+    subTag: "CLASSIFIED MARKETING TRICK",
     accent: PURPLE,
   },
-  // 8.2s - 10.3s: "...aapke dimaag ke saath ek khatarnaak game khelti hain,"
+  // 4 (6.2s - 8.2s | 2.0s): "...The Decoy Effect!"
   {
     id: 4,
-    startSec: 8.2,
-    endSec: 10.3,
-    badge: "NEURAL TARGET // 04",
-    titleTop: "AAPKE DIMAAG KE SAATH",
-    titleMain: "KHATARNAAK MIND GAME! 🧠",
-    subTag: "SUBCONSCIOUS TARGETING",
-    accent: CRIMSON,
-    heavyShake: true,
+    startSec: 6.2,
+    endSec: 8.2,
+    badge: "THE TRAP // 04",
+    titleTop: "THE ILLUSION OF CHOICE:",
+    titleMain: "THE DECOY EFFECT! 🎯",
+    subTag: "BRAIN MANIPULATION FORMULA",
+    accent: CYAN,
+    shake: true,
   },
-  // 10.3s - 12.8s: "jise kehte hain Variable Reward System."
+  // 5 (8.2s - 10.2s | 2.0s): "Maan lo aap movie dekhne gaye."
   {
     id: 5,
-    startSec: 10.3,
-    endSec: 12.8,
-    badge: "PSYCHOLOGY FORMULA // 05",
-    titleTop: "ISE KEHTE HAIN",
-    titleMain: "VARIABLE REWARD SYSTEM 🎯",
-    subTag: "UNPREDICTABLE REWARD LOOP",
+    startSec: 8.2,
+    endSec: 10.2,
+    badge: "SCENARIO // 05",
+    titleTop: "MAAN LO AAP GAYE",
+    titleMain: "MOVIE DEKHNE! 🎬",
+    subTag: "CINEMA SNACK COUNTER",
     accent: GOLD,
   },
-  // 12.8s - 16.5s: "Yeh theek wahi trick hai jo casino ki slot machines mein..."
+  // 6 (10.2s - 12.6s | 2.4s): "Small Popcorn 100 rupees ka hai, aur Large 200 ka."
   {
     id: 6,
-    startSec: 12.8,
-    endSec: 16.5,
-    badge: "CASINO TRICK // 06",
-    titleTop: "BILKUL CASINO KI",
-    titleMain: "SLOT MACHINE KI TARAH! 🎰",
-    subTag: "SPINNING FOR DOPAMINE",
-    accent: NEON_GREEN,
-    heavyShake: true,
+    startSec: 10.2,
+    endSec: 12.6,
+    badge: "MENU BOARD // 06",
+    titleTop: "SAMNE SIRF 2 OPTIONS HAIN:",
+    titleMain: "SMALL ₹100 vs LARGE ₹200 🍿",
+    subTag: "2X PRICE DIFFERENCE",
+    accent: CYAN,
   },
-  // 16.5s - 19.5s: "Jab bhi aap screen neeche kheechte ho aur naya notification ya reel aata hai,"
+  // 7 (12.6s - 15.2s | 2.6s): "Aap paise bachane ke liye hamesha Small loge, right?"
   {
     id: 7,
-    startSec: 16.5,
-    endSec: 19.5,
-    badge: "TRIGGER ACTION // 07",
-    titleTop: "JAB BHI SCREEN KHEENCHTE HO",
-    titleMain: "NAYA REEL & NOTIFICATION! 🔔",
-    subTag: "PULL-TO-REFRESH TRIGGER",
-    accent: CYAN,
+    startSec: 12.6,
+    endSec: 15.2,
+    badge: "SMART MOVE // 07",
+    titleTop: "PAISE BACHANE KE LIYE",
+    titleMain: "AAP SMALL HI LOGE, RIGHT? ✅",
+    subTag: "LOGICAL BRAIN SAVES ₹100",
+    accent: NEON_GREEN,
   },
-  // 19.5s - 22.8s: "toh aapke dimaag mein turant Dopamine release hota hai."
+  // 8 (15.2s - 17.5s | 2.3s): "Lekin ab companies khelti hain mind game!"
   {
     id: 8,
-    startSec: 19.5,
-    endSec: 22.8,
-    badge: "CHEMICAL SPIKE // 08",
-    titleTop: "DIMAAG MEIN TURANT",
-    titleMain: "DOPAMINE RELEASE! ⚡",
-    subTag: "+400% NEURO-SPIKE DETECTED",
-    accent: NEON_GREEN,
-    heavyShake: true,
+    startSec: 15.2,
+    endSec: 17.5,
+    badge: "TRAP ACTIVATED // 08",
+    titleTop: "LEKIN AB COMPANIES KHELTI HAIN",
+    titleMain: "DIRTY MIND GAME! 🧠⚡",
+    subTag: "PSYCHOLOGICAL OVERRIDE",
+    accent: CRIMSON,
+    shake: true,
   },
-  // 22.8s - 25.4s: "Aur jab kuch achha nahi milta..."
+  // 9 (17.5s - 20.3s | 2.8s): "Wo beech mein ek Medium Popcorn rakh deti hain, 180 rupees ka!"
   {
     id: 9,
-    startSec: 22.8,
-    endSec: 25.4,
-    badge: "CHEMICAL CRASH // 09",
-    titleTop: "AUR JAB KUCH NA MILE...",
-    titleMain: "DOPAMINE CRASH & ANXIETY! 📉",
-    subTag: "CRAVING DEFICIT: CRITICAL",
-    accent: CRIMSON,
+    startSec: 17.5,
+    endSec: 20.3,
+    badge: "THE BAIT // 09",
+    titleTop: "BEECH MEIN RAKH DETI HAIN:",
+    titleMain: "MEDIUM POPCORN @ ₹180! 🚨",
+    subTag: "3-OPTION MENU TRAP",
+    accent: GOLD,
+    shake: true,
   },
-  // 25.4s - 28.0s: "...toh aapka dimaag bechain hokar baar-baar scroll karta rehta hai."
+  // 10 (20.3s - 22.3s | 2.0s): "Ab aapka dimaag kahega—"
   {
     id: 10,
-    startSec: 25.4,
-    endSec: 28.0,
-    badge: "ZOMBIE LOOP // 10",
-    titleTop: "BECHAIN HOKAR BAAR-BAAR",
-    titleMain: "INFINITE SCROLLING! ♾️",
-    subTag: "ENDLESS FEED ADDICTION",
+    startSec: 20.3,
+    endSec: 22.3,
+    badge: "BRAIN GLITCH // 10",
+    titleTop: "AB AAPKA DIMAAG",
+    titleMain: "TURANT COMPARE KAREGA: 🤯",
+    subTag: "₹180 vs ₹200 = SIRF ₹20!",
     accent: PURPLE,
   },
-  // 28.0s - 31.0s: "Is jaal se bachne ka ek secret psychological hack hai."
+  // 11 (22.3s - 25.2s | 2.9s): "Bhai sirf 20 rupees aur dekar Large mil raha hai, wahi le leta hoon!"
   {
     id: 11,
-    startSec: 28.0,
-    endSec: 31.0,
-    badge: "ESCAPE PROTOCOL // 11",
-    titleTop: "IS JAAL SE BACHNE KA",
-    titleMain: "SECRET BRAIN HACK! 🔓",
-    subTag: "PSYCHOLOGICAL OVERRIDE",
-    accent: GOLD,
+    startSec: 22.3,
+    endSec: 25.2,
+    badge: "GOTCHA! // 11",
+    titleTop: "SIRF ₹20 AUR DEKAR",
+    titleMain: "LARGE HI LE LETA HOON! 🤑",
+    subTag: "YOU SPENT ₹200 INSTEAD OF ₹100!",
+    accent: NEON_GREEN,
+    shake: true,
   },
-  // 31.0s - 34.5s: "Bas apne phone ki setting mein jakar Grayscale mode on kar do."
+  // 12 (25.2s - 27.5s | 2.3s): "Ye Medium Popcorn unhe bechna hi nahi tha!"
   {
     id: 12,
-    startSec: 31.0,
-    endSec: 34.5,
-    badge: "SETTINGS OVERRIDE // 12",
-    titleTop: "PHONE SETTINGS MEIN ON KARO:",
-    titleMain: "GRAYSCALE MODE! 🔘",
-    subTag: "KILL THE COLOR TRIGGERS",
-    accent: CYAN,
+    startSec: 25.2,
+    endSec: 27.5,
+    badge: "DARK TRUTH // 12",
+    titleTop: "YE MEDIUM POPCORN UNHE",
+    titleMain: "BECHNA HI NAHI THA! ❌",
+    subTag: "DUMMY PRODUCT EXPOSED",
+    accent: CRIMSON,
   },
-  // 34.5s - 37.2s: "Screen black and white hote hi Dopamine gir jayega..."
+  // 13 (27.5s - 29.6s | 2.1s): "Ye bas ek Decoy tha..."
   {
     id: 13,
-    startSec: 34.5,
-    endSec: 37.2,
-    badge: "MONOCHROME SHIELD // 13",
-    titleTop: "SCREEN BLACK & WHITE HOTE HI",
-    titleMain: "DOPAMINE DROP! 📉",
-    subTag: "STIMULATION REDUCED BY 85%",
+    startSec: 27.5,
+    endSec: 29.6,
+    badge: "PURE BAIT // 13",
+    titleTop: "YE BAS EK",
+    titleMain: "FAKE DECOY THA! 🪝",
+    subTag: "DESIGNED TO MAKE ₹200 LOOK CHEAP",
     accent: GOLD,
   },
-  // 37.2s - 40.0s: "...aur aapka dimaag turant control mein aa jayega."
+  // 14 (29.6s - 32.2s | 2.6s): "...aapke dimaag ke decision ko control karne ke liye!"
   {
     id: 14,
-    startSec: 37.2,
-    endSec: 40.0,
-    badge: "SYSTEM RESTORED // 14",
-    titleTop: "AAPKA DIMAAG TURANT",
-    titleMain: "100% CONTROL MEIN! ✅",
-    subTag: "FOCUS & WILLPOWER LOCKED",
-    accent: NEON_GREEN,
-    heavyShake: true,
+    startSec: 29.6,
+    endSec: 32.2,
+    badge: "MIND CONTROL // 14",
+    titleTop: "AAPKE DIMAAG KE DECISION KO",
+    titleMain: "CONTROL KARNE KE LIYE! 🎮",
+    subTag: "PUPPET MASTER MARKETING",
+    accent: CYAN,
+    shake: true,
   },
-  // 40.0s - 43.0s: "Waise imandari se batana, aapka daily screen time kitne ghante ka hai?"
+  // 15 (32.2s - 35.0s | 2.8s): "Agli baar shopping karte waqt apna dimaag khula rakhna!"
   {
     id: 15,
-    startSec: 40.0,
-    endSec: 43.0,
-    badge: "REALITY STATS // 15",
-    titleTop: "AAPKA DAILY SCREEN-TIME",
-    titleMain: "KITNE GHANTE KA HAI? 📊",
-    subTag: "BE 100% HONEST!",
-    accent: GOLD,
+    startSec: 32.2,
+    endSec: 35.0,
+    badge: "STAY AWARE // 15",
+    titleTop: "AGLI BAAR SHOPPING MEIN",
+    titleMain: "DIMAAG KHULA RAKHNA! 🛡️",
+    subTag: "ANTI-DECOY RADAR ON",
+    accent: NEON_GREEN,
   },
-  // 43.0s - 46.0s: "Comment mein sach-sach zaroor batana."
+  // 16 (35.0s - 37.5s | 2.5s): "Waise aapka kaun sa dost offers ke chakkar mein..."
   {
     id: 16,
-    startSec: 43.0,
-    endSec: 46.0,
-    badge: "YOUR TURN // 16",
-    titleTop: "COMMENT MEIN APNA",
-    titleMain: "SACH-SACH BATAO! 👇",
-    subTag: "DROP YOUR HOURS BELOW",
+    startSec: 35.0,
+    endSec: 37.5,
+    badge: "SALE MAGNET // 16",
+    titleTop: "KAUN SA DOST OFFERS DEKHTE HI",
+    titleMain: "PAGAL HO JATA HAI? 🛍️",
+    subTag: "BUY 1 GET 1 TRAP VICTIM",
+    accent: PURPLE,
+  },
+  // 17 (37.5s - 40.0s | 2.5s): "...sabse zyada bewakoof banta hai?"
+  {
+    id: 17,
+    startSec: 37.5,
+    endSec: 40.0,
+    badge: "AWARD GOES TO // 17",
+    titleTop: "OFFERS KE CHAKKAR MEIN",
+    titleMain: "SABSE BADA BEWAKOOF! 🤡🏆",
+    subTag: "#1 MARKETING VICTIM",
+    accent: GOLD,
+    shake: true,
+  },
+  // 18 (40.0s - 43.0s | 3.0s): "Comment mein use jaldi Tag karo!"
+  {
+    id: 18,
+    startSec: 40.0,
+    endSec: 43.0,
+    badge: "YOUR TURN // 18",
+    titleTop: "COMMENT MEIN USE",
+    titleMain: "JALDI TAG KARO! 👇",
+    subTag: "EXPOSE THAT FRIEND BELOW",
     accent: CYAN,
   },
 ];
 
 /* =========================================================================
-   03. CYBERNETIC GRID & FLOATING DATA PARTICLES BACKGROUND
+   03. CYBERNETIC BACKGROUND GRID & FLOATING PARTICLES
    ========================================================================= */
 
-const CyberGridAtmosphere: React.FC<{ accent: string; frame: number }> = ({
+const CyberAtmosphere: React.FC<{ accent: string; frame: number }> = ({
   accent,
   frame,
 }) => {
-  const gridShift = (frame * 1.4) % 90;
-
-  const nodes = useMemo(
+  const shift = (frame * 1.5) % 90;
+  const particles = useMemo(
     () =>
-      Array.from({ length: 36 }, (_, i) => ({
-        x: (i * 197 + 43) % WIDTH,
-        y: (i * 283 + 91) % HEIGHT,
+      Array.from({ length: 34 }, (_, i) => ({
+        x: (i * 193 + 51) % WIDTH,
+        y: (i * 271 + 83) % HEIGHT,
         size: 3 + (i % 4) * 1.5,
-        speed: 0.8 + (i % 5) * 0.35,
+        speed: 0.9 + (i % 5) * 0.35,
       })),
     []
   );
 
   return (
     <AbsoluteFill style={{ backgroundColor: DARK_BG, overflow: "hidden" }}>
-      {/* Radial Center Spotlight */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 50% 52%, ${accent}26 0%, rgba(7, 11, 22, 0.88) 58%, ${DARK_BG} 100%)`,
+          background: `radial-gradient(circle at 50% 54%, ${accent}28 0%, rgba(6,10,20,0.9) 58%, ${DARK_BG} 100%)`,
         }}
       />
-
-      {/* Moving Perspective Grid */}
       <AbsoluteFill
         style={{
           opacity: 0.16,
@@ -404,24 +415,22 @@ const CyberGridAtmosphere: React.FC<{ accent: string; frame: number }> = ({
             linear-gradient(90deg, ${accent}44 1px, transparent 1px)
           `,
           backgroundSize: "90px 90px",
-          transform: `translateY(${gridShift}px)`,
+          transform: `translateY(${shift}px)`,
         }}
       />
-
-      {/* Floating Data Particles */}
-      {nodes.map((n, i) => {
-        const py = (n.y - frame * n.speed + HEIGHT) % HEIGHT;
+      {particles.map((p, i) => {
+        const py = (p.y - frame * p.speed + HEIGHT) % HEIGHT;
         return (
           <div
             key={i}
             style={{
               position: "absolute",
-              left: n.x,
+              left: p.x,
               top: py,
-              width: n.size,
-              height: n.size,
+              width: p.size,
+              height: p.size,
               borderRadius: "50%",
-              background: i % 3 === 0 ? "#FFFFFF" : accent,
+              background: i % 3 === 0 ? "#FFF" : accent,
               opacity: 0.25 + (i % 4) * 0.12,
               boxShadow: `0 0 12px ${accent}`,
             }}
@@ -433,10 +442,10 @@ const CyberGridAtmosphere: React.FC<{ accent: string; frame: number }> = ({
 };
 
 /* =========================================================================
-   04. 16 INTERACTIVE UI & MOTION GRAPHICS STAGES (ONE PER CUT!)
+   04. 18 UNIQUE MICRO-SCENE VISUAL WIDGETS (NEW VISUAL EVERY ~2.2s!)
    ========================================================================= */
 
-const CutWidgetStage: React.FC<{
+const MicroSceneWidget: React.FC<{
   cutId: number;
   localFrame: number;
   accent: string;
@@ -446,588 +455,400 @@ const CutWidgetStage: React.FC<{
   const pop = spring({
     frame: localFrame,
     fps,
-    config: { damping: 12, stiffness: 165 },
+    config: { damping: 12, stiffness: 175 },
   });
 
-  const tiltDeg = Math.sin(localFrame * 0.06) * 4;
-
-  // CUT 1: 3D TILTED SMARTPHONE WITH FINGER SWIPE
+  // CUT 1 (0.0s - 2.2s): CORPORATE EVIL EYE SCANNER & SUSPENSE QUESTION
   if (cutId === 1) {
-    const feedOffset = (localFrame * 5.5) % 240;
-    return (
-      <div
-        style={{
-          width: 490,
-          height: 830,
-          borderRadius: 56,
-          background: "linear-gradient(160deg, #16223B, #080C16)",
-          border: `6px solid ${CYAN}`,
-          boxShadow: `0 0 85px ${CYAN}44, 0 35px 80px rgba(0,0,0,0.9)`,
-          position: "relative",
-          overflow: "hidden",
-          transform: `perspective(1000px) rotateY(${tiltDeg}deg) scale(${
-            0.85 + pop * 0.15
-          })`,
-        }}
-      >
-        <div
-          style={{
-            width: 150,
-            height: 34,
-            borderRadius: 20,
-            background: "#000",
-            margin: "22px auto",
-          }}
-        />
-        <div
-          style={{
-            padding: "10px 32px",
-            transform: `translateY(-${feedOffset}px)`,
-          }}
-        >
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              style={{
-                height: 205,
-                borderRadius: 26,
-                marginBottom: 22,
-                background:
-                  i % 2 === 0
-                    ? "linear-gradient(135deg, #1E293B, #0F172A)"
-                    : "linear-gradient(135deg, #172554, #0F172A)",
-                border: `2px solid ${CYAN}55`,
-                padding: 24,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
-              <div
-                style={{
-                  width: "65%",
-                  height: 22,
-                  borderRadius: 10,
-                  background: CYAN,
-                }}
-              />
-              <div
-                style={{
-                  width: "90%",
-                  height: 16,
-                  borderRadius: 8,
-                  background: "#475569",
-                }}
-              />
-              <div style={{ display: "flex", gap: 18, fontSize: 28, color: "#FFF" }}>
-                <span>❤️ 24.8K</span>
-                <span>💬 1.2K</span>
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Glowing Finger Touch Circle */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 140 + Math.sin(localFrame * 0.18) * 95,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 86,
-            height: 86,
-            borderRadius: "50%",
-            background: `${CYAN}55`,
-            border: "4px solid #FFFFFF",
-            boxShadow: `0 0 40px ${CYAN}`,
-          }}
-        />
-      </div>
-    );
-  }
-
-  // CUT 2: NOTIFICATION COUNTER EXPLOSION (1 -> 99+) & RED ALERT BANNERS
-  if (cutId === 2) {
-    const count = Math.min(
-      99,
-      Math.floor(interpolate(localFrame, [0, 95], [1, 99]))
-    );
-    const banners = [
-      { app: "Instagram", text: "🔥 54 new reels waiting for you!", delay: 4 },
-      { app: "YouTube Shorts", text: "⚡ Don't miss this viral clip!", delay: 14 },
-      { app: "Dopamine Trap", text: "🚨 Brain Control Hijacked (99.8%)", delay: 24 },
-      { app: "System Override", text: "⚠️ You cannot stop scrolling!", delay: 34 },
-    ];
-
-    return (
-      <div style={{ width: 880, height: 820 }}>
-        <div
-          style={{
-            margin: "0 auto 32px",
-            width: 360,
-            height: 145,
-            borderRadius: 40,
-            background: CRIMSON,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 80,
-            fontWeight: 900,
-            color: "#FFF",
-            fontFamily: '"Arial Black", sans-serif',
-            boxShadow: `0 0 85px ${CRIMSON}`,
-            border: "5px solid #FFFFFF",
-          }}
-        >
-          🔔 +{count}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {banners.map((b, i) => {
-            const bPop = spring({
-              frame: Math.max(0, localFrame - b.delay),
-              fps,
-              config: { damping: 12, stiffness: 190 },
-            });
-            return (
-              <div
-                key={i}
-                style={{
-                  padding: "22px 34px",
-                  borderRadius: 26,
-                  background: CARD_BG,
-                  border: `3px solid ${CRIMSON}`,
-                  transform: `scale(${bPop}) translateX(${(1 - bPop) * 80}px)`,
-                  opacity: bPop,
-                  boxShadow: "0 18px 45px rgba(0,0,0,0.65)",
-                }}
-              >
-                <div
-                  style={{
-                    color: CRIMSON,
-                    fontSize: 22,
-                    fontWeight: 900,
-                    letterSpacing: 2,
-                  }}
-                >
-                  {b.app.toUpperCase()} • NOW
-                </div>
-                <div
-                  style={{
-                    color: "#FFFFFF",
-                    fontSize: 32,
-                    fontWeight: 800,
-                    marginTop: 4,
-                  }}
-                >
-                  {b.text}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 3: INSTAGRAM & YOUTUBE ALGORITHM CARDS
-  if (cutId === 3) {
-    return (
-      <div
-        style={{
-          width: 880,
-          padding: 46,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `4px solid ${PURPLE}`,
-          boxShadow: `0 0 80px ${PURPLE}44`,
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 28 }}>
-          <div
-            style={{
-              flex: 1,
-              padding: "44px 24px",
-              borderRadius: 32,
-              background: "linear-gradient(135deg, #833AB4, #FD1D1D, #FCB045)",
-              textAlign: "center",
-              color: "#FFF",
-              fontWeight: 900,
-              fontSize: 40,
-              boxShadow: "0 20px 50px rgba(253,29,29,0.45)",
-            }}
-          >
-            📸 INSTAGRAM
-            <div style={{ fontSize: 23, marginTop: 12, opacity: 0.92 }}>
-              REELS HOOK ENGINE
-            </div>
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              padding: "44px 24px",
-              borderRadius: 32,
-              background: "linear-gradient(135deg, #FF0000, #990000)",
-              textAlign: "center",
-              color: "#FFF",
-              fontWeight: 900,
-              fontSize: 40,
-              boxShadow: "0 20px 50px rgba(255,0,0,0.45)",
-            }}
-          >
-            ▶️ YOUTUBE
-            <div style={{ fontSize: 23, marginTop: 12, opacity: 0.92 }}>
-              SHORTS AUTOPLAY
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 34,
-            padding: 30,
-            borderRadius: 26,
-            background: "#080C16",
-            border: `2px solid ${PURPLE}`,
-            textAlign: "center",
-            color: "#FFFFFF",
-            fontSize: 32,
-            fontWeight: 800,
-          }}
-        >
-          Goal: <span style={{ color: GOLD }}>Keep You Scrolling Forever! ♾️</span>
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 4: NEURAL BRAIN TARGET HUD (MIND GAME)
-  if (cutId === 4) {
-    const lockPct = interpolate(localFrame, [0, 90], [65, 99.4], {
-      extrapolateRight: "clamp",
-    });
     return (
       <div
         style={{
           width: 860,
-          padding: 46,
+          padding: 48,
           borderRadius: 42,
           background: CARD_BG,
-          border: `5px solid ${CRIMSON}`,
-          boxShadow: `0 0 85px ${CRIMSON}44`,
+          border: `5px solid ${GOLD}`,
+          boxShadow: `0 0 85px ${GOLD}44`,
           textAlign: "center",
+          transform: `scale(${0.85 + pop * 0.15})`,
         }}
       >
-        <svg width="760" height="360" viewBox="0 0 760 360">
-          <g transform="translate(380 180)">
+        <svg width="760" height="320" viewBox="0 0 760 320">
+          <g transform="translate(380 160)">
             <circle
-              r="155"
+              r="140"
               fill="none"
-              stroke={CRIMSON}
-              strokeWidth="4"
-              strokeDasharray="16 10"
-              transform={`rotate(${localFrame * 1.8})`}
-            />
-            <circle
-              r="115"
-              fill="rgba(255,42,84,0.12)"
               stroke={GOLD}
-              strokeWidth="3"
+              strokeWidth="4"
+              strokeDasharray="16 12"
+              transform={`rotate(${localFrame * 2})`}
             />
-            <line x1="-185" y1="0" x2="-90" y2="0" stroke={CRIMSON} strokeWidth="6" />
-            <line x1="90" y1="0" x2="185" y2="0" stroke={CRIMSON} strokeWidth="6" />
-            <text y="32" textAnchor="middle" fontSize="105">
-              🧠
-            </text>
+            <path
+              d="M-210 0 Q0 -150 210 0 Q0 150 -210 0 Z"
+              fill="rgba(255,209,102,0.12)"
+              stroke={GOLD}
+              strokeWidth="6"
+            />
+            <circle cx={Math.sin(localFrame * 0.12) * 35} cy="0" r="52" fill={CRIMSON} />
+            <circle cx={Math.sin(localFrame * 0.12) * 35} cy="0" r="22" fill="#000" />
           </g>
         </svg>
-
         <div
           style={{
-            fontSize: 68,
+            fontSize: 42,
             fontWeight: 900,
-            color: CRIMSON,
-            fontFamily: '"Arial Black", sans-serif',
+            color: "#FFFFFF",
+            letterSpacing: 3,
+            marginTop: 12,
           }}
         >
-          BRAIN HIJACK: {lockPct.toFixed(1)}%
+          🏢 BIG BRANDS vs <span style={{ color: GOLD }}>YOUR BRAIN 🧠</span>
         </div>
       </div>
     );
   }
 
-  // CUT 5: VARIABLE REWARD SYSTEM (3 MYSTERY REWARD CARDS)
+  // CUT 2 (2.2s - 4.3s): WALLET DRAINING FROM ₹2,500 TO ₹0
+  if (cutId === 2) {
+    const moneyLeft = Math.max(
+      0,
+      Math.floor(interpolate(localFrame, [5, 85], [2500, 0]))
+    );
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 48,
+          borderRadius: 42,
+          background: CARD_BG,
+          border: `5px solid ${CRIMSON}`,
+          boxShadow: `0 0 90px ${CRIMSON}55`,
+          textAlign: "center",
+          transform: `scale(${0.86 + pop * 0.14})`,
+        }}
+      >
+        <div style={{ fontSize: 105, marginBottom: 10 }}>👛💸💨</div>
+        <div style={{ color: "#94A3B8", fontSize: 28, fontWeight: 900, letterSpacing: 4 }}>
+          YOUR POCKET BALANCE
+        </div>
+        <div
+          style={{
+            fontSize: 128,
+            fontWeight: 900,
+            color: moneyLeft === 0 ? CRIMSON : "#FFFFFF",
+            fontFamily: '"Arial Black", monospace',
+            margin: "12px 0",
+          }}
+        >
+          ₹{moneyLeft}
+        </div>
+        <div
+          style={{
+            padding: "16px 36px",
+            borderRadius: 100,
+            display: "inline-block",
+            background: CRIMSON,
+            color: "#FFF",
+            fontSize: 32,
+            fontWeight: 900,
+          }}
+        >
+          JEB SAAF! 🚨
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 3 (4.3s - 6.2s): CLASSIFIED DARK PSYCHOLOGY DOSSIER
+  if (cutId === 3) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 50,
+          borderRadius: 42,
+          background: "linear-gradient(155deg, #1E1035, #090612)",
+          border: `5px solid ${PURPLE}`,
+          boxShadow: `0 0 85px ${PURPLE}55`,
+          textAlign: "center",
+          transform: `scale(${0.85 + pop * 0.15})`,
+        }}
+      >
+        <div
+          style={{
+            display: "inline-block",
+            padding: "10px 30px",
+            borderRadius: 12,
+            border: `3px solid ${CRIMSON}`,
+            color: CRIMSON,
+            fontSize: 28,
+            fontWeight: 900,
+            letterSpacing: 5,
+            marginBottom: 24,
+          }}
+        >
+          📁 TOP SECRET // MARKETING
+        </div>
+        <div style={{ fontSize: 110, margin: "10px 0" }}>🧠🔒</div>
+        <div
+          style={{
+            fontSize: 54,
+            fontWeight: 900,
+            color: "#FFFFFF",
+            fontFamily: '"Arial Black", sans-serif',
+            marginTop: 14,
+          }}
+        >
+          DARK PSYCHOLOGY CHAPTER #07
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 4 (6.2s - 8.2s): THE DECOY EFFECT 3D EMBLEM
+  if (cutId === 4) {
+    return (
+      <div
+        style={{
+          width: 880,
+          padding: 52,
+          borderRadius: 44,
+          background: CARD_BG,
+          border: `6px solid ${CYAN}`,
+          boxShadow: `0 0 95px ${CYAN}66`,
+          textAlign: "center",
+          transform: `scale(${0.84 + pop * 0.16})`,
+        }}
+      >
+        <div style={{ fontSize: 115 }}>🎯🪤</div>
+        <div
+          style={{
+            fontSize: 78,
+            fontWeight: 900,
+            color: CYAN,
+            fontFamily: '"Arial Black", sans-serif',
+            letterSpacing: 2,
+            marginTop: 14,
+            textShadow: `0 0 40px ${CYAN}`,
+          }}
+        >
+          THE DECOY EFFECT
+        </div>
+        <div
+          style={{
+            color: GOLD,
+            fontSize: 32,
+            fontWeight: 900,
+            letterSpacing: 4,
+            marginTop: 14,
+          }}
+        >
+          “FAKE CHOICE = REAL PROFIT”
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 5 (8.2s - 10.2s): CINEMA HALL MARQUEE & VIP TICKET
   if (cutId === 5) {
     return (
       <div
         style={{
-          width: 880,
-          padding: 46,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `4px solid ${GOLD}`,
-          textAlign: "center",
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div
-          style={{
-            color: GOLD,
-            fontSize: 28,
-            fontWeight: 900,
-            letterSpacing: 4,
-            marginBottom: 28,
-          }}
-        >
-          🎲 UNPREDICTABLE REWARD SCHEDULE
-        </div>
-
-        <div style={{ display: "flex", gap: 22 }}>
-          {[
-            { top: "SWIPE #1", main: "BORING 😐", col: "#64748B" },
-            { top: "SWIPE #2", main: "VIRAL HIT! 🔥", col: NEON_GREEN },
-            { top: "SWIPE #3", main: "MYSTERY ❓", col: GOLD },
-          ].map((c, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                padding: "46px 18px",
-                borderRadius: 28,
-                background: "#080C16",
-                border: `4px solid ${c.col}`,
-                boxShadow: i === 1 ? `0 0 45px ${NEON_GREEN}55` : "none",
-              }}
-            >
-              <div style={{ color: "#94A3B8", fontSize: 22, fontWeight: 800 }}>
-                {c.top}
-              </div>
-              <div
-                style={{
-                  color: c.col,
-                  fontSize: 34,
-                  fontWeight: 900,
-                  marginTop: 22,
-                }}
-              >
-                {c.main}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 6: CASINO SLOT MACHINE (SPINNING REELS -> 777 JACKPOT!)
-  if (cutId === 6) {
-    const symbols = ["❤️", "💬", "🔥", "💎", "7️⃣"];
-    const isJackpot = localFrame > 110;
-
-    return (
-      <div
-        style={{
-          width: 880,
+          width: 860,
           padding: 48,
-          borderRadius: 46,
-          background: "linear-gradient(160deg, #1E1338, #090612)",
-          border: `6px solid ${GOLD}`,
-          boxShadow: `0 0 90px ${GOLD}55`,
+          borderRadius: 42,
+          background: "linear-gradient(145deg, #2A1215, #0D0814)",
+          border: `5px solid ${GOLD}`,
+          boxShadow: `0 0 85px ${GOLD}55`,
           textAlign: "center",
           transform: `scale(${0.86 + pop * 0.14})`,
         }}
       >
         <div
           style={{
-            fontSize: 36,
+            fontSize: 30,
             fontWeight: 900,
             color: GOLD,
             letterSpacing: 6,
-            marginBottom: 30,
+            marginBottom: 22,
           }}
         >
-          🎰 SOCIAL MEDIA SLOT MACHINE 🎰
+          ✨ PVR / CINEMA SNACK COUNTER ✨
         </div>
-
-        <div style={{ display: "flex", gap: 26, justifyContent: "center" }}>
-          {[0, 1, 2].map((reelIdx) => {
-            const symIdx = isJackpot
-              ? 4 // Locks on 7️⃣!
-              : Math.floor((localFrame * 0.48 + reelIdx * 2) % symbols.length);
-            return (
-              <div
-                key={reelIdx}
-                style={{
-                  width: 225,
-                  height: 255,
-                  borderRadius: 30,
-                  background: "#070912",
-                  border: `5px solid ${isJackpot ? NEON_GREEN : GOLD}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 120,
-                  boxShadow: isJackpot
-                    ? `0 0 55px ${NEON_GREEN}`
-                    : "inset 0 15px 35px #000",
-                }}
-              >
-                {symbols[symIdx]}
-              </div>
-            );
-          })}
-        </div>
-
         <div
           style={{
-            marginTop: 34,
-            padding: "20px 44px",
-            borderRadius: 100,
-            display: "inline-block",
-            background: isJackpot ? NEON_GREEN : CRIMSON,
-            color: "#06080E",
-            fontSize: 36,
-            fontWeight: 900,
-            letterSpacing: 3,
+            padding: "36px 40px",
+            borderRadius: 30,
+            background: "#120D1D",
+            border: `4px dashed ${GOLD}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-around",
           }}
         >
-          {isJackpot ? "JACKPOT HIT: DOPAMINE RUSH! ⚡" : "SPINNING THE REELS..."}
+          <span style={{ fontSize: 110 }}>🎟️🍿</span>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ color: "#FFF", fontSize: 46, fontWeight: 900 }}>
+              MOVIE NIGHT
+            </div>
+            <div style={{ color: CYAN, fontSize: 28, fontWeight: 800, marginTop: 8 }}>
+              INTERVAL POPCORN TIME!
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  // CUT 7: PULL-TO-REFRESH SPRING UI & NEW REEL POPUP
-  if (cutId === 7) {
-    const pullY = interpolate(
-      localFrame,
-      [0, 35, 55],
-      [0, 115, 0],
-      {
-        extrapolateRight: "clamp",
-        easing: Easing.out(Easing.back(1.7)),
-      }
-    );
-
+  // CUT 6 (10.2s - 12.6s): SMALL ₹100 VS LARGE ₹200 (2-COLUMN PRICING)
+  if (cutId === 6) {
     return (
       <div
         style={{
-          width: 840,
-          padding: 44,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `4px solid ${CYAN}`,
-          textAlign: "center",
+          width: 900,
+          display: "flex",
+          gap: 36,
+          transform: `scale(${0.86 + pop * 0.14})`,
         }}
       >
-        {/* Pull-to-refresh spinner */}
+        {/* Small ₹100 */}
         <div
           style={{
-            width: 82,
-            height: 82,
-            borderRadius: "50%",
-            margin: "0 auto 24px",
-            border: `6px solid ${CYAN}`,
-            borderTopColor: "transparent",
-            transform: `translateY(${pullY * 0.4}px) rotate(${localFrame * 9}deg)`,
-          }}
-        />
-
-        <div
-          style={{
-            padding: 36,
-            borderRadius: 30,
-            background: "#0B1324",
-            border: `3px solid ${NEON_GREEN}`,
-            transform: `translateY(${pullY}px)`,
-            boxShadow: `0 0 55px ${NEON_GREEN}44`,
+            flex: 1,
+            padding: "44px 28px",
+            borderRadius: 38,
+            background: CARD_BG,
+            border: `4px solid ${CYAN}`,
+            textAlign: "center",
           }}
         >
-          <div style={{ color: NEON_GREEN, fontSize: 28, fontWeight: 900 }}>
-            🔔 NEW REEL UNLOCKED!
+          <div style={{ fontSize: 95 }}>🍿</div>
+          <div style={{ color: "#FFF", fontSize: 42, fontWeight: 900, marginTop: 18 }}>
+            SMALL
           </div>
           <div
             style={{
-              color: "#FFFFFF",
-              fontSize: 48,
+              color: CYAN,
+              fontSize: 82,
               fontWeight: 900,
-              marginTop: 14,
+              fontFamily: '"Arial Black", sans-serif',
+              marginTop: 10,
             }}
           >
-            ❤️ +12,400 Likes • 🔥 Trending
+            ₹100
+          </div>
+        </div>
+
+        {/* Large ₹200 */}
+        <div
+          style={{
+            flex: 1,
+            padding: "44px 28px",
+            borderRadius: 38,
+            background: CARD_BG,
+            border: `4px solid ${GOLD}`,
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: 130 }}>🍿</div>
+          <div style={{ color: "#FFF", fontSize: 42, fontWeight: 900, marginTop: 8 }}>
+            LARGE
+          </div>
+          <div
+            style={{
+              color: GOLD,
+              fontSize: 82,
+              fontWeight: 900,
+              fontFamily: '"Arial Black", sans-serif',
+              marginTop: 10,
+            }}
+          >
+            ₹200
           </div>
         </div>
       </div>
     );
   }
 
-  // CUT 8: LIVE DOPAMINE SPIKE ECG WAVEFORM (+400%)
-  if (cutId === 8) {
-    const surge = Math.min(
-      400,
-      Math.floor(interpolate(localFrame, [0, 110], [100, 400]))
-    );
-
+  // CUT 7 (12.6s - 15.2s): USER PICKS SMALL ₹100 (SAVES MONEY)
+  if (cutId === 7) {
     return (
       <div
         style={{
-          width: 880,
-          padding: 44,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${NEON_GREEN}`,
-          boxShadow: `0 0 85px ${NEON_GREEN}55`,
+          width: 900,
+          display: "flex",
+          gap: 36,
+          transform: `scale(${0.88 + pop * 0.12})`,
         }}
       >
+        {/* Selected Small ₹100 */}
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
+            flex: 1,
+            padding: "44px 28px",
+            borderRadius: 38,
+            background: "#0B291E",
+            border: `6px solid ${NEON_GREEN}`,
+            boxShadow: `0 0 75px ${NEON_GREEN}66`,
+            textAlign: "center",
+            transform: "scale(1.06)",
           }}
         >
-          <span style={{ color: NEON_GREEN, fontSize: 28, fontWeight: 900, letterSpacing: 3 }}>
-            ⚡ BRAIN DOPAMINE LEVEL
-          </span>
-          <span
+          <div style={{ fontSize: 95 }}>🍿</div>
+          <div style={{ color: "#FFF", fontSize: 40, fontWeight: 900, marginTop: 14 }}>
+            SMALL • ₹100
+          </div>
+          <div
             style={{
-              color: "#FFFFFF",
-              fontSize: 60,
+              marginTop: 20,
+              padding: "14px 20px",
+              borderRadius: 16,
+              background: NEON_GREEN,
+              color: "#05140E",
+              fontSize: 28,
               fontWeight: 900,
-              fontFamily: '"Arial Black", sans-serif',
             }}
           >
-            +{surge}%
-          </span>
+            ✅ YOU PICK THIS!
+          </div>
         </div>
 
-        <svg width="790" height="330" viewBox="0 0 790 330">
-          <polyline
-            fill="none"
-            stroke={NEON_GREEN}
-            strokeWidth="9"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            points="0,240 120,240 170,190 210,270 270,35 320,300 375,120 430,250 510,25 570,290 640,75 790,75"
-            strokeDasharray="1400"
-            strokeDashoffset={interpolate(localFrame, [0, 95], [1400, 0], {
-              extrapolateRight: "clamp",
-            })}
-          />
-        </svg>
+        {/* Rejected Large ₹200 */}
+        <div
+          style={{
+            flex: 1,
+            padding: "44px 28px",
+            borderRadius: 38,
+            background: CARD_BG,
+            border: "4px solid #334155",
+            textAlign: "center",
+            opacity: 0.45,
+          }}
+        >
+          <div style={{ fontSize: 120 }}>🍿</div>
+          <div style={{ color: "#94A3B8", fontSize: 40, fontWeight: 900, marginTop: 14 }}>
+            LARGE • ₹200
+          </div>
+          <div
+            style={{
+              marginTop: 20,
+              padding: "14px 20px",
+              borderRadius: 16,
+              background: CRIMSON,
+              color: "#FFF",
+              fontSize: 28,
+              fontWeight: 900,
+            }}
+          >
+            ❌ TOO EXPENSIVE
+          </div>
+        </div>
       </div>
     );
   }
 
-  // CUT 9: DOPAMINE CRASH TO 8% & ANXIETY METER
-  if (cutId === 9) {
-    const level = Math.max(
-      8,
-      Math.floor(interpolate(localFrame, [0, 100], [92, 8]))
-    );
-
+  // CUT 8 (15.2s - 17.5s): COMPANIES PLAY MIND GAME (CHESS + BRAIN)
+  if (cutId === 8) {
     return (
       <div
         style={{
@@ -1038,215 +859,431 @@ const CutWidgetStage: React.FC<{
           border: `5px solid ${CRIMSON}`,
           boxShadow: `0 0 85px ${CRIMSON}55`,
           textAlign: "center",
+          transform: `scale(${0.85 + pop * 0.15})`,
         }}
       >
-        <div style={{ color: CRIMSON, fontSize: 30, fontWeight: 900, letterSpacing: 4 }}>
-          ⚠️ DOPAMINE CRASH DETECTED
-        </div>
+        <div style={{ fontSize: 125 }}>♟️🧠⚡</div>
         <div
           style={{
-            fontSize: 132,
+            fontSize: 66,
             fontWeight: 900,
             color: CRIMSON,
             fontFamily: '"Arial Black", sans-serif',
-            margin: "16px 0",
+            marginTop: 16,
           }}
         >
-          {level}% 📉
+          MIND GAME ACTIVATED!
         </div>
-        <div
-          style={{
-            width: "100%",
-            height: 44,
-            borderRadius: 22,
-            background: "#1E1218",
-            border: `2px solid ${CRIMSON}`,
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ width: `${level}%`, height: "100%", background: CRIMSON }} />
+        <div style={{ color: "#FFF", fontSize: 32, fontWeight: 800, marginTop: 14 }}>
+          Goal: Make You Spend <span style={{ color: GOLD }}>₹200 Willingly!</span>
         </div>
       </div>
     );
   }
 
-  // CUT 10: INFINITE SCROLLING & LATE NIGHT CLOCK (01:00 AM -> 04:45 AM)
-  if (cutId === 10) {
-    const hr = Math.min(4, 1 + Math.floor(localFrame / 38));
-    const mn = Math.floor((localFrame * 2.1) % 60);
-
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `4px solid ${PURPLE}`,
-          textAlign: "center",
-        }}
-      >
-        <div style={{ color: GOLD, fontSize: 28, fontWeight: 900, letterSpacing: 4 }}>
-          🕒 ENDLESS NIGHT SCROLLING
-        </div>
-        <div
-          style={{
-            fontSize: 116,
-            fontWeight: 900,
-            color: "#FFFFFF",
-            fontFamily: '"Arial Black", monospace',
-            margin: "18px 0 30px",
-          }}
-        >
-          0{hr}:{String(mn).padStart(2, "0")} AM
-        </div>
-        <div
-          style={{
-            padding: "24px 36px",
-            borderRadius: 26,
-            background: "rgba(168, 85, 247, 0.2)",
-            border: `2px solid ${PURPLE}`,
-            color: "#FFF",
-            fontSize: 34,
-            fontWeight: 900,
-          }}
-        >
-          “Bas ek last Reel...” ➔ 4 Hours Wasted! 🧟‍♂️
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 11: SECRET PSYCHOLOGICAL HACK VAULT UNLOCK
-  if (cutId === 11) {
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 50,
-          borderRadius: 44,
-          background: CARD_BG,
-          border: `5px solid ${GOLD}`,
-          boxShadow: `0 0 90px ${GOLD}55`,
-          textAlign: "center",
-          transform: `scale(${0.86 + pop * 0.14})`,
-        }}
-      >
-        <div style={{ fontSize: 115, marginBottom: 18 }}>🔓🧠</div>
-        <div
-          style={{
-            fontSize: 60,
-            fontWeight: 900,
-            color: GOLD,
-            fontFamily: '"Arial Black", sans-serif',
-          }}
-        >
-          SECRET PSYCHOLOGICAL HACK
-        </div>
-        <div style={{ color: "#FFFFFF", fontSize: 32, fontWeight: 800, marginTop: 18 }}>
-          1-Minute Settings Change to Break the Loop!
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 12 & 13: PHONE SETTINGS PANEL & GRAYSCALE MODE TOGGLE SWITCH
-  if (cutId === 12 || cutId === 13) {
-    const isToggleOn = cutId === 13 || localFrame > 45;
-    const knobSlide = spring({
-      frame: isToggleOn ? (cutId === 13 ? 60 : localFrame - 45) : 0,
+  // CUT 9 (17.5s - 20.3s): MEDIUM ₹180 SLAMS INTO THE MIDDLE!
+  if (cutId === 9) {
+    const midSlam = spring({
+      frame: Math.max(0, localFrame - 12),
       fps,
-      config: { damping: 12, stiffness: 180 },
+      config: { damping: 9, stiffness: 220 },
     });
 
     return (
       <div
         style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `4px solid ${CYAN}`,
-          boxShadow: "0 30px 80px rgba(0,0,0,0.85)",
+          width: 960,
+          display: "flex",
+          gap: 22,
+          alignItems: "center",
         }}
       >
+        {/* Small ₹100 */}
         <div
           style={{
-            color: "#94A3B8",
-            fontSize: 26,
-            fontWeight: 900,
-            letterSpacing: 3,
-            marginBottom: 28,
-          }}
-        >
-          ⚙️ SETTINGS ▸ ACCESSIBILITY ▸ DISPLAY
-        </div>
-
-        <div
-          style={{
-            padding: "36px 34px",
+            flex: 1,
+            padding: "36px 16px",
             borderRadius: 30,
-            background: "#131C31",
-            border: `4px solid ${GOLD}`,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            background: CARD_BG,
+            border: "3px solid #475569",
+            textAlign: "center",
+            opacity: 0.65,
           }}
         >
-          <div>
-            <div style={{ color: "#FFFFFF", fontSize: 42, fontWeight: 900 }}>
-              🔘 Grayscale Mode
-            </div>
-            <div style={{ color: GOLD, fontSize: 25, fontWeight: 700, marginTop: 8 }}>
-              Turns Screen 100% Black & White
-            </div>
+          <div style={{ fontSize: 75 }}>🍿</div>
+          <div style={{ color: "#FFF", fontSize: 32, fontWeight: 900, marginTop: 10 }}>
+            SMALL
           </div>
+          <div style={{ color: "#94A3B8", fontSize: 54, fontWeight: 900 }}>₹100</div>
+        </div>
 
+        {/* NEW MEDIUM ₹180 (THE DECOY!) */}
+        <div
+          style={{
+            flex: 1.15,
+            padding: "44px 18px",
+            borderRadius: 34,
+            background: "#2B0C16",
+            border: `6px solid ${GOLD}`,
+            boxShadow: `0 0 85px ${GOLD}77`,
+            textAlign: "center",
+            transform: `scale(${interpolate(midSlam, [0, 1], [2.1, 1.06])})`,
+            zIndex: 10,
+          }}
+        >
           <div
             style={{
-              width: 144,
-              height: 78,
-              borderRadius: 40,
-              background: isToggleOn ? NEON_GREEN : "#334155",
-              padding: 8,
-              display: "flex",
-              alignItems: "center",
+              background: GOLD,
+              color: "#000",
+              padding: "6px 16px",
+              borderRadius: 100,
+              fontSize: 22,
+              fontWeight: 900,
+              display: "inline-block",
+              marginBottom: 12,
             }}
           >
-            <div
-              style={{
-                width: 62,
-                height: 62,
-                borderRadius: "50%",
-                background: "#FFFFFF",
-                transform: `translateX(${knobSlide * 66}px)`,
-              }}
-            />
+            🚨 NEW MIDDLE OPTION
+          </div>
+          <div style={{ fontSize: 105 }}>🍿</div>
+          <div style={{ color: "#FFF", fontSize: 38, fontWeight: 900, marginTop: 8 }}>
+            MEDIUM
+          </div>
+          <div
+            style={{
+              color: GOLD,
+              fontSize: 76,
+              fontWeight: 900,
+              fontFamily: '"Arial Black", sans-serif',
+            }}
+          >
+            ₹180
           </div>
         </div>
 
-        {cutId === 13 && (
-          <div
-            style={{
-              marginTop: 28,
-              padding: "22px 30px",
-              borderRadius: 22,
-              background: "#1E293B",
-              color: "#FFFFFF",
-              fontSize: 32,
-              fontWeight: 900,
-              textAlign: "center",
-            }}
-          >
-            Colors Gayab ➔ Dopamine Stimulation Drops by 85%! 📉
+        {/* Large ₹200 */}
+        <div
+          style={{
+            flex: 1,
+            padding: "36px 16px",
+            borderRadius: 30,
+            background: CARD_BG,
+            border: "3px solid #475569",
+            textAlign: "center",
+            opacity: 0.8,
+          }}
+        >
+          <div style={{ fontSize: 115 }}>🍿</div>
+          <div style={{ color: "#FFF", fontSize: 32, fontWeight: 900, marginTop: 10 }}>
+            LARGE
           </div>
-        )}
+          <div style={{ color: "#FFF", fontSize: 54, fontWeight: 900 }}>₹200</div>
+        </div>
       </div>
     );
   }
 
-  // CUT 14: BRAIN 100% IN CONTROL SHIELD
+  // CUT 10 (20.3s - 22.3s): BRAIN MATH EQUATION (₹200 - ₹180 = ONLY ₹20!)
+  if (cutId === 10) {
+    return (
+      <div
+        style={{
+          width: 880,
+          padding: 48,
+          borderRadius: 42,
+          background: CARD_BG,
+          border: `5px solid ${PURPLE}`,
+          boxShadow: `0 0 85px ${PURPLE}55`,
+          textAlign: "center",
+          transform: `scale(${0.86 + pop * 0.14})`,
+        }}
+      >
+        <div style={{ color: PURPLE, fontSize: 28, fontWeight: 900, letterSpacing: 4 }}>
+          🧠 INSTANT BRAIN CALCULATION
+        </div>
+        <div
+          style={{
+            fontSize: 82,
+            fontWeight: 900,
+            color: "#FFFFFF",
+            fontFamily: '"Arial Black", sans-serif',
+            margin: "24px 0",
+          }}
+        >
+          ₹200 − ₹180 = <span style={{ color: NEON_GREEN }}>SIRF ₹20!</span>
+        </div>
+        <div
+          style={{
+            padding: "20px 36px",
+            borderRadius: 22,
+            background: "rgba(0,255,135,0.15)",
+            border: `2px solid ${NEON_GREEN}`,
+            color: NEON_GREEN,
+            fontSize: 34,
+            fontWeight: 900,
+          }}
+        >
+          “Sirf ₹20 extra mein HUGE Bucket?!” 🤯
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 11 (22.3s - 25.2s): USER BUYS LARGE ₹200 ("WAHI LE LETA HOON!")
+  if (cutId === 11) {
+    return (
+      <div
+        style={{
+          width: 880,
+          padding: 48,
+          borderRadius: 44,
+          background: "linear-gradient(155deg, #0D2E22, #071410)",
+          border: `6px solid ${NEON_GREEN}`,
+          boxShadow: `0 0 95px ${NEON_GREEN}66`,
+          textAlign: "center",
+          transform: `scale(${0.86 + pop * 0.14})`,
+        }}
+      >
+        <div style={{ fontSize: 135 }}>🍿🤑✨</div>
+        <div
+          style={{
+            fontSize: 74,
+            fontWeight: 900,
+            color: NEON_GREEN,
+            fontFamily: '"Arial Black", sans-serif',
+            marginTop: 10,
+          }}
+        >
+          LARGE ₹200 SOLD! 🔔
+        </div>
+        <div
+          style={{
+            marginTop: 22,
+            padding: "18px 34px",
+            borderRadius: 20,
+            background: "#06120D",
+            border: `2px solid ${GOLD}`,
+            color: GOLD,
+            fontSize: 32,
+            fontWeight: 900,
+          }}
+        >
+          Aap aaye the ₹100 kharch karne ➔ De aaye ₹200! 😂
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 12 (25.2s - 27.5s): MEDIUM ₹180 STAMPED "NOT MEANT TO SELL!"
+  if (cutId === 12) {
+    const stampScale = spring({
+      frame: Math.max(0, localFrame - 10),
+      fps,
+      config: { damping: 8, stiffness: 250 },
+    });
+
+    return (
+      <div
+        style={{
+          width: 780,
+          padding: 48,
+          borderRadius: 42,
+          background: CARD_BG,
+          border: "4px solid #475569",
+          textAlign: "center",
+          position: "relative",
+        }}
+      >
+        <div style={{ fontSize: 115, opacity: 0.45 }}>🍿</div>
+        <div style={{ color: "#94A3B8", fontSize: 48, fontWeight: 900 }}>
+          MEDIUM • ₹180
+        </div>
+
+        {/* Giant Angled Red Stamp */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: `translate(-50%, -50%) rotate(-12deg) scale(${interpolate(
+              stampScale,
+              [0, 1],
+              [2.4, 1]
+            )})`,
+            padding: "22px 48px",
+            borderRadius: 20,
+            background: "rgba(255, 42, 84, 0.95)",
+            border: "6px solid #FFFFFF",
+            color: "#FFFFFF",
+            fontSize: 52,
+            fontWeight: 900,
+            fontFamily: '"Arial Black", sans-serif',
+            whiteSpace: "nowrap",
+            boxShadow: `0 0 70px ${CRIMSON}`,
+          }}
+        >
+          0% SALES TARGET ❌
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 13 (27.5s - 29.6s): FISHING HOOK BAIT X-RAY ("YE BAS EK DECOY THA")
+  if (cutId === 13) {
+    const sway = Math.sin(localFrame * 0.12) * 14;
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 48,
+          borderRadius: 42,
+          background: CARD_BG,
+          border: `5px solid ${GOLD}`,
+          boxShadow: `0 0 85px ${GOLD}55`,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 135,
+            transform: `translateX(${sway}px)`,
+          }}
+        >
+          🪝🍿
+        </div>
+        <div
+          style={{
+            fontSize: 68,
+            fontWeight: 900,
+            color: GOLD,
+            fontFamily: '"Arial Black", sans-serif',
+            marginTop: 14,
+          }}
+        >
+          100% MARKETING BAIT!
+        </div>
+        <div style={{ color: "#FFF", fontSize: 32, fontWeight: 800, marginTop: 12 }}>
+          Medium ka kaam sirf <span style={{ color: NEON_GREEN }}>Large bikwana tha!</span>
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 14 (29.6s - 32.2s): PUPPET STRINGS CONTROLLING BRAIN DECISION
   if (cutId === 14) {
+    const tilt = Math.sin(localFrame * 0.14) * 10;
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 48,
+          borderRadius: 42,
+          background: CARD_BG,
+          border: `5px solid ${CYAN}`,
+          boxShadow: `0 0 90px ${CYAN}55`,
+          textAlign: "center",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "center", gap: 80, marginBottom: -15 }}>
+          <div style={{ width: 5, height: 95, background: CYAN }} />
+          <div style={{ width: 5, height: 95, background: CYAN }} />
+        </div>
+        <div
+          style={{
+            fontSize: 130,
+            transform: `rotate(${tilt}deg)`,
+            display: "inline-block",
+          }}
+        >
+          🧠🎮
+        </div>
+        <div
+          style={{
+            marginTop: 24,
+            padding: "20px 38px",
+            borderRadius: 22,
+            background: CYAN,
+            color: "#041016",
+            fontSize: 46,
+            fontWeight: 900,
+            fontFamily: '"Arial Black", sans-serif',
+          }}
+        >
+          DECISION REMOTE-CONTROLLED!
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 15 (32.2s - 35.0s): ANTI-SCAM SHIELD BLOCKING FAKE OFFERS
+  if (cutId === 15) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 48,
+          borderRadius: 42,
+          background: CARD_BG,
+          border: `5px solid ${NEON_GREEN}`,
+          boxShadow: `0 0 85px ${NEON_GREEN}55`,
+          textAlign: "center",
+          transform: `scale(${0.86 + pop * 0.14})`,
+        }}
+      >
+        <div style={{ fontSize: 115 }}>🛡️👁️⚡</div>
+        <div
+          style={{
+            fontSize: 62,
+            fontWeight: 900,
+            color: NEON_GREEN,
+            fontFamily: '"Arial Black", sans-serif',
+            marginTop: 14,
+          }}
+        >
+          DECOY RADAR: ON!
+        </div>
+        <div style={{ color: "#FFF", fontSize: 32, fontWeight: 800, marginTop: 14 }}>
+          Shopping karte waqt <span style={{ color: GOLD }}>Middle Price Trap</span> pehchano!
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 16 (35.0s - 37.5s): GIANT "SALE 50% OFF" MAGNET PULLING FRIEND
+  if (cutId === 16) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 48,
+          borderRadius: 42,
+          background: CARD_BG,
+          border: `5px solid ${PURPLE}`,
+          textAlign: "center",
+          transform: `scale(${0.86 + pop * 0.14})`,
+        }}
+      >
+        <div style={{ fontSize: 120 }}>🧲🛍️🏃‍♂️</div>
+        <div
+          style={{
+            marginTop: 20,
+            padding: "18px 36px",
+            borderRadius: 20,
+            background: CRIMSON,
+            color: "#FFF",
+            fontSize: 44,
+            fontWeight: 900,
+            display: "inline-block",
+          }}
+        >
+          “BUY 2 GET 1 FREE!” 🏷️
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 17 (37.5s - 40.0s): #1 BEWAKOOF FRIEND AWARD TROPHY
+  if (cutId === 17) {
     return (
       <div
         style={{
@@ -1254,142 +1291,47 @@ const CutWidgetStage: React.FC<{
           padding: 50,
           borderRadius: 44,
           background: CARD_BG,
-          border: `5px solid ${NEON_GREEN}`,
+          border: `6px solid ${GOLD}`,
+          boxShadow: `0 0 90px ${GOLD}66`,
           textAlign: "center",
-          boxShadow: `0 0 90px ${NEON_GREEN}55`,
-          transform: `scale(${0.86 + pop * 0.14})`,
+          transform: `scale(${0.85 + pop * 0.15})`,
         }}
       >
-        <div style={{ fontSize: 110, marginBottom: 14 }}>🛡️🧠✅</div>
+        <div style={{ fontSize: 125 }}>🤡🏆</div>
         <div
           style={{
-            fontSize: 64,
+            fontSize: 58,
             fontWeight: 900,
-            color: NEON_GREEN,
+            color: GOLD,
             fontFamily: '"Arial Black", sans-serif',
+            marginTop: 14,
           }}
         >
-          DIMAAG 100% CONTROL MEIN!
+          #1 OFFER VICTIM AWARD
         </div>
-        <div style={{ color: "#FFFFFF", fontSize: 32, fontWeight: 800, marginTop: 16 }}>
-          No Colors = No Casino Trap = Pure Focus!
+        <div style={{ color: "#FFF", fontSize: 32, fontWeight: 800, marginTop: 12 }}>
+          Har “Fake Sale” mein sabse pehle phasta hai! 😂
         </div>
       </div>
     );
   }
 
-  // CUT 15: DAILY SCREEN-TIME BAR CHART
-  if (cutId === 15) {
-    const bars = [
-      { day: "MON", h: 5.2, col: CYAN },
-      { day: "TUE", h: 6.4, col: CYAN },
-      { day: "WED", h: 7.5, col: GOLD },
-      { day: "THU", h: 8.6, col: CRIMSON },
-      { day: "TODAY", h: 9.4, col: CRIMSON },
-    ];
-
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 46,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `4px solid ${GOLD}`,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "baseline",
-            marginBottom: 34,
-          }}
-        >
-          <span style={{ color: "#94A3B8", fontSize: 26, fontWeight: 900 }}>
-            📊 DAILY SCREEN-TIME REPORT
-          </span>
-          <span
-            style={{
-              color: CRIMSON,
-              fontSize: 62,
-              fontWeight: 900,
-              fontFamily: '"Arial Black", sans-serif',
-            }}
-          >
-            9h 24m / DAY ⚠️
-          </span>
-        </div>
-
-        <div
-          style={{
-            height: 320,
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-around",
-            gap: 24,
-          }}
-        >
-          {bars.map((b, i) => {
-            const grow = spring({
-              frame: Math.max(0, localFrame - i * 7),
-              fps,
-              config: { damping: 12, stiffness: 145 },
-            });
-            return (
-              <div key={i} style={{ textAlign: "center", flex: 1 }}>
-                <div
-                  style={{
-                    color: "#FFF",
-                    fontSize: 22,
-                    fontWeight: 900,
-                    marginBottom: 8,
-                  }}
-                >
-                  {b.h}h
-                </div>
-                <div
-                  style={{
-                    height: b.h * 26 * grow,
-                    borderRadius: "16px 16px 6px 6px",
-                    background: b.col,
-                    boxShadow: `0 0 30px ${b.col}66`,
-                  }}
-                />
-                <div
-                  style={{
-                    color: "#94A3B8",
-                    fontSize: 22,
-                    fontWeight: 800,
-                    marginTop: 12,
-                  }}
-                >
-                  {b.day}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 16: COMMENT CTA BOX
+  // CUT 18 (40.0s - 43.0s): INTERACTIVE COMMENT TAG BOX
   return (
     <div
       style={{
         width: 880,
-        padding: 50,
+        padding: 52,
         borderRadius: 44,
         background: CARD_BG,
         border: `6px solid ${CYAN}`,
-        boxShadow: `0 0 90px ${CYAN}55`,
+        boxShadow: `0 0 95px ${CYAN}66`,
         textAlign: "center",
-        transform: `scale(${0.92 + Math.sin(localFrame * 0.16) * 0.04})`,
+        transform: `scale(${0.92 + Math.sin(localFrame * 0.18) * 0.04})`,
       }}
     >
-      <div style={{ color: GOLD, fontSize: 32, fontWeight: 900, letterSpacing: 4 }}>
-        💬 COMMENT MEIN SACH-SACH BATAO:
+      <div style={{ color: GOLD, fontSize: 34, fontWeight: 900, letterSpacing: 4 }}>
+        💬 COMMENT MEIN USE JALDI TAG KARO:
       </div>
       <div
         style={{
@@ -1397,30 +1339,30 @@ const CutWidgetStage: React.FC<{
           padding: "32px 36px",
           borderRadius: 26,
           background: "#070A12",
-          border: `3px solid ${NEON_GREEN}`,
+          border: `4px solid ${NEON_GREEN}`,
           color: "#FFFFFF",
-          fontSize: 44,
+          fontSize: 46,
           fontWeight: 900,
         }}
       >
-        “Mera Daily Screen-time ___ hrs hai! 👇”
+        @tag_your_bewakoof_friend 😂👇
       </div>
     </div>
   );
 };
 
 /* =========================================================================
-   05. MASTER COMPOSITION + CAMERA SHAKE + REAL-TIME GRAYSCALE FILTER
+   05. MASTER REEL ORCHESTRATOR
    ========================================================================= */
 
-const DopamineSlotMachineReel: React.FC = () => {
+const DecoyRapidReel: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const sec = frame / fps;
 
   const activeCut =
-    UI_CUTS.find((c) => sec >= c.startSec && sec < c.endSec) ??
-    UI_CUTS[UI_CUTS.length - 1];
+    RAPID_CUTS.find((c) => sec >= c.startSec && sec < c.endSec) ??
+    RAPID_CUTS[RAPID_CUTS.length - 1];
 
   const cutStartFrame = Math.round(activeCut.startSec * FPS);
   const localFrame = Math.max(0, frame - cutStartFrame);
@@ -1428,30 +1370,17 @@ const DopamineSlotMachineReel: React.FC = () => {
   const titleSlam = spring({
     frame: localFrame,
     fps,
-    config: { damping: 10, stiffness: 220, mass: 0.68 },
+    config: { damping: 10, stiffness: 225, mass: 0.65 },
   });
 
-  // Camera Shake on heavy impact cuts (Cut 2, 4, 6, 8, 14)
-  const shakeEnv = activeCut.heavyShake
-    ? interpolate(localFrame, [0, 5, 20], [0, 1, 0], {
+  const shakeEnv = activeCut.shake
+    ? interpolate(localFrame, [0, 5, 18], [0, 1, 0], {
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
       })
     : 0;
-  const shakeX = Math.sin(localFrame * 2.8) * shakeEnv * 18;
-  const shakeY = Math.cos(localFrame * 3.5) * shakeEnv * 18;
-
-  // LIVE GRAYSCALE FILTER WHEN "SCREEN BLACK & WHITE HOTE HI" PLAYS (32.0s - 37.2s)!
-  const grayscalePct = interpolate(
-    sec,
-    [31.8, 32.5, 36.8, 37.4],
-    [0, 100, 100, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: Easing.inOut(Easing.cubic),
-    }
-  );
+  const shakeX = Math.sin(localFrame * 2.9) * shakeEnv * 18;
+  const shakeY = Math.cos(localFrame * 3.6) * shakeEnv * 18;
 
   const progress = interpolate(frame, [0, DURATION], [0, 100], {
     extrapolateLeft: "clamp",
@@ -1459,33 +1388,23 @@ const DopamineSlotMachineReel: React.FC = () => {
   });
 
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: DARK_BG,
-        filter: `grayscale(${grayscalePct}%)`,
-        overflow: "hidden",
-      }}
-    >
-      <CyberGridAtmosphere accent={activeCut.accent} frame={frame} />
+    <AbsoluteFill style={{ backgroundColor: DARK_BG, overflow: "hidden" }}>
+      <CyberAtmosphere accent={activeCut.accent} frame={frame} />
 
-      <AbsoluteFill
-        style={{
-          transform: `translate(${shakeX}px, ${shakeY}px)`,
-        }}
-      >
-        {/* TOP 16-SEGMENT STORY PROGRESS BAR */}
+      <AbsoluteFill style={{ transform: `translate(${shakeX}px, ${shakeY}px)` }}>
+        {/* TOP 18-SEGMENT MICRO-CUT PROGRESS BAR */}
         <div
           style={{
             position: "absolute",
             top: 28,
-            left: 50,
-            right: 50,
+            left: 45,
+            right: 45,
             display: "flex",
-            gap: 6,
+            gap: 5,
             height: 6,
           }}
         >
-          {UI_CUTS.map((c) => {
+          {RAPID_CUTS.map((c) => {
             const fill =
               sec >= c.endSec
                 ? 1
@@ -1514,13 +1433,13 @@ const DopamineSlotMachineReel: React.FC = () => {
           })}
         </div>
 
-        {/* TOP TELEMETRY HEADER */}
+        {/* TELEMETRY HEADER */}
         <div
           style={{
             position: "absolute",
-            top: 76,
-            left: 65,
-            right: 65,
+            top: 74,
+            left: 60,
+            right: 60,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -1530,7 +1449,7 @@ const DopamineSlotMachineReel: React.FC = () => {
             style={{
               padding: "10px 26px",
               borderRadius: 100,
-              background: "rgba(255,255,255,0.07)",
+              background: "rgba(255,255,255,0.08)",
               border: `2px solid ${activeCut.accent}`,
               color: activeCut.accent,
               fontSize: 20,
@@ -1548,7 +1467,7 @@ const DopamineSlotMachineReel: React.FC = () => {
               letterSpacing: 3,
             }}
           >
-            CUT {String(activeCut.id).padStart(2, "0")} / 16
+            CUT {String(activeCut.id).padStart(2, "0")} / 18
           </div>
         </div>
 
@@ -1556,16 +1475,16 @@ const DopamineSlotMachineReel: React.FC = () => {
         <div
           style={{
             position: "absolute",
-            top: 180,
-            left: 48,
-            right: 48,
+            top: 175,
+            left: 45,
+            right: 45,
             textAlign: "center",
             transform: `scale(${interpolate(titleSlam, [0, 1], [1.9, 1])})`,
           }}
         >
           <div
             style={{
-              fontSize: 38,
+              fontSize: 36,
               fontWeight: 900,
               color: "#E2E8F0",
               letterSpacing: 3,
@@ -1576,7 +1495,7 @@ const DopamineSlotMachineReel: React.FC = () => {
           <div
             style={{
               fontFamily: '"Arial Black", Impact, sans-serif',
-              fontSize: 72,
+              fontSize: 70,
               fontWeight: 900,
               lineHeight: 1.05,
               color: activeCut.accent,
@@ -1599,20 +1518,20 @@ const DopamineSlotMachineReel: React.FC = () => {
           </div>
         </div>
 
-        {/* CENTER INTERACTIVE UI & DATA STAGE */}
+        {/* CENTER INTERACTIVE WIDGET STAGE */}
         <div
           style={{
             position: "absolute",
-            top: 485,
+            top: 480,
             left: 0,
             right: 0,
-            bottom: 120,
+            bottom: 110,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <CutWidgetStage
+          <MicroSceneWidget
             cutId={activeCut.id}
             localFrame={localFrame}
             accent={activeCut.accent}
@@ -1634,76 +1553,61 @@ const DopamineSlotMachineReel: React.FC = () => {
       />
 
       {/* ===================================================================
-          VOICEOVER-SYNCED PROCEDURAL SFX TIMELINE
+          SECOND-BY-SECOND PROCEDURAL SFX TIMELINE
          =================================================================== */}
-      {/* Transition Whoosh on every ~2.8s UI Cut */}
-      {UI_CUTS.map((c) => (
+      {/* Transition Whoosh on every ~2.2s cut */}
+      {RAPID_CUTS.map((c) => (
         <Sequence
           key={`whoosh-${c.id}`}
           from={Math.round(c.startSec * FPS)}
-          durationInFrames={20}
+          durationInFrames={18}
           layout="none"
         >
-          <Audio src={SFX.uiWhoosh} volume={0.45} />
+          <Audio src={SFX.whoosh} volume={0.45} />
         </Sequence>
       ))}
 
-      {/* 2.5s: "Bilkul Galat!" Glitch Slam + Rapid Notification Pings */}
-      <Sequence from={Math.round(2.5 * FPS)} durationInFrames={30} layout="none">
+      {/* Cut 2 (2.2s): Wallet Drain Glitch Slam */}
+      <Sequence from={Math.round(2.2 * FPS)} durationInFrames={30} layout="none">
         <Audio src={SFX.glitchSlam} volume={0.85} />
       </Sequence>
-      {[2.9, 3.25, 3.6, 3.95].map((tSec, i) => (
-        <Sequence
-          key={`ping-${i}`}
-          from={Math.round(tSec * FPS)}
-          durationInFrames={25}
-          layout="none"
-        >
-          <Audio src={SFX.notifPing} volume={0.75} />
-        </Sequence>
-      ))}
 
-      {/* 8.2s: "Khatarnaak game" Glitch Slam */}
-      <Sequence from={Math.round(8.2 * FPS)} durationInFrames={30} layout="none">
-        <Audio src={SFX.glitchSlam} volume={0.75} />
+      {/* Cut 4 (6.2s): "The Decoy Effect" Radar Ping */}
+      <Sequence from={Math.round(6.2 * FPS)} durationInFrames={30} layout="none">
+        <Audio src={SFX.radarPing} volume={0.8} />
       </Sequence>
 
-      {/* 12.8s - 16.5s: Casino Slot Machine Spinning Ticks + Jackpot Hit */}
-      {[13.0, 13.3, 13.6, 13.9, 14.2, 14.5].map((tSec, i) => (
-        <Sequence
-          key={`slot-${i}`}
-          from={Math.round(tSec * FPS)}
-          durationInFrames={12}
-          layout="none"
-        >
-          <Audio src={SFX.slotTick} volume={0.7} />
-        </Sequence>
-      ))}
-      <Sequence from={Math.round(14.7 * FPS)} durationInFrames={45} layout="none">
-        <Audio src={SFX.jackpot} volume={0.85} />
+      {/* Cut 7 (12.8s): Small ₹100 Selection Ding */}
+      <Sequence from={Math.round(12.8 * FPS)} durationInFrames={25} layout="none">
+        <Audio src={SFX.ding} volume={0.8} />
       </Sequence>
 
-      {/* 17.2s: Notification Pull Ping */}
-      <Sequence from={Math.round(17.2 * FPS)} durationInFrames={25} layout="none">
-        <Audio src={SFX.notifPing} volume={0.8} />
+      {/* Cut 8 (15.2s): Mind Game Glitch Slam */}
+      <Sequence from={Math.round(15.2 * FPS)} durationInFrames={30} layout="none">
+        <Audio src={SFX.glitchSlam} volume={0.8} />
       </Sequence>
 
-      {/* 19.5s: Dopamine Surge Up + 22.8s: Dopamine Crash Power-Down */}
-      <Sequence from={Math.round(19.6 * FPS)} durationInFrames={35} layout="none">
-        <Audio src={SFX.dopamineUp} volume={0.85} />
-      </Sequence>
-      <Sequence from={Math.round(22.9 * FPS)} durationInFrames={40} layout="none">
-        <Audio src={SFX.powerDown} volume={0.85} />
+      {/* Cut 9 (17.7s): Medium ₹180 Slam Buzzer */}
+      <Sequence from={Math.round(17.7 * FPS)} durationInFrames={28} layout="none">
+        <Audio src={SFX.buzzer} volume={0.75} />
       </Sequence>
 
-      {/* 28.0s: Secret Hack Vault Unlock */}
-      <Sequence from={Math.round(28.1 * FPS)} durationInFrames={30} layout="none">
-        <Audio src={SFX.vaultUnlock} volume={0.8} />
+      {/* Cut 11 (22.4s): Buying Large ₹200 Cash Register KA-CHING! */}
+      <Sequence from={Math.round(22.4 * FPS)} durationInFrames={35} layout="none">
+        <Audio src={SFX.kaching} volume={0.9} />
       </Sequence>
 
-      {/* 31.8s: Grayscale Mode Switch Click */}
-      <Sequence from={Math.round(31.8 * FPS)} durationInFrames={20} layout="none">
-        <Audio src={SFX.toggleClick} volume={0.9} />
+      {/* Cut 12 (25.4s): "Bechna hi nahi tha" Stamp Slam */}
+      <Sequence from={Math.round(25.4 * FPS)} durationInFrames={28} layout="none">
+        <Audio src={SFX.stampSlam} volume={0.85} />
+      </Sequence>
+
+      {/* Cut 14 (29.6s): Decision Hijacked Glitch + Cut 18 Pop */}
+      <Sequence from={Math.round(29.6 * FPS)} durationInFrames={30} layout="none">
+        <Audio src={SFX.glitchSlam} volume={0.8} />
+      </Sequence>
+      <Sequence from={Math.round(40.1 * FPS)} durationInFrames={20} layout="none">
+        <Audio src={SFX.pop} volume={0.85} />
       </Sequence>
     </AbsoluteFill>
   );
@@ -1713,7 +1617,7 @@ export const RemotionRoot: React.FC = () => {
   return (
     <Composition
       id="Reel"
-      component={DopamineSlotMachineReel}
+      component={DecoyRapidReel}
       durationInFrames={DURATION}
       fps={FPS}
       width={WIDTH}
