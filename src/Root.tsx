@@ -12,54 +12,53 @@ import {
 } from "remotion";
 
 /* =========================================================================
-   THE DECOY EFFECT — SATISFYING ASMR SFX & 6 VARIED TEXT ANIMATIONS EDITION
-   1080 x 1920 | 60 FPS | 43.0 Seconds (2580 Frames)
-   - 6 Distinct Text Animation Styles (No repetitive text slams!)
-   - 8 Tactile ASMR Procedural Sounds (Marimba Pop, Mech Thock, Crystal Plink,
-     Velvet Swipe, Card Flutter, Warm Sub-Bass, Harmonic Kaching, Bubble Pop)
+   THE FREE SHIPPING TRAP — SENPAISPIDER DARK MINIMAL & NEON GREEN EDITION
+   1080 x 1920 | 60 FPS | 40.5 Seconds (2430 Frames) | 17 Sub-3s Cuts
+   - ZERO EMOJIS: Pure Vector Geometry, Wireframes & Clean Kinetic Typography
+   - Full-Screen Typography Hook ("CHALO AAJ EXACTLY DEKHTE HAIN")
+   - Neon Green Money Highlights (#00FF66) + Crisp Cash & Coin SFX
+   - 3-Card Middle Insertion Scene (RS. 400 + RS. 150 EXTRA = RS. 550)
    Zero External Assets Required.
    ========================================================================= */
 
 const FPS = 60;
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const DURATION = 2580; // 43.0 Seconds @ 60 FPS
+const DURATION = 2430; // 40.5 Seconds @ 60 FPS
 
-const CYAN = "#00F0FF";
-const NEON_GREEN = "#00FF87";
+const NEON_GREEN = "#00FF66";
+const GREEN_GLOW = "rgba(0, 255, 102, 0.35)";
 const CRIMSON = "#FF2A54";
 const GOLD = "#FFD166";
-const PURPLE = "#A855F7";
-const DARK_BG = "#05070E";
-const CARD_BG = "rgba(14, 20, 36, 0.92)";
+const CYAN = "#00F0FF";
+const DARK_BG = "#04060A";
+const PANEL_BG = "rgba(10, 15, 24, 0.94)";
 
 const clamp = (v: number, min = 0, max = 1) => Math.max(min, Math.min(max, v));
 
 /* =========================================================================
-   01. SATISFYING TACTILE / ASMR PROCEDURAL AUDIO ENGINE
+   01. SENPAISPIDER-STYLE CRISP MONEY & TACTILE UI SFX ENGINE
    ========================================================================= */
 
 type SfxKind =
-  | "marimbaPop"
+  | "cashKaching"
+  | "coinClink"
+  | "markerSwipe"
   | "mechThock"
-  | "velvetSwipe"
-  | "cardFlutter"
-  | "crystalPlink"
-  | "harmonicKaching"
-  | "warmSub"
-  | "bubblePop";
+  | "subDrop"
+  | "cardSnap"
+  | "uiPop";
 
-function buildSatisfyingSfx(kind: SfxKind): string {
+function buildCrispSfx(kind: SfxKind): string {
   const sampleRate = 22050;
   const durations: Record<SfxKind, number> = {
-    marimbaPop: 0.22,
+    cashKaching: 0.52,
+    coinClink: 0.34,
+    markerSwipe: 0.24,
     mechThock: 0.14,
-    velvetSwipe: 0.28,
-    cardFlutter: 0.24,
-    crystalPlink: 0.38,
-    harmonicKaching: 0.6,
-    warmSub: 0.48,
-    bubblePop: 0.16,
+    subDrop: 0.46,
+    cardSnap: 0.2,
+    uiPop: 0.16,
   };
 
   const duration = durations[kind];
@@ -93,64 +92,55 @@ function buildSatisfyingSfx(kind: SfxKind): string {
     let w = 0;
     let env = 1;
 
-    if (kind === "marimbaPop") {
-      // Warm woody marimba/kalimba tone with gentle pitch bend
-      const f = 440 + Math.sin(p * Math.PI * 0.5) * 140;
+    if (kind === "cashKaching") {
+      // Crisp metallic register drawer + high silver bell shimmer
+      const f1 = p < 0.18 ? 1480 : 2960;
+      const f2 = p < 0.18 ? 2217 : 4435;
+      const subP = p < 0.18 ? p / 0.18 : (p - 0.18) / 0.82;
       w =
-        Math.sin(2 * Math.PI * f * t) * 0.75 +
-        Math.sin(2 * Math.PI * (f * 2) * t) * 0.25;
-      env = Math.sin(Math.PI * Math.min(1, p * 8)) * Math.exp(-p * 9);
-    } else if (kind === "mechThock") {
-      // Satisfying mechanical keyboard "thock" (low body + crisp tap)
-      const bodyF = 190 * Math.exp(-p * 12) + 65;
-      const tap = Math.sin(2 * Math.PI * 1650 * t) * Math.exp(-p * 28);
-      w = Math.sin(2 * Math.PI * bodyF * t) * 0.8 + tap * 0.35;
-      env = Math.exp(-p * 14);
-    } else if (kind === "velvetSwipe") {
-      // Smooth harmonic filter glide (no harsh static noise)
-      const glideF = 240 + Math.sin(p * Math.PI) * 340;
+        Math.sin(2 * Math.PI * f1 * t) * 0.55 +
+        Math.sin(2 * Math.PI * f2 * t) * 0.35 +
+        Math.sin(2 * Math.PI * (f1 * 1.5) * t) * 0.15;
+      env = Math.exp(-subP * 7.5);
+    } else if (kind === "coinClink") {
+      // High-frequency metallic coin ring
       w =
-        Math.sin(2 * Math.PI * glideF * t) * 0.65 +
-        Math.sin(2 * Math.PI * (glideF * 1.5) * t) * 0.3;
+        Math.sin(2 * Math.PI * 2637 * t) * 0.6 +
+        Math.sin(2 * Math.PI * 3951 * t) * 0.35;
+      env = Math.exp(-p * 9.5);
+    } else if (kind === "markerSwipe") {
+      // Smooth felt highlighter brush sweep
+      const glideF = 260 + Math.sin(p * Math.PI) * 380;
+      w =
+        Math.sin(2 * Math.PI * glideF * t) * 0.6 +
+        Math.sin(2 * Math.PI * (glideF * 1.5) * t) * 0.25;
       env = Math.sin(Math.PI * p) * 0.85;
-    } else if (kind === "cardFlutter") {
-      // Crisp double-tap card flip sound
-      const f = p < 0.45 ? 380 : 520;
-      const localP = p < 0.45 ? p / 0.45 : (p - 0.45) / 0.55;
+    } else if (kind === "mechThock") {
+      // Deep tactile keyboard switch thock
+      const bodyF = 185 * Math.exp(-p * 12) + 60;
+      const click = Math.sin(2 * Math.PI * 1750 * t) * Math.exp(-p * 26);
+      w = Math.sin(2 * Math.PI * bodyF * t) * 0.8 + click * 0.35;
+      env = Math.exp(-p * 13);
+    } else if (kind === "subDrop") {
+      // Clean dark documentary 808 bass drop
+      const f = 110 * Math.pow(1 - p * 0.65, 1.4) + 34;
+      w =
+        Math.sin(2 * Math.PI * f * t) * 0.88 +
+        Math.sin(2 * Math.PI * (f * 2) * t) * 0.18;
+      env = Math.pow(1 - p, 1.5);
+    } else if (kind === "cardSnap") {
+      // Crisp double-tap card lock sound
+      const f = p < 0.4 ? 420 : 640;
+      const lp = p < 0.4 ? p / 0.4 : (p - 0.4) / 0.6;
       w = Math.sin(2 * Math.PI * f * t) * 0.75;
-      env = Math.exp(-localP * 11);
-    } else if (kind === "crystalPlink") {
-      // Pure water-drop / glass harmonic bell
-      w =
-        Math.sin(2 * Math.PI * 987.77 * t) * 0.6 +
-        Math.sin(2 * Math.PI * 1975.5 * t) * 0.3 +
-        Math.sin(2 * Math.PI * 2963.3 * t) * 0.1;
-      env = Math.exp(-p * 7.5);
-    } else if (kind === "harmonicKaching") {
-      // Lush Major-9th arpeggio shimmer (C6 -> E6 -> G6 -> B6 -> D7)
-      const notes = [1046.5, 1318.5, 1568.0, 1975.5, 2349.3];
-      const idx = Math.min(notes.length - 1, Math.floor(p * notes.length));
-      const noteF = notes[idx];
-      const subP = (p * notes.length) % 1;
-      w =
-        Math.sin(2 * Math.PI * noteF * t) * 0.6 +
-        Math.sin(2 * Math.PI * (noteF * 2) * t) * 0.25;
-      env = Math.exp(-subP * 5.5) * (1 - p * 0.3);
-    } else if (kind === "warmSub") {
-      // Deep, round cinematic 808 sub-bass drop
-      const subF = 115 * Math.pow(1 - p * 0.65, 1.4) + 36;
-      w =
-        Math.sin(2 * Math.PI * subF * t) * 0.85 +
-        Math.sin(2 * Math.PI * (subF * 2) * t) * 0.2;
-      env = Math.pow(1 - p, 1.6);
-    } else if (kind === "bubblePop") {
-      // Classic satisfying mouth/water bubble pop (upward pitch sweep)
-      const f = 280 + Math.pow(p, 1.6) * 680;
+      env = Math.exp(-lp * 12);
+    } else if (kind === "uiPop") {
+      const f = 310 + Math.pow(p, 1.5) * 620;
       w = Math.sin(2 * Math.PI * f * t);
-      env = Math.sin(Math.PI * p) * Math.pow(1 - p, 0.8);
+      env = Math.sin(Math.PI * p) * Math.pow(1 - p, 0.85);
     }
 
-    const out = clamp(w * env * 0.72, -1, 1);
+    const out = clamp(w * env * 0.74, -1, 1);
     view.setInt16(44 + i * 2, out * 32767, true);
   }
 
@@ -163,18 +153,17 @@ function buildSatisfyingSfx(kind: SfxKind): string {
 }
 
 const SFX: Record<SfxKind, string> = {
-  marimbaPop: buildSatisfyingSfx("marimbaPop"),
-  mechThock: buildSatisfyingSfx("mechThock"),
-  velvetSwipe: buildSatisfyingSfx("velvetSwipe"),
-  cardFlutter: buildSatisfyingSfx("cardFlutter"),
-  crystalPlink: buildSatisfyingSfx("crystalPlink"),
-  harmonicKaching: buildSatisfyingSfx("harmonicKaching"),
-  warmSub: buildSatisfyingSfx("warmSub"),
-  bubblePop: buildSatisfyingSfx("bubblePop"),
+  cashKaching: buildCrispSfx("cashKaching"),
+  coinClink: buildCrispSfx("coinClink"),
+  markerSwipe: buildCrispSfx("markerSwipe"),
+  mechThock: buildCrispSfx("mechThock"),
+  subDrop: buildCrispSfx("subDrop"),
+  cardSnap: buildCrispSfx("cardSnap"),
+  uiPop: buildCrispSfx("uiPop"),
 };
 
 /* =========================================================================
-   02. 18 CUTS WITH 6 DISTINCT TEXT ANIMATION STYLES & VARIED SFX
+   02. 17 SUB-3-SECOND CUTS (ZERO EMOJIS, SENPAISPIDER TIMELINE)
    ========================================================================= */
 
 type TextAnimStyle =
@@ -189,403 +178,460 @@ type CutSpec = {
   id: number;
   startSec: number;
   endSec: number;
-  badge: string;
+  tag: string;
   titleTop: string;
   titleMain: string;
-  subTag: string;
+  subLabel: string;
   accent: string;
   textStyle: TextAnimStyle;
-  sfx: SfxKind;
-  extraSfx?: { offsetSec: number; kind: SfxKind };
+  fullScreenTypo?: boolean;
+  primarySfx: SfxKind;
+  moneySfx?: { offsetSec: number; kind: SfxKind };
 };
 
-const RAPID_CUTS: CutSpec[] = [
-  // 1 (0.0s - 2.2s)
+const CUTS: CutSpec[] = [
+  // CUT 1 (0.0s - 2.2s): FULL-SCREEN TYPOGRAPHY HOOK PART 1
   {
     id: 1,
     startSec: 0.0,
     endSec: 2.2,
-    badge: "HOOK // 01",
-    titleTop: "CHALO AAJ DEKHTE HAIN...",
-    titleMain: "COMPANIES KAISE LETI HAIN?! 👀",
-    subTag: "WAIT FOR IT...",
-    accent: GOLD,
-    textStyle: "wordStagger",
-    sfx: "marimbaPop",
-    extraSfx: { offsetSec: 0.25, kind: "bubblePop" },
+    tag: "SEQUENCE // 01",
+    titleTop: "BADI COMPANIES AAPKO",
+    titleMain: "'FREE' KE NAAM PAR KAISE LOOT-TI HAIN?",
+    subLabel: "DARK MARKETING EXPOSED",
+    accent: NEON_GREEN,
+    textStyle: "highlighter",
+    fullScreenTypo: true,
+    primarySfx: "markerSwipe",
+    moneySfx: { offsetSec: 0.3, kind: "subDrop" },
   },
-  // 2 (2.2s - 4.3s)
+  // CUT 2 (2.2s - 4.2s): FULL-SCREEN TYPOGRAPHY HOOK PART 2 ("CHALO AAJ EXACTLY DEKHTE HAIN")
   {
     id: 2,
     startSec: 2.2,
-    endSec: 4.3,
-    badge: "POCKET DRAIN // 02",
-    titleTop: "MERA MATLAB HAI...",
-    titleMain: "JEB KAISE KHAALI KARTI HAIN! 💸",
-    subTag: "WALLET BALANCE: ₹0",
-    accent: CRIMSON,
-    textStyle: "highlighter",
-    sfx: "velvetSwipe",
-    extraSfx: { offsetSec: 0.35, kind: "warmSub" },
+    endSec: 4.2,
+    tag: "SEQUENCE // 02",
+    titleTop: "CHALO AAJ",
+    titleMain: "EXACTLY DEKHTE HAIN.",
+    subLabel: "STEP-BY-STEP BREAKDOWN",
+    accent: NEON_GREEN,
+    textStyle: "wordStagger",
+    fullScreenTypo: true,
+    primarySfx: "mechThock",
+    moneySfx: { offsetSec: 0.22, kind: "cardSnap" },
   },
-  // 3 (4.3s - 6.2s)
+  // CUT 3 (4.2s - 6.4s): ONLINE T-SHIRT SHOPPING
   {
     id: 3,
-    startSec: 4.3,
-    endSec: 6.2,
-    badge: "SECRET FILE // 03",
-    titleTop: "ISE DARK PSYCHOLOGY MEIN",
-    titleMain: "KYA KEHTE HAIN? 🕵️‍♂️",
-    subTag: "CLASSIFIED MARKETING TRICK",
-    accent: PURPLE,
-    textStyle: "typewriter",
-    sfx: "mechThock",
-    extraSfx: { offsetSec: 0.18, kind: "mechThock" },
+    startSec: 4.2,
+    endSec: 6.4,
+    tag: "SCENARIO // 03",
+    titleTop: "MAAN LO AAP ONLINE EK",
+    titleMain: "T-SHIRT KHARID RAHE HO",
+    subLabel: "STANDARD E-COMMERCE CHECKOUT",
+    accent: CYAN,
+    textStyle: "slideSplit",
+    primarySfx: "cardSnap",
   },
-  // 4 (6.2s - 8.2s)
+  // CUT 4 (6.4s - 8.6s): PRICE IS RS. 400 (NEON GREEN MONEY HIGHLIGHT + CASH SFX)
   {
     id: 4,
-    startSec: 6.2,
-    endSec: 8.2,
-    badge: "THE TRAP // 04",
-    titleTop: "THE ILLUSION OF CHOICE:",
-    titleMain: "THE DECOY EFFECT! 🎯",
-    subTag: "BRAIN MANIPULATION FORMULA",
-    accent: CYAN,
-    textStyle: "letterSnap",
-    sfx: "crystalPlink",
-    extraSfx: { offsetSec: 0.25, kind: "warmSub" },
+    startSec: 6.4,
+    endSec: 8.6,
+    tag: "ITEM PRICE // 04",
+    titleTop: "T-SHIRT KI PRICE HAI",
+    titleMain: "RS. 400",
+    subLabel: "BASE PRODUCT VALUE",
+    accent: NEON_GREEN,
+    textStyle: "highlighter",
+    primarySfx: "cashKaching",
   },
-  // 5 (8.2s - 10.2s)
+  // CUT 5 (8.6s - 10.8s): DELIVERY CHARGE RS. 50
   {
     id: 5,
-    startSec: 8.2,
-    endSec: 10.2,
-    badge: "SCENARIO // 05",
-    titleTop: "MAAN LO AAP GAYE",
-    titleMain: "MOVIE DEKHNE! 🎬",
-    subTag: "CINEMA SNACK COUNTER",
-    accent: GOLD,
+    startSec: 8.6,
+    endSec: 10.8,
+    tag: "SHIPPING FEE // 05",
+    titleTop: "AUR DELIVERY CHARGE HAI",
+    titleMain: "+ RS. 50",
+    subLabel: "EXTRA SHIPPING COST",
+    accent: CRIMSON,
     textStyle: "flip3D",
-    sfx: "cardFlutter",
+    primarySfx: "coinClink",
   },
-  // 6 (10.2s - 12.6s)
+  // CUT 6 (10.8s - 13.0s): TOTAL HUA RS. 450
   {
     id: 6,
-    startSec: 10.2,
-    endSec: 12.6,
-    badge: "MENU BOARD // 06",
-    titleTop: "SAMNE SIRF 2 OPTIONS HAIN:",
-    titleMain: "SMALL ₹100 vs LARGE ₹200 🍿",
-    subTag: "2X PRICE DIFFERENCE",
-    accent: CYAN,
-    textStyle: "slideSplit",
-    sfx: "velvetSwipe",
-    extraSfx: { offsetSec: 0.3, kind: "crystalPlink" },
+    startSec: 10.8,
+    endSec: 13.0,
+    tag: "CART TOTAL // 06",
+    titleTop: "AAPKA TOTAL BILL HUA",
+    titleMain: "RS. 450",
+    subLabel: "RS. 400 ITEM + RS. 50 SHIPPING",
+    accent: NEON_GREEN,
+    textStyle: "letterSnap",
+    primarySfx: "coinClink",
+    moneySfx: { offsetSec: 0.25, kind: "markerSwipe" },
   },
-  // 7 (12.6s - 15.2s)
+  // CUT 7 (13.0s - 15.5s): RS. 50 DELIVERY FEELS LIKE A WASTE
   {
     id: 7,
-    startSec: 12.6,
-    endSec: 15.2,
-    badge: "SMART MOVE // 07",
-    titleTop: "PAISE BACHANE KE LIYE",
-    titleMain: "AAP SMALL HI LOGE, RIGHT? ✅",
-    subTag: "LOGICAL BRAIN SAVES ₹100",
-    accent: NEON_GREEN,
-    textStyle: "highlighter",
-    sfx: "bubblePop",
-    extraSfx: { offsetSec: 0.4, kind: "crystalPlink" },
+    startSec: 13.0,
+    endSec: 15.5,
+    tag: "PAIN POINT // 07",
+    titleTop: "AAPKO LAGTA HAI KI RS. 50 DENA",
+    titleMain: "PURE WASTE HAI",
+    subLabel: "LOSS AVERSION TRIGGERED",
+    accent: CRIMSON,
+    textStyle: "wordStagger",
+    primarySfx: "subDrop",
   },
-  // 8 (15.2s - 17.5s)
+  // CUT 8 (15.5s - 18.2s): BANNER APPEARS: FREE SHIPPING ABOVE RS. 500
   {
     id: 8,
-    startSec: 15.2,
-    endSec: 17.5,
-    badge: "TRAP ACTIVATED // 08",
-    titleTop: "LEKIN AB COMPANIES KHELTI HAIN",
-    titleMain: "DIRTY MIND GAME! 🧠⚡",
-    subTag: "PSYCHOLOGICAL OVERRIDE",
-    accent: CRIMSON,
-    textStyle: "wordStagger",
-    sfx: "warmSub",
-    extraSfx: { offsetSec: 0.22, kind: "marimbaPop" },
+    startSec: 15.5,
+    endSec: 18.2,
+    tag: "THE BAIT BANNER // 08",
+    titleTop: "TABHI SCREEN PAR BANNER DIKHTA HAI:",
+    titleMain: "FREE SHIPPING ABOVE RS. 500",
+    subLabel: "ADD RS. 100 MORE TO UNLOCK",
+    accent: NEON_GREEN,
+    textStyle: "highlighter",
+    primarySfx: "markerSwipe",
+    moneySfx: { offsetSec: 0.3, kind: "coinClink" },
   },
-  // 9 (17.5s - 20.3s)
+  // CUT 9 (18.2s - 20.6s): TO SAVE THAT RS. 50 DELIVERY
   {
     id: 9,
-    startSec: 17.5,
-    endSec: 20.3,
-    badge: "THE BAIT // 09",
-    titleTop: "BEECH MEIN RAKH DETI HAIN:",
-    titleMain: "MEDIUM POPCORN @ ₹180! 🚨",
-    subTag: "3-OPTION MENU TRAP",
+    startSec: 18.2,
+    endSec: 20.6,
+    tag: "BRAIN LOGIC // 09",
+    titleTop: "AB US RS. 50 KI DELIVERY KO",
+    titleMain: "BACHANE KE LIYE...",
+    subLabel: "MISSION: AVOID SHIPPING FEE",
     accent: GOLD,
-    textStyle: "flip3D",
-    sfx: "cardFlutter",
-    extraSfx: { offsetSec: 0.3, kind: "bubblePop" },
+    textStyle: "typewriter",
+    primarySfx: "mechThock",
+    moneySfx: { offsetSec: 0.2, kind: "coinClink" },
   },
-  // 10 (20.3s - 22.3s)
+  // CUT 10 (20.6s - 23.4s): HERO 3-CARD SCENE! RS. 150 EXTRA ITEM SLAMS IN THE MIDDLE
   {
     id: 10,
-    startSec: 20.3,
-    endSec: 22.3,
-    badge: "BRAIN GLITCH // 10",
-    titleTop: "AB AAPKA DIMAAG",
-    titleMain: "TURANT COMPARE KAREGA: 🤯",
-    subTag: "₹180 vs ₹200 = SIRF ₹20!",
-    accent: PURPLE,
-    textStyle: "typewriter",
-    sfx: "mechThock",
-    extraSfx: { offsetSec: 0.2, kind: "crystalPlink" },
-  },
-  // 11 (22.3s - 25.2s)
-  {
-    id: 11,
-    startSec: 22.3,
-    endSec: 25.2,
-    badge: "GOTCHA! // 11",
-    titleTop: "SIRF ₹20 AUR DEKAR",
-    titleMain: "LARGE HI LE LETA HOON! 🤑",
-    subTag: "YOU SPENT ₹200 INSTEAD OF ₹100!",
-    accent: NEON_GREEN,
-    textStyle: "highlighter",
-    sfx: "harmonicKaching",
-  },
-  // 12 (25.2s - 27.5s)
-  {
-    id: 12,
-    startSec: 25.2,
-    endSec: 27.5,
-    badge: "DARK TRUTH // 12",
-    titleTop: "YE MEDIUM POPCORN UNHE",
-    titleMain: "BECHNA HI NAHI THA! ❌",
-    subTag: "DUMMY PRODUCT EXPOSED",
-    accent: CRIMSON,
-    textStyle: "slideSplit",
-    sfx: "velvetSwipe",
-    extraSfx: { offsetSec: 0.35, kind: "warmSub" },
-  },
-  // 13 (27.5s - 29.6s)
-  {
-    id: 13,
-    startSec: 27.5,
-    endSec: 29.6,
-    badge: "PURE BAIT // 13",
-    titleTop: "YE BAS EK",
-    titleMain: "FAKE DECOY THA! 🪝",
-    subTag: "DESIGNED TO MAKE ₹200 LOOK CHEAP",
-    accent: GOLD,
-    textStyle: "letterSnap",
-    sfx: "crystalPlink",
-  },
-  // 14 (29.6s - 32.2s)
-  {
-    id: 14,
-    startSec: 29.6,
-    endSec: 32.2,
-    badge: "MIND CONTROL // 14",
-    titleTop: "AAPKE DIMAAG KE DECISION KO",
-    titleMain: "CONTROL KARNE KE LIYE! 🎮",
-    subTag: "PUPPET MASTER MARKETING",
-    accent: CYAN,
-    textStyle: "wordStagger",
-    sfx: "marimbaPop",
-    extraSfx: { offsetSec: 0.25, kind: "bubblePop" },
-  },
-  // 15 (32.2s - 35.0s)
-  {
-    id: 15,
-    startSec: 32.2,
-    endSec: 35.0,
-    badge: "STAY AWARE // 15",
-    titleTop: "AGLI BAAR SHOPPING MEIN",
-    titleMain: "DIMAAG KHULA RAKHNA! 🛡️",
-    subTag: "ANTI-DECOY RADAR ON",
+    startSec: 20.6,
+    endSec: 23.4,
+    tag: "THE TRAP ADDITION // 10",
+    titleTop: "AAP BEECH MEIN ADD KAR LETE HO:",
+    titleMain: "RS. 150 KA EXTRA ITEM",
+    subLabel: "UNPLANNED PURCHASE INSERTED",
     accent: NEON_GREEN,
     textStyle: "flip3D",
-    sfx: "cardFlutter",
-    extraSfx: { offsetSec: 0.3, kind: "crystalPlink" },
+    primarySfx: "cardSnap",
+    moneySfx: { offsetSec: 0.25, kind: "cashKaching" },
   },
-  // 16 (35.0s - 37.5s)
+  // CUT 11 (23.4s - 26.0s): RESULT? TOTAL BILL BECOMES RS. 550!
   {
-    id: 16,
-    startSec: 35.0,
-    endSec: 37.5,
-    badge: "SALE MAGNET // 16",
-    titleTop: "KAUN SA DOST OFFERS DEKHTE HI",
-    titleMain: "PAGAL HO JATA HAI? 🛍️",
-    subTag: "BUY 1 GET 1 TRAP VICTIM",
-    accent: PURPLE,
-    textStyle: "slideSplit",
-    sfx: "velvetSwipe",
-  },
-  // 17 (37.5s - 40.0s)
-  {
-    id: 17,
-    startSec: 37.5,
-    endSec: 40.0,
-    badge: "AWARD GOES TO // 17",
-    titleTop: "OFFERS KE CHAKKAR MEIN",
-    titleMain: "SABSE BADA BEWAKOOF! 🤡🏆",
-    subTag: "#1 MARKETING VICTIM",
-    accent: GOLD,
+    id: 11,
+    startSec: 23.4,
+    endSec: 26.0,
+    tag: "FINAL BILL // 11",
+    titleTop: "RESULT? AAPKA TOTAL BILL BANA",
+    titleMain: "RS. 550",
+    subLabel: "SHIPPING: RS. 0 [FREE] • TOTAL: RS. 550",
+    accent: NEON_GREEN,
     textStyle: "highlighter",
-    sfx: "bubblePop",
-    extraSfx: { offsetSec: 0.3, kind: "harmonicKaching" },
+    primarySfx: "cashKaching",
   },
-  // 18 (40.0s - 43.0s)
+  // CUT 12 (26.0s - 28.6s): COMPANY INCREASED YOUR SPEND BY RS. 100
   {
-    id: 18,
-    startSec: 40.0,
-    endSec: 43.0,
-    badge: "YOUR TURN // 18",
-    titleTop: "COMMENT MEIN USE",
-    titleMain: "JALDI TAG KARO! 👇",
-    subTag: "EXPOSE THAT FRIEND BELOW",
+    id: 12,
+    startSec: 26.0,
+    endSec: 28.6,
+    tag: "PROFIT MATH // 12",
+    titleTop: "COMPANY NE CHALAKI SE AAPKA KHARCH",
+    titleMain: "RS. 100 BADHA DIYA",
+    subLabel: "RS. 450 OLD BILL -> RS. 550 NEW BILL",
+    accent: CRIMSON,
+    textStyle: "slideSplit",
+    primarySfx: "coinClink",
+    moneySfx: { offsetSec: 0.28, kind: "subDrop" },
+  },
+  // CUT 13 (28.6s - 31.2s): ONLY USING THE ILLUSION OF 'FREE'
+  {
+    id: 13,
+    startSec: 28.6,
+    endSec: 31.2,
+    tag: "THE ILLUSION // 13",
+    titleTop: "SIRF US 'FREE' WORD KA",
+    titleMain: "ILLUSION BANAKAR",
+    subLabel: "PSYCHOLOGICAL TRIGGER WORD",
+    accent: NEON_GREEN,
+    textStyle: "letterSnap",
+    primarySfx: "markerSwipe",
+  },
+  // CUT 14 (31.2s - 33.6s): THIS IS CALLED THE FREE SHIPPING TRAP
+  {
+    id: 14,
+    startSec: 31.2,
+    endSec: 33.6,
+    tag: "CONCEPT LOCKED // 14",
+    titleTop: "ISE KEHTE HAIN",
+    titleMain: "THE FREE SHIPPING TRAP",
+    subLabel: "E-COMMERCE DARK PATTERN #04",
     accent: CYAN,
     textStyle: "wordStagger",
-    sfx: "marimbaPop",
-    extraSfx: { offsetSec: 0.25, kind: "crystalPlink" },
+    fullScreenTypo: true,
+    primarySfx: "subDrop",
+    moneySfx: { offsetSec: 0.22, kind: "cardSnap" },
+  },
+  // CUT 15 (33.6s - 36.0s): CTA PART 1 — TO SAVE RS. 50 DELIVERY
+  {
+    id: 15,
+    startSec: 33.6,
+    endSec: 36.0,
+    tag: "REALITY CHECK // 15",
+    titleTop: "PICHHLI BAAR US RS. 50 KI",
+    titleMain: "DELIVERY BACHANE KE LIYE...",
+    subLabel: "BE 100% HONEST WITH YOURSELF",
+    accent: GOLD,
+    textStyle: "typewriter",
+    primarySfx: "mechThock",
+  },
+  // CUT 16 (36.0s - 38.2s): CTA PART 2 — HOW MUCH EXTRA DID YOU BUY?
+  {
+    id: 16,
+    startSec: 36.0,
+    endSec: 38.2,
+    tag: "YOUR BILL // 16",
+    titleTop: "AAPNE KITNE RUPEES KA",
+    titleMain: "FALTU SAAMAN KHARIDA THA?",
+    subLabel: "RS. 200? RS. 500? RS. 1,000?",
+    accent: NEON_GREEN,
+    textStyle: "highlighter",
+    primarySfx: "cashKaching",
+  },
+  // CUT 17 (38.2s - 40.5s): CTA PART 3 — DROP REALITY IN COMMENTS
+  {
+    id: 17,
+    startSec: 38.2,
+    endSec: 40.5,
+    tag: "COMMENT BELOW // 17",
+    titleTop: "APNI REALITY",
+    titleMain: "COMMENT MEIN BATAO.",
+    subLabel: "DROP YOUR EXTRA SPEND AMOUNT",
+    accent: NEON_GREEN,
+    textStyle: "wordStagger",
+    primarySfx: "uiPop",
+    moneySfx: { offsetSec: 0.25, kind: "coinClink" },
   },
 ];
 
 /* =========================================================================
-   03. 6 DISTINCT SATISFYING TEXT ANIMATION RENDERERS
+   03. HELPER: INLINE NEON GREEN MONEY PILL RENDERER
    ========================================================================= */
 
-const SatisfyingHeadline: React.FC<{
+const highlightMoneyTokens = (text: string, accent: string) => {
+  const parts = text.split(/(RS\.\s*\d+|'FREE'|FREE|\+\s*RS\.\s*\d+)/g);
+  return parts.map((part, i) => {
+    const isMoneyOrFree = /^(RS\.\s*\d+|'FREE'|FREE|\+\s*RS\.\s*\d+)$/.test(part);
+    if (!isMoneyOrFree) return <React.Fragment key={i}>{part}</React.Fragment>;
+    return (
+      <span
+        key={i}
+        style={{
+          display: "inline-block",
+          padding: "2px 18px",
+          margin: "0 6px",
+          borderRadius: 10,
+          background: NEON_GREEN,
+          color: "#030705",
+          boxShadow: `0 0 35px ${NEON_GREEN}99`,
+          fontWeight: 900,
+        }}
+      >
+        {part}
+      </span>
+    );
+  });
+};
+
+/* =========================================================================
+   04. FULL-SCREEN KINETIC TYPOGRAPHY STAGE (FOR HOOKS & KEY REVEALS)
+   ========================================================================= */
+
+const FullScreenTypographyStage: React.FC<{
   cut: CutSpec;
   localFrame: number;
 }> = ({ cut, localFrame }) => {
   const { fps } = useVideoConfig();
 
-  // STYLE 1: WORD-BY-WORD ELASTIC MASK RISE
-  if (cut.textStyle === "wordStagger") {
-    const words = cut.titleMain.split(" ");
-    const topSpring = spring({
-      frame: localFrame,
-      fps,
-      config: { damping: 14, stiffness: 160 },
-    });
+  const words = cut.titleMain.split(" ");
+  const sweep = interpolate(localFrame, [8, 34], [0, 100], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
 
-    return (
-      <div style={{ textAlign: "center" }}>
-        <div
-          style={{
-            fontSize: 34,
-            fontWeight: 900,
-            color: "#CBD5E1",
-            letterSpacing: 4,
-            opacity: topSpring,
-            transform: `translateY(${(1 - topSpring) * 20}px)`,
-            marginBottom: 10,
-          }}
-        >
-          {cut.titleTop}
-        </div>
+  return (
+    <AbsoluteFill
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "0 68px",
+        textAlign: "center",
+      }}
+    >
+      {/* Top Minimal Architectural Bracket */}
+      <div
+        style={{
+          padding: "10px 28px",
+          border: `2px solid ${ NEON_GREEN }`,
+          background: "rgba(0, 255, 102, 0.08)",
+          color: NEON_GREEN,
+          fontSize: 24,
+          fontWeight: 900,
+          letterSpacing: 6,
+          marginBottom: 36,
+        }}
+      >
+        [ {cut.titleTop} ]
+      </div>
 
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: "8px 18px",
-          }}
-        >
-          {words.map((word, idx) => {
-            const wSpring = spring({
-              frame: Math.max(0, localFrame - idx * 4),
-              fps,
-              config: { damping: 11, stiffness: 190, mass: 0.7 },
-            });
-            return (
+      {/* Giant Senpaispider Full-Screen Words */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: "16px 24px",
+          maxWidth: 940,
+        }}
+      >
+        {words.map((w, idx) => {
+          const wSpring = spring({
+            frame: Math.max(0, localFrame - idx * 4),
+            fps,
+            config: { damping: 12, stiffness: 200, mass: 0.7 },
+          });
+
+          const isGreenWord =
+            w.includes("FREE") ||
+            w.includes("EXACTLY") ||
+            w.includes("TRAP");
+
+          return (
+            <span
+              key={idx}
+              style={{
+                display: "inline-block",
+                overflow: "hidden",
+                padding: "4px 6px",
+              }}
+            >
               <span
-                key={idx}
                 style={{
                   display: "inline-block",
-                  overflow: "hidden",
-                  paddingBottom: 6,
+                  position: "relative",
+                  fontFamily: '"Arial Black", Impact, sans-serif',
+                  fontSize: cut.id === 2 ? 104 : 86,
+                  fontWeight: 900,
+                  lineHeight: 1.04,
+                  letterSpacing: -1,
+                  color: isGreenWord ? "#040806" : "#FFFFFF",
+                  padding: isGreenWord ? "4px 22px" : "0",
+                  borderRadius: 12,
+                  background: isGreenWord
+                    ? `linear-gradient(90deg, ${NEON_GREEN} ${sweep}%, rgba(0,255,102,0.15) ${sweep}%)`
+                    : "transparent",
+                  boxShadow: isGreenWord ? `0 0 55px ${NEON_GREEN}88` : "none",
+                  transform: `translateY(${(1 - wSpring) * 95}px)`,
                 }}
               >
-                <span
-                  style={{
-                    display: "inline-block",
-                    fontFamily: '"Arial Black", Impact, sans-serif',
-                    fontSize: 68,
-                    fontWeight: 900,
-                    lineHeight: 1.05,
-                    color: idx === words.length - 1 ? cut.accent : "#FFFFFF",
-                    transform: `translateY(${(1 - wSpring) * 85}px) rotate(${
-                      (1 - wSpring) * 6
-                    }deg)`,
-                    textShadow: `0 10px 25px rgba(0,0,0,0.85)`,
-                  }}
-                >
-                  {word}
-                </span>
+                {w}
               </span>
-            );
-          })}
-        </div>
+            </span>
+          );
+        })}
       </div>
-    );
-  }
 
-  // STYLE 2: GLOWING HIGHLIGHTER MARKER SWEEP
+      {/* Bottom Telemetry Rule */}
+      <div
+        style={{
+          marginTop: 48,
+          display: "flex",
+          alignItems: "center",
+          gap: 20,
+          color: "#64748B",
+          fontSize: 22,
+          fontWeight: 800,
+          letterSpacing: 5,
+        }}
+      >
+        <div style={{ width: 60, height: 2, background: NEON_GREEN }} />
+        <span>{cut.subLabel}</span>
+        <div style={{ width: 60, height: 2, background: NEON_GREEN }} />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/* =========================================================================
+   05. 6 DISTINCT TOP HEADLINE ANIMATIONS (ZERO REPETITION)
+   ========================================================================= */
+
+const VariedTopHeadline: React.FC<{
+  cut: CutSpec;
+  localFrame: number;
+}> = ({ cut, localFrame }) => {
+  const { fps } = useVideoConfig();
+
   if (cut.textStyle === "highlighter") {
-    const fade = interpolate(localFrame, [0, 12], [0, 1], {
-      extrapolateRight: "clamp",
-    });
-    const sweepPct = interpolate(localFrame, [6, 30], [0, 100], {
+    const barW = interpolate(localFrame, [4, 28], [0, 100], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
       easing: Easing.out(Easing.cubic),
     });
 
     return (
-      <div style={{ textAlign: "center", opacity: fade }}>
+      <div style={{ textAlign: "center" }}>
         <div
           style={{
-            fontSize: 34,
+            fontSize: 30,
             fontWeight: 900,
-            color: "#E2E8F0",
-            letterSpacing: 3,
-            marginBottom: 14,
+            color: "#94A3B8",
+            letterSpacing: 4,
+            marginBottom: 12,
           }}
         >
           {cut.titleTop}
         </div>
-
         <div
           style={{
             position: "relative",
             display: "inline-block",
-            padding: "10px 28px",
+            padding: "8px 32px",
           }}
         >
-          {/* Animated Marker Bar Sweeping Behind Text */}
           <div
             style={{
               position: "absolute",
               left: 0,
-              top: 4,
-              bottom: 4,
-              width: `${sweepPct}%`,
-              background: cut.accent,
-              borderRadius: 18,
-              boxShadow: `0 0 45px ${cut.accent}99`,
-              zIndex: 0,
+              top: 2,
+              bottom: 2,
+              width: `${barW}%`,
+              background: NEON_GREEN,
+              borderRadius: 12,
+              boxShadow: `0 0 50px ${NEON_GREEN}99`,
             }}
           />
           <span
             style={{
               position: "relative",
-              zIndex: 1,
               fontFamily: '"Arial Black", Impact, sans-serif',
-              fontSize: 64,
+              fontSize: 66,
               fontWeight: 900,
-              color: sweepPct > 50 ? "#05070E" : "#FFFFFF",
+              color: barW > 45 ? "#040806" : "#FFFFFF",
             }}
           >
             {cut.titleMain}
@@ -595,28 +641,19 @@ const SatisfyingHeadline: React.FC<{
     );
   }
 
-  // STYLE 3: MECHANICAL TYPEWRITER REVEAL WITH CURSOR
   if (cut.textStyle === "typewriter") {
-    const totalChars = cut.titleMain.length;
-    const visibleChars = Math.min(
-      totalChars,
-      Math.floor(
-        interpolate(localFrame, [2, 28], [0, totalChars], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        })
-      )
+    const len = cut.titleMain.length;
+    const chars = Math.min(
+      len,
+      Math.floor(interpolate(localFrame, [2, 26], [0, len], { extrapolateRight: "clamp" }))
     );
-    const typedText = cut.titleMain.slice(0, visibleChars);
-    const showCursor = localFrame % 12 < 7;
-
     return (
       <div style={{ textAlign: "center" }}>
         <div
           style={{
-            fontSize: 32,
+            fontSize: 28,
             fontWeight: 900,
-            color: cut.accent,
+            color: NEON_GREEN,
             letterSpacing: 5,
             fontFamily: "monospace",
             marginBottom: 10,
@@ -625,176 +662,961 @@ const SatisfyingHeadline: React.FC<{
           {"> "}
           {cut.titleTop}
         </div>
+        <div
+          style={{
+            fontFamily: '"Arial Black", Impact, sans-serif',
+            fontSize: 64,
+            fontWeight: 900,
+            color: "#FFFFFF",
+          }}
+        >
+          {highlightMoneyTokens(cut.titleMain.slice(0, chars), cut.accent)}
+          <span style={{ color: NEON_GREEN, marginLeft: 6 }}>_</span>
+        </div>
+      </div>
+    );
+  }
 
+  if (cut.textStyle === "flip3D") {
+    const f1 = spring({ frame: localFrame, fps, config: { damping: 12, stiffness: 165 } });
+    return (
+      <div style={{ textAlign: "center", perspective: 900 }}>
+        <div
+          style={{
+            fontSize: 30,
+            fontWeight: 900,
+            color: "#CBD5E1",
+            letterSpacing: 4,
+            marginBottom: 10,
+          }}
+        >
+          {cut.titleTop}
+        </div>
         <div
           style={{
             fontFamily: '"Arial Black", Impact, sans-serif',
             fontSize: 66,
             fontWeight: 900,
             color: "#FFFFFF",
-            textShadow: `0 0 35px ${cut.accent}77`,
+            transformOrigin: "50% 0%",
+            transform: `rotateX(${(1 - f1) * 85}deg)`,
+            opacity: f1,
           }}
         >
-          {typedText}
-          {showCursor && (
-            <span style={{ color: cut.accent, marginLeft: 6 }}>▋</span>
-          )}
+          {highlightMoneyTokens(cut.titleMain, cut.accent)}
         </div>
       </div>
     );
   }
 
-  // STYLE 4: 3D SPLIT-FLAP PERSPECTIVE FLIP
-  if (cut.textStyle === "flip3D") {
-    const flip1 = spring({
-      frame: localFrame,
-      fps,
-      config: { damping: 12, stiffness: 150 },
-    });
-    const flip2 = spring({
-      frame: Math.max(0, localFrame - 7),
-      fps,
-      config: { damping: 11, stiffness: 165 },
-    });
-
+  if (cut.textStyle === "slideSplit") {
+    const s = spring({ frame: localFrame, fps, config: { damping: 14, stiffness: 170 } });
     return (
-      <div
-        style={{
-          textAlign: "center",
-          perspective: 900,
-        }}
-      >
+      <div style={{ textAlign: "center" }}>
         <div
           style={{
-            fontSize: 34,
+            fontSize: 30,
             fontWeight: 900,
-            color: "#E2E8F0",
-            letterSpacing: 3,
-            transformOrigin: "50% 0%",
-            transform: `rotateX(${(1 - flip1) * -88}deg)`,
-            opacity: flip1,
+            color: "#94A3B8",
+            letterSpacing: 4,
+            transform: `translateX(${(1 - s) * -140}px)`,
+            opacity: s,
           }}
         >
           {cut.titleTop}
         </div>
+        <div
+          style={{
+            marginTop: 10,
+            fontFamily: '"Arial Black", Impact, sans-serif',
+            fontSize: 64,
+            fontWeight: 900,
+            color: "#FFFFFF",
+            transform: `translateX(${(1 - s) * 140}px)`,
+            opacity: s,
+          }}
+        >
+          {highlightMoneyTokens(cut.titleMain, cut.accent)}
+        </div>
+      </div>
+    );
+  }
 
+  if (cut.textStyle === "letterSnap") {
+    const snap = spring({ frame: localFrame, fps, config: { damping: 13, stiffness: 175 } });
+    return (
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 30, fontWeight: 900, color: "#94A3B8", letterSpacing: 4 }}>
+          {cut.titleTop}
+        </div>
         <div
           style={{
             marginTop: 10,
             fontFamily: '"Arial Black", Impact, sans-serif',
             fontSize: 68,
             fontWeight: 900,
-            color: cut.accent,
-            transformOrigin: "50% 0%",
-            transform: `rotateX(${(1 - flip2) * 88}deg)`,
-            opacity: flip2,
-            textShadow: `0 0 40px ${cut.accent}88`,
+            color: "#FFFFFF",
+            letterSpacing: `${interpolate(snap, [0, 1], [22, 0])}px`,
+            opacity: snap,
           }}
         >
-          {cut.titleMain}
+          {highlightMoneyTokens(cut.titleMain, cut.accent)}
         </div>
       </div>
     );
   }
 
-  // STYLE 5: OPPOSITE HORIZONTAL SPLIT-SLIDE
-  if (cut.textStyle === "slideSplit") {
-    const slideProgress = spring({
-      frame: localFrame,
-      fps,
-      config: { damping: 14, stiffness: 170 },
-    });
-
-    return (
-      <div style={{ textAlign: "center" }}>
-        <div
-          style={{
-            fontSize: 34,
-            fontWeight: 900,
-            color: "#E2E8F0",
-            letterSpacing: 3,
-            transform: `translateX(${(1 - slideProgress) * -180}px)`,
-            opacity: slideProgress,
-          }}
-        >
-          {cut.titleTop}
-        </div>
-
-        <div
-          style={{
-            marginTop: 10,
-            fontFamily: '"Arial Black", Impact, sans-serif',
-            fontSize: 66,
-            fontWeight: 900,
-            color: cut.accent,
-            transform: `translateX(${(1 - slideProgress) * 180}px)`,
-            opacity: slideProgress,
-            textShadow: `0 0 40px ${cut.accent}77`,
-          }}
-        >
-          {cut.titleMain}
-        </div>
-      </div>
-    );
-  }
-
-  // STYLE 6: MAGNETIC LETTER-SPACING SNAP ("letterSnap")
-  const snap = spring({
-    frame: localFrame,
-    fps,
-    config: { damping: 13, stiffness: 175 },
-  });
-  const spacing = interpolate(snap, [0, 1], [26, 0]);
-
+  // Default: wordStagger
+  const words = cut.titleMain.split(" ");
   return (
     <div style={{ textAlign: "center" }}>
       <div
         style={{
-          fontSize: 34,
+          fontSize: 30,
           fontWeight: 900,
-          color: "#CBD5E1",
+          color: "#94A3B8",
           letterSpacing: 4,
-          opacity: snap,
+          marginBottom: 10,
         }}
       >
         {cut.titleTop}
       </div>
-
-      <div
-        style={{
-          marginTop: 10,
-          fontFamily: '"Arial Black", Impact, sans-serif',
-          fontSize: 70,
-          fontWeight: 900,
-          color: cut.accent,
-          letterSpacing: `${spacing}px`,
-          transform: `scale(${0.9 + snap * 0.1})`,
-          opacity: snap,
-          textShadow: `0 0 45px ${cut.accent}99`,
-        }}
-      >
-        {cut.titleMain}
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "8px 16px" }}>
+        {words.map((w, i) => {
+          const ws = spring({
+            frame: Math.max(0, localFrame - i * 4),
+            fps,
+            config: { damping: 12, stiffness: 190 },
+          });
+          return (
+            <span key={i} style={{ display: "inline-block", overflow: "hidden" }}>
+              <span
+                style={{
+                  display: "inline-block",
+                  fontFamily: '"Arial Black", Impact, sans-serif',
+                  fontSize: 64,
+                  fontWeight: 900,
+                  color: "#FFFFFF",
+                  transform: `translateY(${(1 - ws) * 75}px)`,
+                }}
+              >
+                {highlightMoneyTokens(w, cut.accent)}
+              </span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );
 };
 
 /* =========================================================================
-   04. CYBERNETIC BACKGROUND GRID & FLOATING PARTICLES
+   06. CLEAN VECTOR & NEON GREEN UI STAGE WIDGETS (ZERO EMOJIS!)
    ========================================================================= */
 
-const CyberAtmosphere: React.FC<{ accent: string; frame: number }> = ({
+const CleanVectorStage: React.FC<{
+  cutId: number;
+  localFrame: number;
+}> = ({ cutId, localFrame }) => {
+  const { fps } = useVideoConfig();
+
+  const pop = spring({
+    frame: localFrame,
+    fps,
+    config: { damping: 13, stiffness: 170 },
+  });
+
+  // CUT 3: CLEAN VECTOR E-COMMERCE T-SHIRT PRODUCT CARD
+  if (cutId === 3) {
+    return (
+      <div
+        style={{
+          width: 840,
+          padding: 48,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `2px solid ${CYAN}88`,
+          boxShadow: `0 25px 70px rgba(0,0,0,0.85)`,
+          transform: `translateY(${(1 - pop) * 40}px) scale(${0.92 + pop * 0.08})`,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            borderBottom: "1px solid #1E293B",
+            paddingBottom: 18,
+            marginBottom: 32,
+            color: "#64748B",
+            fontSize: 20,
+            fontWeight: 800,
+            letterSpacing: 3,
+          }}
+        >
+          <span>STORE // APPAREL</span>
+          <span style={{ color: CYAN }}>IN STOCK [01]</span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 44 }}>
+          {/* Clean Geometric SVG T-Shirt Wireframe */}
+          <div
+            style={{
+              width: 260,
+              height: 260,
+              borderRadius: 20,
+              background: "#070B12",
+              border: `2px solid ${CYAN}55`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg width="170" height="170" viewBox="0 0 170 170">
+              <path
+                d="M45 25 L65 25 C72 38 98 38 105 25 L125 25 L155 55 L135 80 L120 65 L120 145 L50 145 L50 65 L35 80 L15 55 Z"
+                fill="rgba(0, 240, 255, 0.12)"
+                stroke={CYAN}
+                strokeWidth="4"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <div style={{ color: "#94A3B8", fontSize: 22, fontWeight: 800, letterSpacing: 3 }}>
+              ESSENTIAL COTTON TEE
+            </div>
+            <div style={{ color: "#FFFFFF", fontSize: 46, fontWeight: 900, marginTop: 8 }}>
+              BLACK OVERSIZED FIT
+            </div>
+            <div
+              style={{
+                marginTop: 28,
+                display: "inline-block",
+                padding: "14px 32px",
+                borderRadius: 10,
+                background: NEON_GREEN,
+                color: "#030805",
+                fontSize: 26,
+                fontWeight: 900,
+                letterSpacing: 2,
+              }}
+            >
+              SELECTED FOR CHECKOUT
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 4: PRICE IS RS. 400 (GIANT NEON GREEN PRICE HIGHLIGHT)
+  if (cutId === 4) {
+    const count = Math.floor(
+      interpolate(localFrame, [0, 28], [100, 400], { extrapolateRight: "clamp" })
+    );
+    return (
+      <div
+        style={{
+          width: 840,
+          padding: 56,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `3px solid ${NEON_GREEN}`,
+          boxShadow: `0 0 80px ${GREEN_GLOW}`,
+          textAlign: "center",
+          transform: `scale(${0.9 + pop * 0.1})`,
+        }}
+      >
+        <div style={{ color: "#94A3B8", fontSize: 24, fontWeight: 900, letterSpacing: 5 }}>
+          ITEM SUBTOTAL
+        </div>
+        <div
+          style={{
+            marginTop: 24,
+            display: "inline-block",
+            padding: "18px 56px",
+            borderRadius: 18,
+            background: NEON_GREEN,
+            color: "#030805",
+            fontFamily: '"Arial Black", Impact, sans-serif',
+            fontSize: 120,
+            fontWeight: 900,
+            boxShadow: `0 0 65px ${NEON_GREEN}`,
+          }}
+        >
+          RS. {count}
+        </div>
+        <div style={{ color: "#CBD5E1", fontSize: 26, fontWeight: 800, marginTop: 28, letterSpacing: 3 }}>
+          1 X OVERSIZED T-SHIRT
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 5: DELIVERY CHARGE + RS. 50
+  if (cutId === 5) {
+    return (
+      <div
+        style={{
+          width: 840,
+          padding: 48,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `3px solid ${CRIMSON}`,
+          boxShadow: `0 0 70px rgba(255, 42, 84, 0.3)`,
+          transform: `scale(${0.9 + pop * 0.1})`,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "24px 32px",
+            borderRadius: 16,
+            background: "#080C14",
+            marginBottom: 22,
+          }}
+        >
+          <span style={{ color: "#94A3B8", fontSize: 30, fontWeight: 800 }}>
+            ITEM PRICE
+          </span>
+          <span style={{ color: "#FFFFFF", fontSize: 36, fontWeight: 900 }}>
+            RS. 400
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "30px 32px",
+            borderRadius: 16,
+            background: "rgba(255, 42, 84, 0.14)",
+            border: `3px solid ${CRIMSON}`,
+          }}
+        >
+          <span style={{ color: "#FFFFFF", fontSize: 34, fontWeight: 900 }}>
+            STANDARD DELIVERY FEE
+          </span>
+          <span
+            style={{
+              padding: "8px 24px",
+              borderRadius: 10,
+              background: NEON_GREEN,
+              color: "#030805",
+              fontSize: 42,
+              fontWeight: 900,
+              boxShadow: `0 0 35px ${NEON_GREEN}`,
+            }}
+          >
+            + RS. 50
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 6: TOTAL HUA RS. 450
+  if (cutId === 6) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 50,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `3px solid ${NEON_GREEN}`,
+          boxShadow: `0 0 75px ${GREEN_GLOW}`,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 24,
+            fontSize: 44,
+            fontWeight: 900,
+            color: "#CBD5E1",
+            marginBottom: 30,
+          }}
+        >
+          <span>RS. 400</span>
+          <span style={{ color: NEON_GREEN }}>+</span>
+          <span>RS. 50</span>
+          <span style={{ color: NEON_GREEN }}>=</span>
+        </div>
+
+        <div
+          style={{
+            display: "inline-block",
+            padding: "20px 64px",
+            borderRadius: 18,
+            background: NEON_GREEN,
+            color: "#030805",
+            fontFamily: '"Arial Black", Impact, sans-serif',
+            fontSize: 108,
+            fontWeight: 900,
+            boxShadow: `0 0 65px ${NEON_GREEN}`,
+          }}
+        >
+          RS. 450
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 7: RS. 50 DELIVERY FEELS LIKE A WASTE
+  if (cutId === 7) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 52,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `3px solid ${CRIMSON}`,
+          textAlign: "center",
+          position: "relative",
+        }}
+      >
+        <div style={{ color: "#94A3B8", fontSize: 26, fontWeight: 900, letterSpacing: 4 }}>
+          CUSTOMER BRAIN REACTION
+        </div>
+        <div
+          style={{
+            fontSize: 82,
+            fontWeight: 900,
+            color: "#FFFFFF",
+            margin: "24px 0",
+            textDecoration: "line-through",
+            opacity: 0.45,
+          }}
+        >
+          DELIVERY: RS. 50
+        </div>
+        <div
+          style={{
+            display: "inline-block",
+            padding: "16px 42px",
+            borderRadius: 12,
+            background: CRIMSON,
+            color: "#FFFFFF",
+            fontSize: 40,
+            fontWeight: 900,
+            letterSpacing: 3,
+            boxShadow: `0 0 50px ${CRIMSON}`,
+          }}
+        >
+          [ 100% MONEY WASTE ]
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 8: FREE SHIPPING ON ORDERS ABOVE RS. 500 BANNER
+  if (cutId === 8) {
+    const barFill = interpolate(localFrame, [0, 45], [30, 80], {
+      extrapolateRight: "clamp",
+      easing: Easing.out(Easing.cubic),
+    });
+
+    return (
+      <div
+        style={{
+          width: 880,
+          padding: 48,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `4px solid ${NEON_GREEN}`,
+          boxShadow: `0 0 85px ${GREEN_GLOW}`,
+        }}
+      >
+        <div
+          style={{
+            padding: "18px 28px",
+            borderRadius: 14,
+            background: NEON_GREEN,
+            color: "#030805",
+            fontSize: 34,
+            fontWeight: 900,
+            textAlign: "center",
+            letterSpacing: 2,
+            boxShadow: `0 0 40px ${NEON_GREEN}`,
+          }}
+        >
+          UNLOCK FREE SHIPPING ON ORDERS ABOVE RS. 500
+        </div>
+
+        <div style={{ marginTop: 36 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              color: "#CBD5E1",
+              fontSize: 24,
+              fontWeight: 900,
+              marginBottom: 14,
+            }}
+          >
+            <span>CURRENT CART: RS. 400</span>
+            <span style={{ color: NEON_GREEN }}>TARGET: RS. 500</span>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              height: 34,
+              borderRadius: 17,
+              background: "#090E17",
+              border: `2px solid ${NEON_GREEN}66`,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${barFill}%`,
+                height: "100%",
+                background: NEON_GREEN,
+                boxShadow: `0 0 30px ${NEON_GREEN}`,
+              }}
+            />
+          </div>
+          <div
+            style={{
+              marginTop: 22,
+              textAlign: "center",
+              color: GOLD,
+              fontSize: 28,
+              fontWeight: 900,
+              letterSpacing: 2,
+            }}
+          >
+            ONLY RS. 100 AWAY FROM FREE DELIVERY
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 9: TO SAVE RS. 50 DELIVERY...
+  if (cutId === 9) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 50,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `3px solid ${GOLD}`,
+          textAlign: "center",
+        }}
+      >
+        <div style={{ color: "#94A3B8", fontSize: 26, fontWeight: 900, letterSpacing: 4 }}>
+          YOUR GOAL AT CHECKOUT
+        </div>
+        <div
+          style={{
+            marginTop: 24,
+            display: "inline-block",
+            padding: "20px 48px",
+            borderRadius: 16,
+            border: `4px solid ${NEON_GREEN}`,
+            background: "rgba(0, 255, 102, 0.12)",
+            color: NEON_GREEN,
+            fontSize: 64,
+            fontWeight: 900,
+            fontFamily: '"Arial Black", sans-serif',
+          }}
+        >
+          SAVE RS. 50 FEE
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 10: THE HERO 3-CARD MIDDLE INSERTION (RS. 400 + RS. 150 EXTRA = RS. 550)
+  // Built just like the 100 - 180 - 200 scene the user loved!
+  if (cutId === 10) {
+    const midInsert = spring({
+      frame: Math.max(0, localFrame - 8),
+      fps,
+      config: { damping: 11, stiffness: 190 },
+    });
+
+    return (
+      <div
+        style={{
+          width: 980,
+          display: "flex",
+          gap: 22,
+          alignItems: "center",
+        }}
+      >
+        {/* Left Card: Original T-Shirt RS. 400 */}
+        <div
+          style={{
+            flex: 1,
+            padding: "38px 20px",
+            borderRadius: 24,
+            background: PANEL_BG,
+            border: "2px solid #334155",
+            textAlign: "center",
+            opacity: 0.75,
+          }}
+        >
+          <div style={{ color: "#94A3B8", fontSize: 22, fontWeight: 800 }}>
+            ITEM 01
+          </div>
+          <div style={{ color: "#FFFFFF", fontSize: 32, fontWeight: 900, margin: "12px 0" }}>
+            T-SHIRT
+          </div>
+          <div style={{ color: "#CBD5E1", fontSize: 52, fontWeight: 900 }}>
+            RS. 400
+          </div>
+        </div>
+
+        {/* Center Highlighted Card: EXTRA ITEM RS. 150 SLAMS IN! */}
+        <div
+          style={{
+            flex: 1.25,
+            padding: "46px 22px",
+            borderRadius: 28,
+            background: "#051F12",
+            border: `5px solid ${NEON_GREEN}`,
+            boxShadow: `0 0 95px ${NEON_GREEN}88`,
+            textAlign: "center",
+            transform: `translateY(${(1 - midInsert) * 95}px) scale(${
+              0.82 + midInsert * 0.24
+            })`,
+            zIndex: 10,
+          }}
+        >
+          <div
+            style={{
+              display: "inline-block",
+              padding: "6px 18px",
+              borderRadius: 8,
+              background: NEON_GREEN,
+              color: "#030805",
+              fontSize: 20,
+              fontWeight: 900,
+              letterSpacing: 2,
+              marginBottom: 14,
+            }}
+          >
+            + EXTRA ITEM ADDED
+          </div>
+          <div style={{ color: "#FFFFFF", fontSize: 34, fontWeight: 900 }}>
+            SOCKS / CAP
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              color: NEON_GREEN,
+              fontFamily: '"Arial Black", Impact, sans-serif',
+              fontSize: 78,
+              fontWeight: 900,
+              textShadow: `0 0 35px ${NEON_GREEN}`,
+            }}
+          >
+            RS. 150
+          </div>
+        </div>
+
+        {/* Right Card: Shipping Unlocked */}
+        <div
+          style={{
+            flex: 1,
+            padding: "38px 20px",
+            borderRadius: 24,
+            background: PANEL_BG,
+            border: `2px solid ${NEON_GREEN}66`,
+            textAlign: "center",
+            opacity: 0.85,
+          }}
+        >
+          <div style={{ color: "#94A3B8", fontSize: 22, fontWeight: 800 }}>
+            SHIPPING
+          </div>
+          <div style={{ color: NEON_GREEN, fontSize: 32, fontWeight: 900, margin: "12px 0" }}>
+            UNLOCKED
+          </div>
+          <div style={{ color: NEON_GREEN, fontSize: 52, fontWeight: 900 }}>
+            FREE
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 11: RESULT? TOTAL BILL RS. 550!
+  if (cutId === 11) {
+    const bill = Math.floor(
+      interpolate(localFrame, [0, 32], [450, 550], { extrapolateRight: "clamp" })
+    );
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 52,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `4px solid ${NEON_GREEN}`,
+          boxShadow: `0 0 90px ${GREEN_GLOW}`,
+          textAlign: "center",
+        }}
+      >
+        <div style={{ color: "#94A3B8", fontSize: 26, fontWeight: 900, letterSpacing: 4 }}>
+          FINAL AMOUNT PAID
+        </div>
+        <div
+          style={{
+            marginTop: 22,
+            display: "inline-block",
+            padding: "20px 64px",
+            borderRadius: 18,
+            background: NEON_GREEN,
+            color: "#030805",
+            fontFamily: '"Arial Black", Impact, sans-serif',
+            fontSize: 118,
+            fontWeight: 900,
+            boxShadow: `0 0 70px ${NEON_GREEN}`,
+          }}
+        >
+          RS. {bill}
+        </div>
+        <div style={{ color: "#FFFFFF", fontSize: 30, fontWeight: 800, marginTop: 26 }}>
+          RS. 400 + RS. 150 EXTRA = <span style={{ color: NEON_GREEN }}>RS. 550</span>
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 12: SIDE-BY-SIDE COMPARISON (+ RS. 100 EXTRA SPENT)
+  if (cutId === 12) {
+    return (
+      <div
+        style={{
+          width: 880,
+          padding: 46,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `3px solid ${CRIMSON}`,
+        }}
+      >
+        <div style={{ display: "flex", gap: 28, marginBottom: 30 }}>
+          <div
+            style={{
+              flex: 1,
+              padding: 32,
+              borderRadius: 20,
+              background: "#080C14",
+              border: "2px solid #334155",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ color: "#94A3B8", fontSize: 22, fontWeight: 800 }}>
+              WITH DELIVERY FEE
+            </div>
+            <div style={{ color: "#FFFFFF", fontSize: 60, fontWeight: 900, marginTop: 10 }}>
+              RS. 450
+            </div>
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              padding: 32,
+              borderRadius: 20,
+              background: "rgba(255, 42, 84, 0.14)",
+              border: `3px solid ${CRIMSON}`,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ color: CRIMSON, fontSize: 22, fontWeight: 900 }}>
+              WITH 'FREE' SHIPPING
+            </div>
+            <div style={{ color: "#FFFFFF", fontSize: 60, fontWeight: 900, marginTop: 10 }}>
+              RS. 550
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: "20px 32px",
+            borderRadius: 14,
+            background: NEON_GREEN,
+            color: "#030805",
+            fontSize: 38,
+            fontWeight: 900,
+            textAlign: "center",
+            boxShadow: `0 0 50px ${NEON_GREEN}`,
+          }}
+        >
+          NET LOSS TO YOUR POCKET: + RS. 100
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 13: 'FREE' WORD ILLUSION WIREFRAME
+  if (cutId === 13) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 52,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `3px solid ${NEON_GREEN}`,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-block",
+            padding: "16px 54px",
+            borderRadius: 16,
+            border: `4px dashed ${NEON_GREEN}`,
+            color: NEON_GREEN,
+            fontFamily: '"Arial Black", sans-serif',
+            fontSize: 96,
+            fontWeight: 900,
+          }}
+        >
+          "FREE"
+        </div>
+        <div style={{ color: "#FFFFFF", fontSize: 34, fontWeight: 900, marginTop: 28 }}>
+          ILLUSION OF SAVING RS. 50 ➔ <span style={{ color: CRIMSON }}>COST YOU RS. 150</span>
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 15: SAVING RS. 50 QUESTION CARD
+  if (cutId === 15) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 50,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `3px solid ${GOLD}`,
+          textAlign: "center",
+        }}
+      >
+        <div style={{ color: "#94A3B8", fontSize: 24, fontWeight: 900, letterSpacing: 4 }}>
+          YOUR LAST ONLINE ORDER
+        </div>
+        <div
+          style={{
+            marginTop: 22,
+            fontSize: 78,
+            fontWeight: 900,
+            color: NEON_GREEN,
+            fontFamily: '"Arial Black", sans-serif',
+          }}
+        >
+          TO SAVE RS. 50...
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 16: HOW MUCH EXTRA DID YOU BUY? (RS. ???)
+  if (cutId === 16) {
+    return (
+      <div
+        style={{
+          width: 860,
+          padding: 52,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `4px solid ${NEON_GREEN}`,
+          boxShadow: `0 0 85px ${GREEN_GLOW}`,
+          textAlign: "center",
+        }}
+      >
+        <div style={{ color: "#94A3B8", fontSize: 26, fontWeight: 900, letterSpacing: 4 }}>
+          UNPLANNED EXTRA CART VALUE
+        </div>
+        <div
+          style={{
+            marginTop: 22,
+            display: "inline-block",
+            padding: "18px 60px",
+            borderRadius: 16,
+            background: NEON_GREEN,
+            color: "#030805",
+            fontFamily: '"Arial Black", sans-serif',
+            fontSize: 104,
+            fontWeight: 900,
+            boxShadow: `0 0 60px ${NEON_GREEN}`,
+          }}
+        >
+          RS. ???
+        </div>
+      </div>
+    );
+  }
+
+  // CUT 17: CLEAN SENPAISPIDER COMMENT BOX CTA
+  return (
+    <div
+      style={{
+        width: 880,
+        padding: 52,
+        borderRadius: 28,
+        background: PANEL_BG,
+        border: `4px solid ${NEON_GREEN}`,
+        boxShadow: `0 0 90px ${GREEN_GLOW}`,
+        textAlign: "center",
+      }}
+    >
+      <div style={{ color: NEON_GREEN, fontSize: 28, fontWeight: 900, letterSpacing: 5 }}>
+        [ CONFESSION BOX // COMMENTS ]
+      </div>
+      <div
+        style={{
+          marginTop: 26,
+          padding: "32px 36px",
+          borderRadius: 16,
+          background: "#06090F",
+          border: `2px solid ${NEON_GREEN}`,
+          color: "#FFFFFF",
+          fontSize: 40,
+          fontWeight: 900,
+          letterSpacing: 1,
+        }}
+      >
+        "Maine RS. ___ ka extra saaman kharida tha."
+      </div>
+    </div>
+  );
+};
+
+/* =========================================================================
+   07. DARK ARCHITECTURAL GRID BACKGROUND
+   ========================================================================= */
+
+const SenpaiDarkBackdrop: React.FC<{ accent: string; frame: number }> = ({
   accent,
   frame,
 }) => {
-  const shift = (frame * 1.4) % 90;
-  const particles = useMemo(
+  const shift = (frame * 1.1) % 80;
+  const dots = useMemo(
     () =>
-      Array.from({ length: 32 }, (_, i) => ({
-        x: (i * 193 + 51) % WIDTH,
-        y: (i * 271 + 83) % HEIGHT,
-        size: 3 + (i % 4) * 1.5,
-        speed: 0.9 + (i % 5) * 0.35,
+      Array.from({ length: 28 }, (_, i) => ({
+        x: (i * 199 + 67) % WIDTH,
+        y: (i * 263 + 41) % HEIGHT,
+        s: 2 + (i % 3) * 1.5,
+        v: 0.7 + (i % 4) * 0.3,
       })),
     []
   );
@@ -803,35 +1625,33 @@ const CyberAtmosphere: React.FC<{ accent: string; frame: number }> = ({
     <AbsoluteFill style={{ backgroundColor: DARK_BG, overflow: "hidden" }}>
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 50% 54%, ${accent}25 0%, rgba(6,10,20,0.92) 58%, ${DARK_BG} 100%)`,
+          background: `radial-gradient(circle at 50% 50%, ${accent}1F 0%, rgba(4,6,10,0.94) 62%, ${DARK_BG} 100%)`,
         }}
       />
       <AbsoluteFill
         style={{
-          opacity: 0.14,
+          opacity: 0.12,
           backgroundImage: `
-            linear-gradient(${accent}44 1px, transparent 1px),
-            linear-gradient(90deg, ${accent}44 1px, transparent 1px)
+            linear-gradient(${accent}33 1px, transparent 1px),
+            linear-gradient(90deg, ${accent}33 1px, transparent 1px)
           `,
-          backgroundSize: "90px 90px",
+          backgroundSize: "80px 80px",
           transform: `translateY(${shift}px)`,
         }}
       />
-      {particles.map((p, i) => {
-        const py = (p.y - frame * p.speed + HEIGHT) % HEIGHT;
+      {dots.map((d, i) => {
+        const py = (d.y - frame * d.v + HEIGHT) % HEIGHT;
         return (
           <div
             key={i}
             style={{
               position: "absolute",
-              left: p.x,
+              left: d.x,
               top: py,
-              width: p.size,
-              height: p.size,
-              borderRadius: "50%",
-              background: i % 3 === 0 ? "#FFF" : accent,
-              opacity: 0.22 + (i % 4) * 0.12,
-              boxShadow: `0 0 12px ${accent}`,
+              width: d.s,
+              height: d.s,
+              background: NEON_GREEN,
+              opacity: 0.25,
             }}
           />
         );
@@ -841,816 +1661,17 @@ const CyberAtmosphere: React.FC<{ accent: string; frame: number }> = ({
 };
 
 /* =========================================================================
-   05. 18 MICRO-SCENE VISUAL WIDGETS (SMOOTH SPRING MOTION)
+   08. MASTER COMPOSITION ORCHESTRATOR
    ========================================================================= */
 
-const MicroSceneWidget: React.FC<{
-  cutId: number;
-  localFrame: number;
-  accent: string;
-}> = ({ cutId, localFrame }) => {
-  const { fps } = useVideoConfig();
-
-  const pop = spring({
-    frame: localFrame,
-    fps,
-    config: { damping: 13, stiffness: 165 },
-  });
-
-  // CUT 1: CORPORATE EYE SCANNER
-  if (cutId === 1) {
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${GOLD}`,
-          boxShadow: `0 0 85px ${GOLD}44`,
-          textAlign: "center",
-          transform: `translateY(${(1 - pop) * 45}px) scale(${0.9 + pop * 0.1})`,
-        }}
-      >
-        <svg width="760" height="320" viewBox="0 0 760 320">
-          <g transform="translate(380 160)">
-            <circle
-              r="140"
-              fill="none"
-              stroke={GOLD}
-              strokeWidth="4"
-              strokeDasharray="16 12"
-              transform={`rotate(${localFrame * 1.8})`}
-            />
-            <path
-              d="M-210 0 Q0 -150 210 0 Q0 150 -210 0 Z"
-              fill="rgba(255,209,102,0.12)"
-              stroke={GOLD}
-              strokeWidth="6"
-            />
-            <circle cx={Math.sin(localFrame * 0.12) * 35} cy="0" r="52" fill={CRIMSON} />
-            <circle cx={Math.sin(localFrame * 0.12) * 35} cy="0" r="22" fill="#000" />
-          </g>
-        </svg>
-        <div style={{ fontSize: 40, fontWeight: 900, color: "#FFFFFF", letterSpacing: 3 }}>
-          🏢 BIG BRANDS vs <span style={{ color: GOLD }}>YOUR BRAIN 🧠</span>
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 2: WALLET DRAINING ₹2,500 -> ₹0
-  if (cutId === 2) {
-    const moneyLeft = Math.max(
-      0,
-      Math.floor(interpolate(localFrame, [5, 85], [2500, 0]))
-    );
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${CRIMSON}`,
-          boxShadow: `0 0 90px ${CRIMSON}55`,
-          textAlign: "center",
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div style={{ fontSize: 105, marginBottom: 10 }}>👛💸💨</div>
-        <div style={{ color: "#94A3B8", fontSize: 28, fontWeight: 900, letterSpacing: 4 }}>
-          YOUR POCKET BALANCE
-        </div>
-        <div
-          style={{
-            fontSize: 124,
-            fontWeight: 900,
-            color: moneyLeft === 0 ? CRIMSON : "#FFFFFF",
-            fontFamily: '"Arial Black", monospace',
-            margin: "12px 0",
-          }}
-        >
-          ₹{moneyLeft}
-        </div>
-        <div
-          style={{
-            padding: "16px 36px",
-            borderRadius: 100,
-            display: "inline-block",
-            background: CRIMSON,
-            color: "#FFF",
-            fontSize: 32,
-            fontWeight: 900,
-          }}
-        >
-          JEB SAAF! 🚨
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 3: CLASSIFIED DARK PSYCHOLOGY DOSSIER
-  if (cutId === 3) {
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 50,
-          borderRadius: 42,
-          background: "linear-gradient(155deg, #1E1035, #090612)",
-          border: `5px solid ${PURPLE}`,
-          boxShadow: `0 0 85px ${PURPLE}55`,
-          textAlign: "center",
-          transform: `translateY(${(1 - pop) * 40}px)`,
-        }}
-      >
-        <div
-          style={{
-            display: "inline-block",
-            padding: "10px 30px",
-            borderRadius: 12,
-            border: `3px solid ${CRIMSON}`,
-            color: CRIMSON,
-            fontSize: 28,
-            fontWeight: 900,
-            letterSpacing: 5,
-            marginBottom: 24,
-          }}
-        >
-          📁 TOP SECRET // MARKETING
-        </div>
-        <div style={{ fontSize: 110, margin: "10px 0" }}>🧠🔒</div>
-        <div
-          style={{
-            fontSize: 52,
-            fontWeight: 900,
-            color: "#FFFFFF",
-            fontFamily: '"Arial Black", sans-serif',
-            marginTop: 14,
-          }}
-        >
-          DARK PSYCHOLOGY SECRET
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 4: THE DECOY EFFECT EMBLEM
-  if (cutId === 4) {
-    return (
-      <div
-        style={{
-          width: 880,
-          padding: 52,
-          borderRadius: 44,
-          background: CARD_BG,
-          border: `6px solid ${CYAN}`,
-          boxShadow: `0 0 95px ${CYAN}66`,
-          textAlign: "center",
-          transform: `scale(${0.86 + pop * 0.14})`,
-        }}
-      >
-        <div style={{ fontSize: 115 }}>🎯🪤</div>
-        <div
-          style={{
-            fontSize: 74,
-            fontWeight: 900,
-            color: CYAN,
-            fontFamily: '"Arial Black", sans-serif',
-            letterSpacing: 2,
-            marginTop: 14,
-          }}
-        >
-          THE DECOY EFFECT
-        </div>
-        <div style={{ color: GOLD, fontSize: 32, fontWeight: 900, letterSpacing: 4, marginTop: 14 }}>
-          “FAKE CHOICE = REAL PROFIT”
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 5: CINEMA SNACK COUNTER
-  if (cutId === 5) {
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: "linear-gradient(145deg, #2A1215, #0D0814)",
-          border: `5px solid ${GOLD}`,
-          boxShadow: `0 0 85px ${GOLD}55`,
-          textAlign: "center",
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div style={{ fontSize: 30, fontWeight: 900, color: GOLD, letterSpacing: 6, marginBottom: 22 }}>
-          ✨ CINEMA SNACK COUNTER ✨
-        </div>
-        <div
-          style={{
-            padding: "36px 40px",
-            borderRadius: 30,
-            background: "#120D1D",
-            border: `4px dashed ${GOLD}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-around",
-          }}
-        >
-          <span style={{ fontSize: 110 }}>🎟️🍿</span>
-          <div style={{ textAlign: "left" }}>
-            <div style={{ color: "#FFF", fontSize: 46, fontWeight: 900 }}>MOVIE NIGHT</div>
-            <div style={{ color: CYAN, fontSize: 28, fontWeight: 800, marginTop: 8 }}>
-              INTERVAL POPCORN TIME!
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 6: SMALL ₹100 VS LARGE ₹200
-  if (cutId === 6) {
-    return (
-      <div style={{ width: 900, display: "flex", gap: 36, transform: `scale(${0.88 + pop * 0.12})` }}>
-        <div
-          style={{
-            flex: 1,
-            padding: "44px 28px",
-            borderRadius: 38,
-            background: CARD_BG,
-            border: `4px solid ${CYAN}`,
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: 95 }}>🍿</div>
-          <div style={{ color: "#FFF", fontSize: 42, fontWeight: 900, marginTop: 18 }}>SMALL</div>
-          <div style={{ color: CYAN, fontSize: 80, fontWeight: 900, fontFamily: '"Arial Black", sans-serif' }}>
-            ₹100
-          </div>
-        </div>
-
-        <div
-          style={{
-            flex: 1,
-            padding: "44px 28px",
-            borderRadius: 38,
-            background: CARD_BG,
-            border: `4px solid ${GOLD}`,
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontSize: 130 }}>🍿</div>
-          <div style={{ color: "#FFF", fontSize: 42, fontWeight: 900, marginTop: 8 }}>LARGE</div>
-          <div style={{ color: GOLD, fontSize: 80, fontWeight: 900, fontFamily: '"Arial Black", sans-serif' }}>
-            ₹200
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 7: USER PICKS SMALL ₹100
-  if (cutId === 7) {
-    return (
-      <div style={{ width: 900, display: "flex", gap: 36, transform: `scale(${0.9 + pop * 0.1})` }}>
-        <div
-          style={{
-            flex: 1,
-            padding: "44px 28px",
-            borderRadius: 38,
-            background: "#0B291E",
-            border: `6px solid ${NEON_GREEN}`,
-            boxShadow: `0 0 75px ${NEON_GREEN}66`,
-            textAlign: "center",
-            transform: "scale(1.05)",
-          }}
-        >
-          <div style={{ fontSize: 95 }}>🍿</div>
-          <div style={{ color: "#FFF", fontSize: 40, fontWeight: 900, marginTop: 14 }}>SMALL • ₹100</div>
-          <div
-            style={{
-              marginTop: 20,
-              padding: "14px 20px",
-              borderRadius: 16,
-              background: NEON_GREEN,
-              color: "#05140E",
-              fontSize: 28,
-              fontWeight: 900,
-            }}
-          >
-            ✅ YOU PICK THIS!
-          </div>
-        </div>
-
-        <div
-          style={{
-            flex: 1,
-            padding: "44px 28px",
-            borderRadius: 38,
-            background: CARD_BG,
-            border: "4px solid #334155",
-            textAlign: "center",
-            opacity: 0.45,
-          }}
-        >
-          <div style={{ fontSize: 120 }}>🍿</div>
-          <div style={{ color: "#94A3B8", fontSize: 40, fontWeight: 900, marginTop: 14 }}>LARGE • ₹200</div>
-          <div
-            style={{
-              marginTop: 20,
-              padding: "14px 20px",
-              borderRadius: 16,
-              background: CRIMSON,
-              color: "#FFF",
-              fontSize: 28,
-              fontWeight: 900,
-            }}
-          >
-            ❌ TOO EXPENSIVE
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 8: MIND GAME ACTIVATED
-  if (cutId === 8) {
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${CRIMSON}`,
-          boxShadow: `0 0 85px ${CRIMSON}55`,
-          textAlign: "center",
-          transform: `scale(${0.86 + pop * 0.14})`,
-        }}
-      >
-        <div style={{ fontSize: 125 }}>♟️🧠⚡</div>
-        <div
-          style={{
-            fontSize: 64,
-            fontWeight: 900,
-            color: CRIMSON,
-            fontFamily: '"Arial Black", sans-serif',
-            marginTop: 16,
-          }}
-        >
-          MIND GAME ACTIVATED!
-        </div>
-        <div style={{ color: "#FFF", fontSize: 32, fontWeight: 800, marginTop: 14 }}>
-          Goal: Make You Spend <span style={{ color: GOLD }}>₹200 Willingly!</span>
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 9: MEDIUM ₹180 RISES IN THE MIDDLE
-  if (cutId === 9) {
-    const midRise = spring({
-      frame: Math.max(0, localFrame - 10),
-      fps,
-      config: { damping: 12, stiffness: 175 },
-    });
-
-    return (
-      <div style={{ width: 960, display: "flex", gap: 22, alignItems: "center" }}>
-        <div
-          style={{
-            flex: 1,
-            padding: "36px 16px",
-            borderRadius: 30,
-            background: CARD_BG,
-            border: "3px solid #475569",
-            textAlign: "center",
-            opacity: 0.65,
-          }}
-        >
-          <div style={{ fontSize: 75 }}>🍿</div>
-          <div style={{ color: "#FFF", fontSize: 32, fontWeight: 900, marginTop: 10 }}>SMALL</div>
-          <div style={{ color: "#94A3B8", fontSize: 54, fontWeight: 900 }}>₹100</div>
-        </div>
-
-        <div
-          style={{
-            flex: 1.15,
-            padding: "44px 18px",
-            borderRadius: 34,
-            background: "#2B0C16",
-            border: `6px solid ${GOLD}`,
-            boxShadow: `0 0 85px ${GOLD}77`,
-            textAlign: "center",
-            transform: `translateY(${(1 - midRise) * 90}px) scale(${0.85 + midRise * 0.2})`,
-            opacity: midRise,
-            zIndex: 10,
-          }}
-        >
-          <div
-            style={{
-              background: GOLD,
-              color: "#000",
-              padding: "6px 16px",
-              borderRadius: 100,
-              fontSize: 22,
-              fontWeight: 900,
-              display: "inline-block",
-              marginBottom: 12,
-            }}
-          >
-            🚨 NEW MIDDLE OPTION
-          </div>
-          <div style={{ fontSize: 105 }}>🍿</div>
-          <div style={{ color: "#FFF", fontSize: 38, fontWeight: 900, marginTop: 8 }}>MEDIUM</div>
-          <div style={{ color: GOLD, fontSize: 74, fontWeight: 900, fontFamily: '"Arial Black", sans-serif' }}>
-            ₹180
-          </div>
-        </div>
-
-        <div
-          style={{
-            flex: 1,
-            padding: "36px 16px",
-            borderRadius: 30,
-            background: CARD_BG,
-            border: "3px solid #475569",
-            textAlign: "center",
-            opacity: 0.8,
-          }}
-        >
-          <div style={{ fontSize: 115 }}>🍿</div>
-          <div style={{ color: "#FFF", fontSize: 32, fontWeight: 900, marginTop: 10 }}>LARGE</div>
-          <div style={{ color: "#FFF", fontSize: 54, fontWeight: 900 }}>₹200</div>
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 10: BRAIN MATH (₹200 - ₹180 = ₹20)
-  if (cutId === 10) {
-    return (
-      <div
-        style={{
-          width: 880,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${PURPLE}`,
-          boxShadow: `0 0 85px ${PURPLE}55`,
-          textAlign: "center",
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div style={{ color: PURPLE, fontSize: 28, fontWeight: 900, letterSpacing: 4 }}>
-          🧠 INSTANT BRAIN CALCULATION
-        </div>
-        <div
-          style={{
-            fontSize: 80,
-            fontWeight: 900,
-            color: "#FFFFFF",
-            fontFamily: '"Arial Black", sans-serif',
-            margin: "24px 0",
-          }}
-        >
-          ₹200 − ₹180 = <span style={{ color: NEON_GREEN }}>SIRF ₹20!</span>
-        </div>
-        <div
-          style={{
-            padding: "20px 36px",
-            borderRadius: 22,
-            background: "rgba(0,255,135,0.15)",
-            border: `2px solid ${NEON_GREEN}`,
-            color: NEON_GREEN,
-            fontSize: 34,
-            fontWeight: 900,
-          }}
-        >
-          “Sirf ₹20 extra mein HUGE Bucket?!” 🤯
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 11: LARGE ₹200 SOLD
-  if (cutId === 11) {
-    return (
-      <div
-        style={{
-          width: 880,
-          padding: 48,
-          borderRadius: 44,
-          background: "linear-gradient(155deg, #0D2E22, #071410)",
-          border: `6px solid ${NEON_GREEN}`,
-          boxShadow: `0 0 95px ${NEON_GREEN}66`,
-          textAlign: "center",
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div style={{ fontSize: 135 }}>🍿🤑✨</div>
-        <div
-          style={{
-            fontSize: 72,
-            fontWeight: 900,
-            color: NEON_GREEN,
-            fontFamily: '"Arial Black", sans-serif',
-            marginTop: 10,
-          }}
-        >
-          LARGE ₹200 SOLD! 🔔
-        </div>
-        <div
-          style={{
-            marginTop: 22,
-            padding: "18px 34px",
-            borderRadius: 20,
-            background: "#06120D",
-            border: `2px solid ${GOLD}`,
-            color: GOLD,
-            fontSize: 32,
-            fontWeight: 900,
-          }}
-        >
-          Aap aaye the ₹100 kharch karne ➔ De aaye ₹200! 😂
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 12: MEDIUM ₹180 STAMPED 0% SALES TARGET
-  if (cutId === 12) {
-    const stampPop = spring({
-      frame: Math.max(0, localFrame - 10),
-      fps,
-      config: { damping: 11, stiffness: 190 },
-    });
-
-    return (
-      <div
-        style={{
-          width: 780,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: "4px solid #475569",
-          textAlign: "center",
-          position: "relative",
-        }}
-      >
-        <div style={{ fontSize: 115, opacity: 0.45 }}>🍿</div>
-        <div style={{ color: "#94A3B8", fontSize: 48, fontWeight: 900 }}>MEDIUM • ₹180</div>
-
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: `translate(-50%, -50%) rotate(-10deg) scale(${stampPop})`,
-            padding: "22px 48px",
-            borderRadius: 20,
-            background: "rgba(255, 42, 84, 0.95)",
-            border: "6px solid #FFFFFF",
-            color: "#FFFFFF",
-            fontSize: 50,
-            fontWeight: 900,
-            fontFamily: '"Arial Black", sans-serif',
-            whiteSpace: "nowrap",
-            boxShadow: `0 0 70px ${CRIMSON}`,
-          }}
-        >
-          0% SALES TARGET ❌
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 13: FISHING HOOK BAIT
-  if (cutId === 13) {
-    const sway = Math.sin(localFrame * 0.12) * 14;
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${GOLD}`,
-          boxShadow: `0 0 85px ${GOLD}55`,
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontSize: 135, transform: `translateX(${sway}px)` }}>🪝🍿</div>
-        <div
-          style={{
-            fontSize: 66,
-            fontWeight: 900,
-            color: GOLD,
-            fontFamily: '"Arial Black", sans-serif',
-            marginTop: 14,
-          }}
-        >
-          100% MARKETING BAIT!
-        </div>
-        <div style={{ color: "#FFF", fontSize: 32, fontWeight: 800, marginTop: 12 }}>
-          Medium ka kaam sirf <span style={{ color: NEON_GREEN }}>Large bikwana tha!</span>
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 14: PUPPET STRINGS CONTROLLING BRAIN
-  if (cutId === 14) {
-    const tilt = Math.sin(localFrame * 0.14) * 10;
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${CYAN}`,
-          boxShadow: `0 0 90px ${CYAN}55`,
-          textAlign: "center",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "center", gap: 80, marginBottom: -15 }}>
-          <div style={{ width: 5, height: 95, background: CYAN }} />
-          <div style={{ width: 5, height: 95, background: CYAN }} />
-        </div>
-        <div style={{ fontSize: 130, transform: `rotate(${tilt}deg)`, display: "inline-block" }}>
-          🧠🎮
-        </div>
-        <div
-          style={{
-            marginTop: 24,
-            padding: "20px 38px",
-            borderRadius: 22,
-            background: CYAN,
-            color: "#041016",
-            fontSize: 44,
-            fontWeight: 900,
-            fontFamily: '"Arial Black", sans-serif',
-          }}
-        >
-          DECISION REMOTE-CONTROLLED!
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 15: ANTI-DECOY SHIELD
-  if (cutId === 15) {
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${NEON_GREEN}`,
-          boxShadow: `0 0 85px ${NEON_GREEN}55`,
-          textAlign: "center",
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div style={{ fontSize: 115 }}>🛡️👁️⚡</div>
-        <div
-          style={{
-            fontSize: 60,
-            fontWeight: 900,
-            color: NEON_GREEN,
-            fontFamily: '"Arial Black", sans-serif',
-            marginTop: 14,
-          }}
-        >
-          DECOY RADAR: ON!
-        </div>
-        <div style={{ color: "#FFF", fontSize: 32, fontWeight: 800, marginTop: 14 }}>
-          Shopping karte waqt <span style={{ color: GOLD }}>Middle Price Trap</span> pehchano!
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 16: SALE MAGNET
-  if (cutId === 16) {
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 48,
-          borderRadius: 42,
-          background: CARD_BG,
-          border: `5px solid ${PURPLE}`,
-          textAlign: "center",
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div style={{ fontSize: 120 }}>🧲🛍️🏃‍♂️</div>
-        <div
-          style={{
-            marginTop: 20,
-            padding: "18px 36px",
-            borderRadius: 20,
-            background: CRIMSON,
-            color: "#FFF",
-            fontSize: 44,
-            fontWeight: 900,
-            display: "inline-block",
-          }}
-        >
-          “BUY 2 GET 1 FREE!” 🏷️
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 17: #1 OFFER VICTIM TROPHY
-  if (cutId === 17) {
-    return (
-      <div
-        style={{
-          width: 860,
-          padding: 50,
-          borderRadius: 44,
-          background: CARD_BG,
-          border: `6px solid ${GOLD}`,
-          boxShadow: `0 0 90px ${GOLD}66`,
-          textAlign: "center",
-          transform: `scale(${0.88 + pop * 0.12})`,
-        }}
-      >
-        <div style={{ fontSize: 125 }}>🤡🏆</div>
-        <div
-          style={{
-            fontSize: 56,
-            fontWeight: 900,
-            color: GOLD,
-            fontFamily: '"Arial Black", sans-serif',
-            marginTop: 14,
-          }}
-        >
-          #1 OFFER VICTIM AWARD
-        </div>
-        <div style={{ color: "#FFF", fontSize: 32, fontWeight: 800, marginTop: 12 }}>
-          Har “Fake Sale” mein sabse pehle phasta hai! 😂
-        </div>
-      </div>
-    );
-  }
-
-  // CUT 18: COMMENT TAG BOX
-  return (
-    <div
-      style={{
-        width: 880,
-        padding: 52,
-        borderRadius: 44,
-        background: CARD_BG,
-        border: `6px solid ${CYAN}`,
-        boxShadow: `0 0 95px ${CYAN}66`,
-        textAlign: "center",
-        transform: `scale(${0.92 + Math.sin(localFrame * 0.16) * 0.03})`,
-      }}
-    >
-      <div style={{ color: GOLD, fontSize: 34, fontWeight: 900, letterSpacing: 4 }}>
-        💬 COMMENT MEIN USE JALDI TAG KARO:
-      </div>
-      <div
-        style={{
-          marginTop: 28,
-          padding: "32px 36px",
-          borderRadius: 26,
-          background: "#070A12",
-          border: `4px solid ${NEON_GREEN}`,
-          color: "#FFFFFF",
-          fontSize: 46,
-          fontWeight: 900,
-        }}
-      >
-        @tag_your_bewakoof_friend 😂👇
-      </div>
-    </div>
-  );
-};
-
-/* =========================================================================
-   06. MASTER REEL COMPOSITION
-   ========================================================================= */
-
-const DecoySatisfyingReel: React.FC = () => {
+const FreeShippingTrapReel: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const sec = frame / fps;
 
   const activeCut =
-    RAPID_CUTS.find((c) => sec >= c.startSec && sec < c.endSec) ??
-    RAPID_CUTS[RAPID_CUTS.length - 1];
+    CUTS.find((c) => sec >= c.startSec && sec < c.endSec) ??
+    CUTS[CUTS.length - 1];
 
   const cutStartFrame = Math.round(activeCut.startSec * FPS);
   const localFrame = Math.max(0, frame - cutStartFrame);
@@ -1662,21 +1683,21 @@ const DecoySatisfyingReel: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: DARK_BG, overflow: "hidden" }}>
-      <CyberAtmosphere accent={activeCut.accent} frame={frame} />
+      <SenpaiDarkBackdrop accent={activeCut.accent} frame={frame} />
 
-      {/* TOP 18-SEGMENT PROGRESS BAR */}
+      {/* TOP 17-SEGMENT PROGRESS TIMELINE */}
       <div
         style={{
           position: "absolute",
           top: 28,
-          left: 45,
-          right: 45,
+          left: 48,
+          right: 48,
           display: "flex",
           gap: 5,
-          height: 6,
+          height: 5,
         }}
       >
-        {RAPID_CUTS.map((c) => {
+        {CUTS.map((c) => {
           const fill =
             sec >= c.endSec
               ? 1
@@ -1688,8 +1709,7 @@ const DecoySatisfyingReel: React.FC = () => {
               key={c.id}
               style={{
                 flex: 1,
-                background: "rgba(255,255,255,0.16)",
-                borderRadius: 4,
+                background: "rgba(255,255,255,0.14)",
                 overflow: "hidden",
               }}
             >
@@ -1697,7 +1717,7 @@ const DecoySatisfyingReel: React.FC = () => {
                 style={{
                   width: `${fill * 100}%`,
                   height: "100%",
-                  background: c.accent,
+                  background: NEON_GREEN,
                 }}
               />
             </div>
@@ -1705,11 +1725,11 @@ const DecoySatisfyingReel: React.FC = () => {
         })}
       </div>
 
-      {/* TELEMETRY HEADER */}
+      {/* MINIMAL TELEMETRY HEADER */}
       <div
         style={{
           position: "absolute",
-          top: 74,
+          top: 68,
           left: 60,
           right: 60,
           display: "flex",
@@ -1719,107 +1739,107 @@ const DecoySatisfyingReel: React.FC = () => {
       >
         <div
           style={{
-            padding: "10px 26px",
-            borderRadius: 100,
-            background: "rgba(255,255,255,0.08)",
+            padding: "8px 22px",
             border: `2px solid ${activeCut.accent}`,
+            background: "rgba(0,0,0,0.6)",
             color: activeCut.accent,
+            fontSize: 19,
+            fontWeight: 900,
+            letterSpacing: 4,
+          }}
+        >
+          {activeCut.tag}
+        </div>
+        <div
+          style={{
+            color: "#64748B",
             fontSize: 20,
             fontWeight: 900,
-            letterSpacing: 3.5,
+            letterSpacing: 4,
           }}
         >
-          {activeCut.badge}
-        </div>
-        <div
-          style={{
-            color: "#94A3B8",
-            fontSize: 22,
-            fontWeight: 900,
-            letterSpacing: 3,
-          }}
-        >
-          STYLE: {activeCut.textStyle.toUpperCase()} • {String(activeCut.id).padStart(2, "0")}/18
+          {String(activeCut.id).padStart(2, "0")} // 17
         </div>
       </div>
 
-      {/* VARIED SATISFYING TEXT ANIMATION STAGE */}
-      <div
-        style={{
-          position: "absolute",
-          top: 175,
-          left: 45,
-          right: 45,
-        }}
-      >
-        <SatisfyingHeadline cut={activeCut} localFrame={localFrame} />
-        <div
-          style={{
-            marginTop: 14,
-            textAlign: "center",
-            fontSize: 22,
-            fontWeight: 800,
-            color: "#94A3B8",
-            letterSpacing: 5,
-          }}
-        >
-          {activeCut.subTag}
-        </div>
-      </div>
+      {/* RENDER EITHER FULL-SCREEN TYPOGRAPHY OR SPLIT HEADLINE + VECTOR STAGE */}
+      {activeCut.fullScreenTypo ? (
+        <FullScreenTypographyStage cut={activeCut} localFrame={localFrame} />
+      ) : (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              top: 175,
+              left: 48,
+              right: 48,
+            }}
+          >
+            <VariedTopHeadline cut={activeCut} localFrame={localFrame} />
+            <div
+              style={{
+                marginTop: 16,
+                textAlign: "center",
+                fontSize: 20,
+                fontWeight: 800,
+                color: "#64748B",
+                letterSpacing: 5,
+              }}
+            >
+              {activeCut.subLabel}
+            </div>
+          </div>
 
-      {/* CENTER INTERACTIVE WIDGET STAGE */}
-      <div
-        style={{
-          position: "absolute",
-          top: 485,
-          left: 0,
-          right: 0,
-          bottom: 110,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <MicroSceneWidget
-          cutId={activeCut.id}
-          localFrame={localFrame}
-          accent={activeCut.accent}
-        />
-      </div>
+          <div
+            style={{
+              position: "absolute",
+              top: 480,
+              left: 0,
+              right: 0,
+              bottom: 110,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <CleanVectorStage cutId={activeCut.id} localFrame={localFrame} />
+          </div>
+        </>
+      )}
 
-      {/* BOTTOM MASTER PROGRESS BAR */}
+      {/* BOTTOM NEON GREEN PROGRESS BAR */}
       <div
         style={{
           position: "absolute",
           bottom: 0,
           left: 0,
-          height: 10,
+          height: 8,
           width: `${progress}%`,
-          background: `linear-gradient(90deg, ${CYAN}, ${NEON_GREEN}, ${GOLD})`,
-          boxShadow: `0 0 25px ${CYAN}`,
+          background: NEON_GREEN,
+          boxShadow: `0 0 25px ${NEON_GREEN}`,
         }}
       />
 
       {/* ===================================================================
-          VARIED SATISFYING ASMR SFX TIMELINE (UNIQUE PER CUT STYLE!)
+          CRISP MONEY & TACTILE UI SFX TIMELINE
          =================================================================== */}
-      {RAPID_CUTS.map((c) => (
+      {CUTS.map((c) => (
         <React.Fragment key={`sfx-${c.id}`}>
           <Sequence
             from={Math.round(c.startSec * FPS)}
             durationInFrames={35}
             layout="none"
           >
-            <Audio src={SFX[c.sfx]} volume={0.78} />
+            <Audio src={SFX[c.primarySfx]} volume={0.8} />
           </Sequence>
 
-          {c.extraSfx && (
+          {c.moneySfx && (
             <Sequence
-              from={Math.round((c.startSec + c.extraSfx.offsetSec) * FPS)}
+              from={Math.round((c.startSec + c.moneySfx.offsetSec) * FPS)}
               durationInFrames={35}
               layout="none"
             >
-              <Audio src={SFX[c.extraSfx.kind]} volume={0.75} />
+              <Audio src={SFX[c.moneySfx.kind]} volume={0.78} />
             </Sequence>
           )}
         </React.Fragment>
@@ -1832,7 +1852,7 @@ export const RemotionRoot: React.FC = () => {
   return (
     <Composition
       id="Reel"
-      component={DecoySatisfyingReel}
+      component={FreeShippingTrapReel}
       durationInFrames={DURATION}
       fps={FPS}
       width={WIDTH}
