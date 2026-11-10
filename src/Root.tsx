@@ -178,7 +178,7 @@ const TestReel: React.FC = () => {
 export const RemotionRoot: React.FC = () => {
   return (
     <Composition
-      id="TestReel"
+      id="Reel"
       component={TestReel}
       durationInFrames={DURATION}
       fps={FPS}
