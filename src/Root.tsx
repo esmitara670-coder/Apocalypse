@@ -12,30 +12,25 @@ import {
 } from "remotion";
 
 /* =========================================================================
-   REMOTION CAPABILITY TEST (10 SECONDS)
-   Features: Kinetic Typography, Smooth UI Elements, Procedural Audio
+   HYPER-KINETIC VFX DEMO: THE FREE SHIPPING TRAP (13 SECONDS)
+   Features: Camera Shake, Continuous Zoom, Film Grain, Chromatic Glitch, 3D Snaps
    ========================================================================= */
 
 const FPS = 60;
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const DURATION = 600; // 10 Seconds @ 60 FPS
+const DURATION = 780; // 13 Seconds
 
 const NEON_GREEN = "#00FF66";
-const CYAN = "#00F0FF";
-const DARK_BG = "#05070E";
-const PANEL_BG = "rgba(10, 15, 24, 0.95)";
+const CRIMSON = "#FF2A54";
+const DARK_BG = "#030407";
 
-const clamp = (v: number, min = 0, max = 1) => Math.max(min, Math.min(max, v));
-
-// 1. PROCEDURAL SFX FOR TESTING
-type SfxKind = "heavySlam" | "uiPop" | "techWhoosh";
-
-function buildTestSfx(kind: SfxKind): string {
+// 1. PROCEDURAL SFX
+type SfxKind = "heavySlam" | "kaching" | "glitchWhoosh";
+function buildSfx(kind: SfxKind): string {
   const sampleRate = 22050;
-  const durations = { heavySlam: 0.5, uiPop: 0.2, techWhoosh: 0.3 };
-  const duration = durations[kind];
-  const totalSamples = Math.floor(sampleRate * duration);
+  const durations = { heavySlam: 0.6, kaching: 0.5, glitchWhoosh: 0.4 };
+  const totalSamples = Math.floor(sampleRate * durations[kind]);
   const buffer = new ArrayBuffer(44 + totalSamples * 2);
   const view = new DataView(buffer);
 
@@ -51,126 +46,131 @@ function buildTestSfx(kind: SfxKind): string {
   writeStr(36, "data"); view.setUint32(40, totalSamples * 2, true);
 
   for (let i = 0; i < totalSamples; i++) {
-    const t = i / sampleRate;
-    const p = i / totalSamples;
+    const t = i / sampleRate; const p = i / totalSamples;
     let w = 0, env = 1;
-
     if (kind === "heavySlam") {
-      w = Math.sin(2 * Math.PI * (120 * Math.pow(1 - p, 2) + 30) * t);
-      env = Math.pow(1 - p, 2);
-    } else if (kind === "uiPop") {
-      w = Math.sin(2 * Math.PI * (400 + p * 600) * t);
-      env = Math.sin(Math.PI * p) * Math.pow(1 - p, 2);
-    } else if (kind === "techWhoosh") {
-      const noise = Math.sin(i * 12.98) * Math.cos(i * 0.21);
-      w = noise * 0.4 + Math.sin(2 * Math.PI * (200 + p * 400) * t) * 0.3;
-      env = Math.sin(Math.PI * p);
+      w = Math.sin(2 * Math.PI * (140 * Math.pow(1 - p, 2) + 40) * t);
+      env = Math.pow(1 - p, 2.5);
+    } else if (kind === "kaching") {
+      w = Math.sin(2 * Math.PI * 1480 * t) * 0.5 + Math.sin(2 * Math.PI * 2960 * t) * 0.3;
+      env = Math.exp(-p * 8);
+    } else if (kind === "glitchWhoosh") {
+      w = (Math.random() * 2 - 1) * 0.4 + Math.sin(2 * Math.PI * 150 * t) * 0.5;
+      env = Math.sin(Math.PI * p) * Math.pow(1 - p, 1.5);
     }
-    view.setInt16(44 + i * 2, clamp(w * env * 0.8, -1, 1) * 32767, true);
+    view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, w * env * 0.8)) * 32767, true);
   }
-
   const bytes = new Uint8Array(buffer);
   let bin = "";
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return `data:audio/wav;base64,${btoa(bin)}`;
 }
+const SFX = { heavySlam: buildSfx("heavySlam"), kaching: buildSfx("kaching"), glitchWhoosh: buildSfx("glitchWhoosh") };
 
-const SFX = {
-  heavySlam: buildTestSfx("heavySlam"),
-  uiPop: buildTestSfx("uiPop"),
-  techWhoosh: buildTestSfx("techWhoosh"),
-};
+// 2. FILM GRAIN OVERLAY (TEXTURE)
+const FilmGrain: React.FC = () => (
+  <AbsoluteFill style={{ opacity: 0.12, pointerEvents: "none", zIndex: 100, mixBlendMode: "screen" }}>
+    <svg width="100%" height="100%">
+      <filter id="noise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#noise)" />
+    </svg>
+  </AbsoluteFill>
+);
 
-// 2. BACKGROUND GRID
-const CyberGrid: React.FC<{ frame: number }> = ({ frame }) => {
-  const shift = (frame * 1.5) % 100;
-  return (
-    <AbsoluteFill style={{ backgroundColor: DARK_BG }}>
-      <AbsoluteFill style={{ background: `radial-gradient(circle at 50% 50%, rgba(0,255,102,0.15) 0%, ${DARK_BG} 70%)` }} />
-      <AbsoluteFill
-        style={{
-          opacity: 0.15,
-          backgroundImage: `linear-gradient(${NEON_GREEN}44 2px, transparent 2px), linear-gradient(90deg, ${NEON_GREEN}44 2px, transparent 2px)`,
-          backgroundSize: "100px 100px",
-          transform: `translateY(${shift}px) perspective(500px) rotateX(25deg)`,
-          transformOrigin: "bottom center",
-        }}
-      />
-    </AbsoluteFill>
-  );
-};
-
-// 3. MAIN COMPOSITION
-const TestReel: React.FC = () => {
+// 3. MASTER COMPOSITION
+const HyperKineticReel: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Animations
-  const textPop = spring({ frame: frame - 10, fps, config: { damping: 12, stiffness: 200 } });
-  const uiRise = spring({ frame: frame - 180, fps, config: { damping: 14, stiffness: 150 } });
-  const closingSlam = spring({ frame: frame - 420, fps, config: { damping: 10, stiffness: 220 } });
+  // --- VFX: CONTINUOUS ZOOM & CAMERA SHAKE ---
+  const globalZoom = 1 + (frame / DURATION) * 0.12; // Slow push-in over 13s
+  // Shake triggers on heavy impacts (frames: 10, 190, 360, 520)
+  const shakeEnv = 
+    Math.max(0, 1 - Math.abs(frame - 15) / 10) * 20 + 
+    Math.max(0, 1 - Math.abs(frame - 195) / 10) * 15 +
+    Math.max(0, 1 - Math.abs(frame - 365) / 10) * 25 +
+    Math.max(0, 1 - Math.abs(frame - 525) / 10) * 20;
   
-  const barWidth = interpolate(frame, [220, 380], [10, 100], { extrapolateRight: "clamp" });
-  const rotation = frame * 2;
+  const shakeX = Math.sin(frame * 2.3) * shakeEnv;
+  const shakeY = Math.cos(frame * 1.8) * shakeEnv;
+  const shakeTilt = Math.sin(frame * 1.5) * (shakeEnv * 0.1);
+
+  // Animations
+  const f1 = spring({ frame: frame - 10, fps, config: { damping: 10, stiffness: 250 } });
+  const f2 = spring({ frame: frame - 190, fps, config: { damping: 12, stiffness: 180 } });
+  const f3 = spring({ frame: frame - 360, fps, config: { damping: 8, stiffness: 300 } }); // Aggressive snap
+  const f4 = spring({ frame: frame - 520, fps, config: { damping: 12, stiffness: 200 } });
 
   return (
-    <AbsoluteFill style={{ overflow: "hidden", color: "white", fontFamily: '"Arial Black", sans-serif' }}>
-      <CyberGrid frame={frame} />
+    <AbsoluteFill style={{ backgroundColor: DARK_BG, overflow: "hidden", fontFamily: '"Arial Black", Impact, sans-serif' }}>
+      <FilmGrain />
+      
+      {/* CAMERA WRAPPER */}
+      <AbsoluteFill style={{ transform: `scale(${globalZoom}) translate(${shakeX}px, ${shakeY}px) rotate(${shakeTilt}deg)`, transformOrigin: "center center" }}>
+        
+        {/* BG Grid */}
+        <AbsoluteFill style={{ opacity: 0.1, backgroundImage: `linear-gradient(${NEON_GREEN} 2px, transparent 2px), linear-gradient(90deg, ${NEON_GREEN} 2px, transparent 2px)`, backgroundSize: "120px 120px", transform: `translateY(${(frame * 2) % 120}px) perspective(800px) rotateX(30deg)` }} />
 
-      {/* SCENE 1: KINETIC TYPOGRAPHY (0s - 3s) */}
-      <Sequence from={0} durationInFrames={200} layout="none">
-        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-          <div style={{ fontSize: 40, color: CYAN, letterSpacing: 10, transform: `translateY(${(1 - textPop) * 50}px)`, opacity: textPop }}>
-            REMOTION ENGINE
-          </div>
-          <div style={{ fontSize: 90, fontWeight: 900, color: NEON_GREEN, textAlign: "center", transform: `scale(${interpolate(textPop, [0, 1], [0.5, 1])})`, opacity: textPop, marginTop: 20 }}>
-            KINETIC<br/>TYPOGRAPHY
-          </div>
-        </AbsoluteFill>
-        <Sequence from={10} durationInFrames={30} layout="none"><Audio src={SFX.heavySlam} volume={0.8} /></Sequence>
-      </Sequence>
-
-      {/* SCENE 2: SMOOTH UI & GRAPHS (3s - 7s) */}
-      <Sequence from={180} durationInFrames={260} layout="none">
-        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-          <div style={{ width: 800, padding: 50, background: PANEL_BG, borderRadius: 30, border: `4px solid ${CYAN}`, transform: `translateY(${(1 - uiRise) * 150}px)`, opacity: uiRise, boxShadow: `0 0 60px rgba(0, 240, 255, 0.3)` }}>
-            
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 24, color: "#94A3B8" }}>
-              <span>SYSTEM TEST</span>
-              <span style={{ color: CYAN }}>PROCESSING...</span>
+        {/* CUT 1: HOOK (0s - 3s) */}
+        {frame < 185 && (
+          <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+            <div style={{ fontSize: 40, color: "#64748B", letterSpacing: 8, transform: `translateY(${(1 - f1) * -50}px)`, opacity: f1 }}>
+              BADI COMPANIES AAPKO
             </div>
-
-            {/* Rotating SVG Radar / Scanner */}
-            <div style={{ display: "flex", justifyContent: "center", margin: "40px 0" }}>
-              <svg width="200" height="200" viewBox="0 0 200 200">
-                <circle cx="100" cy="100" r="80" fill="none" stroke={CYAN} strokeWidth="4" opacity="0.3" />
-                <circle cx="100" cy="100" r="80" fill="none" stroke={NEON_GREEN} strokeWidth="8" strokeDasharray="100 400" transform={`rotate(${rotation} 100 100)`} />
-                <circle cx="100" cy="100" r="40" fill="none" stroke={CYAN} strokeWidth="4" strokeDasharray="20 15" transform={`rotate(${-rotation * 1.5} 100 100)`} />
-              </svg>
+            <div style={{ marginTop: 20, padding: "10px 40px", background: NEON_GREEN, color: "#000", fontSize: 110, fontWeight: 900, transform: `scale(${0.5 + f1 * 0.5}) rotate(${-2 + (1-f1)*10}deg)`, boxShadow: `0 0 80px ${NEON_GREEN}` }}>
+              "FREE"
             </div>
-
-            {/* Animated Loading Bar */}
-            <div style={{ width: "100%", height: 30, background: "#0F172A", borderRadius: 15, overflow: "hidden", border: `2px solid ${NEON_GREEN}` }}>
-              <div style={{ width: `${barWidth}%`, height: "100%", background: NEON_GREEN, boxShadow: `0 0 20px ${NEON_GREEN}` }} />
+            <div style={{ fontSize: 60, color: "#FFF", marginTop: 20, transform: `translateY(${(1 - f1) * 50}px)`, opacity: f1 }}>
+              KE NAAM PAR KAISE LOOT-TI HAI?
             </div>
-            <div style={{ textAlign: "center", marginTop: 15, fontSize: 35, color: NEON_GREEN }}>
-              {Math.floor(barWidth)}% COMPLETE
+          </AbsoluteFill>
+        )}
+
+        {/* CUT 2: T-SHIRT 400 (3s - 6s) */}
+        {frame >= 185 && frame < 355 && (
+          <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+            <div style={{ width: 800, padding: 60, background: "rgba(10,15,24,0.9)", border: `4px solid ${NEON_GREEN}`, borderRadius: 30, textAlign: "center", transform: `perspective(1000px) rotateX(${(1 - f2) * 90}deg) scale(${0.8 + f2 * 0.2})`, boxShadow: `0 30px 60px rgba(0,0,0,0.8)` }}>
+              <div style={{ fontSize: 35, color: "#94A3B8", letterSpacing: 5 }}>ITEM ADDED TO CART</div>
+              <div style={{ fontSize: 70, color: "#FFF", margin: "20px 0" }}>OVERSIZED T-SHIRT</div>
+              <div style={{ fontSize: 120, color: NEON_GREEN, textShadow: `0 0 50px ${NEON_GREEN}` }}>RS. 400</div>
             </div>
-          </div>
-        </AbsoluteFill>
-        <Sequence from={0} durationInFrames={30} layout="none"><Audio src={SFX.techWhoosh} volume={0.8} /></Sequence>
-      </Sequence>
+          </AbsoluteFill>
+        )}
 
-      {/* SCENE 3: FINAL IMPACT (7s - 10s) */}
-      <Sequence from={420} durationInFrames={180} layout="none">
-        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", backgroundColor: NEON_GREEN }}>
-          <div style={{ fontSize: 130, color: "#000", transform: `scale(${0.5 + closingSlam * 0.5}) rotate(${Math.sin(frame * 0.1) * 2}deg)` }}>
-            TEST SUCCESS
-          </div>
-        </AbsoluteFill>
-        <Sequence from={0} durationInFrames={30} layout="none"><Audio src={SFX.heavySlam} volume={1} /></Sequence>
-      </Sequence>
+        {/* CUT 3: + DELIVERY 50 GLITCH (6s - 8.5s) */}
+        {frame >= 355 && frame < 515 && (
+          <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+            <div style={{ width: 800, padding: 60, background: "rgba(30,5,10,0.9)", border: `6px solid ${CRIMSON}`, borderRadius: 30, textAlign: "center", transform: `scale(${1 + (1 - f3) * 0.5})`, boxShadow: `0 0 100px ${CRIMSON}55` }}>
+              <div style={{ fontSize: 45, color: "#FFF", letterSpacing: 3 }}>DELIVERY CHARGE</div>
+              {/* Chromatic Aberration Effect */}
+              <div style={{ fontSize: 130, color: CRIMSON, marginTop: 20, textShadow: `-8px 0px 0px rgba(0,255,255,0.7), 8px 0px 0px rgba(255,0,0,0.7)` }}>
+                + RS. 50
+              </div>
+              <div style={{ marginTop: 20, padding: "10px 30px", background: CRIMSON, color: "#FFF", fontSize: 40, display: "inline-block" }}>PURE WASTE ❌</div>
+            </div>
+          </AbsoluteFill>
+        )}
 
+        {/* CUT 4: FREE SHIPPING BANNER SLAM (8.5s - 13s) */}
+        {frame >= 515 && (
+          <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+            <div style={{ width: 900, padding: 50, background: NEON_GREEN, borderRadius: 20, textAlign: "center", transform: `translateY(${(1 - f4) * -200}px) scale(${0.9 + f4 * 0.1})`, boxShadow: `0 0 100px ${NEON_GREEN}` }}>
+              <div style={{ fontSize: 40, color: "#000", letterSpacing: 4 }}>COMPANY PLAYS A MIND GAME</div>
+              <div style={{ fontSize: 90, color: "#000", marginTop: 20, lineHeight: 1 }}>
+                FREE SHIPPING <br/>ABOVE RS. 500
+              </div>
+            </div>
+          </AbsoluteFill>
+        )}
+      </AbsoluteFill>
+
+      {/* AUDIO TRIGGERS */}
+      <Sequence from={10} durationInFrames={30} layout="none"><Audio src={SFX.heavySlam} volume={1} /></Sequence>
+      <Sequence from={190} durationInFrames={30} layout="none"><Audio src={SFX.glitchWhoosh} volume={0.8} /></Sequence>
+      <Sequence from={360} durationInFrames={30} layout="none"><Audio src={SFX.heavySlam} volume={1} /></Sequence>
+      <Sequence from={520} durationInFrames={30} layout="none"><Audio src={SFX.kaching} volume={1} /></Sequence>
     </AbsoluteFill>
   );
 };
@@ -179,7 +179,7 @@ export const RemotionRoot: React.FC = () => {
   return (
     <Composition
       id="Reel"
-      component={TestReel}
+      component={HyperKineticReel}
       durationInFrames={DURATION}
       fps={FPS}
       width={WIDTH}
