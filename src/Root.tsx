@@ -11,12 +11,12 @@ import {
 } from "remotion";
 
 /* =========================================================================
-   THE FAKE SCARCITY TRAP — STRAIGHT EDITORIAL TYPOGRAPHY & OPTICAL SHADOW
-   1080 x 1920 | 60 FPS | 38.0 Seconds (2280 Frames) | 10 Scenes
-   - ZERO EMOJIS, ZERO TILTED TEXT (100% Straight Vertical Multi-Font Stack)
-   - Safe 920px Max-Width Bounds (Zero Text Overflow / Clipping)
-   - Ghost Motion-Blur Shadow + Optical Lens Vignette + Smooth Camera Zoom
-   - Pop-In Word Animation (Video 2 Style) + Typing SFX Bursts & Whooshes
+   THE FAKE SCARCITY TRAP — DETAILED VISUAL SCENES + MINIMAL MONEY SFX
+   1080 x 1920 | 60 FPS | 38.0 Seconds (2280 Frames)
+   - Detailed Interactive Scenes: Smartphone Sneaker App, Stock Depletion Bar,
+     Flip-Clock Timer, Brain FOMO ECG Graph, UPI Payment Receipt, Warehouse Grid
+   - Typography ONLY on Short Bridge Cuts (Hook & Closing Concept)
+   - SFX ONLY on Money/Purchase Moments (Ka-Ching) + 1 Stock Alert Beep
    ========================================================================= */
 
 const FPS = 60;
@@ -25,27 +25,25 @@ const HEIGHT = 1920;
 const DURATION = 2280; // 38.0 Seconds @ 60 FPS
 
 const NEON_GREEN = "#00FF66";
-const CRIMSON = "#E11D48";
+const GREEN_GLOW = "rgba(0, 255, 102, 0.35)";
+const CRIMSON = "#FF2A54";
+const GOLD = "#FFD166";
+const CYAN = "#00F0FF";
+const DARK_BG = "#050811";
 const PAPER_BG = "#F4F0E6";
-const DARK_BG = "#090D16";
-const INK_DARK = "#0F172A";
+const PANEL_BG = "rgba(11, 17, 30, 0.96)";
 
 const clamp = (v: number, min = 0, max = 1) => Math.max(min, Math.min(max, v));
 
 /* =========================================================================
-   01. PROCEDURAL AUDIO: SCENE WHOOSH, TYPING SFX BURST & CASH KA-CHING
+   01. MINIMAL PROCEDURAL SFX (ONLY CASH KA-CHING & 1 RED ALERT BEEP)
    ========================================================================= */
-type SfxType = "whoosh" | "zoomWhoosh" | "typingBurst" | "kaching";
+type SfxType = "kaching" | "alertBeep";
 
-function buildSfx(type: SfxType): string {
+function buildMinimalSfx(type: SfxType): string {
   const sampleRate = 22050;
-  const durations: Record<SfxType, number> = {
-    whoosh: 0.38,
-    zoomWhoosh: 0.52,
-    typingBurst: 0.48,
-    kaching: 0.5,
-  };
-  const totalSamples = Math.floor(sampleRate * durations[type]);
+  const duration = type === "kaching" ? 0.52 : 0.34;
+  const totalSamples = Math.floor(sampleRate * duration);
   const buffer = new ArrayBuffer(44 + totalSamples * 2);
   const view = new DataView(buffer);
 
@@ -73,31 +71,25 @@ function buildSfx(type: SfxType): string {
     let w = 0;
     let env = 1;
 
-    if (type === "whoosh") {
-      const f = 120 + Math.sin(p * Math.PI) * 260;
-      const air = Math.sin(i * 12.9898) * Math.cos(i * 0.35) * 0.25;
-      w = Math.sin(2 * Math.PI * f * t) * 0.65 + air;
-      env = Math.sin(Math.PI * p) * Math.pow(1 - p * 0.3, 1.3);
-    } else if (type === "zoomWhoosh") {
-      const f = 90 + Math.sin(p * Math.PI) * 180;
-      w = Math.sin(2 * Math.PI * f * t) * 0.75 + Math.sin(2 * Math.PI * (f * 1.5) * t) * 0.25;
-      env = Math.sin(Math.PI * p);
-    } else if (type === "typingBurst") {
-      // 6 rapid mechanical keyboard clacks inside one 0.48s burst
-      const step = (p * 6) % 1;
-      const bodyF = 230 * Math.exp(-step * 14) + 85;
-      const click = Math.sin(2 * Math.PI * 2200 * t) * Math.exp(-step * 30);
-      w = Math.sin(2 * Math.PI * bodyF * t) * 0.75 + click * 0.45;
-      env = Math.exp(-step * 10);
-    } else {
+    if (type === "kaching") {
+      // Crisp metallic coin + cash register bell
       const f1 = p < 0.18 ? 1480 : 2960;
       const f2 = p < 0.18 ? 2217 : 4435;
       const sp = p < 0.18 ? p / 0.18 : (p - 0.18) / 0.82;
-      w = Math.sin(2 * Math.PI * f1 * t) * 0.55 + Math.sin(2 * Math.PI * f2 * t) * 0.35;
+      w =
+        Math.sin(2 * Math.PI * f1 * t) * 0.55 +
+        Math.sin(2 * Math.PI * f2 * t) * 0.35 +
+        Math.sin(2 * Math.PI * (f1 * 1.5) * t) * 0.15;
       env = Math.exp(-sp * 7.5);
+    } else {
+      // Clean double radar beep for "Only 1 Left" alert
+      const f = p < 0.45 ? 880 : 1174.6;
+      const lp = p < 0.45 ? p / 0.45 : (p - 0.45) / 0.55;
+      w = Math.sin(2 * Math.PI * f * t) * 0.65;
+      env = Math.exp(-lp * 8.5);
     }
 
-    view.setInt16(44 + i * 2, clamp(w * env * 0.78, -1, 1) * 32767, true);
+    view.setInt16(44 + i * 2, clamp(w * env * 0.8, -1, 1) * 32767, true);
   }
 
   const bytes = new Uint8Array(buffer);
@@ -106,38 +98,13 @@ function buildSfx(type: SfxType): string {
   return `data:audio/wav;base64,${btoa(bin)}`;
 }
 
-const SFX: Record<SfxType, string> = {
-  whoosh: buildSfx("whoosh"),
-  zoomWhoosh: buildSfx("zoomWhoosh"),
-  typingBurst: buildSfx("typingBurst"),
-  kaching: buildSfx("kaching"),
+const SFX = {
+  kaching: buildMinimalSfx("kaching"),
+  alertBeep: buildMinimalSfx("alertBeep"),
 };
 
 /* =========================================================================
-   02. OPTICAL LENS VIGNETTE SHADOW (VIDEO 1 STYLE)
-   ========================================================================= */
-const OpticalShadowVignette: React.FC<{ frame: number; dark?: boolean }> = ({
-  frame,
-  dark = false,
-}) => {
-  const dx = Math.sin(frame * 0.025) * 12;
-  const dy = Math.cos(frame * 0.02) * 10;
-
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none", zIndex: 40 }}>
-      <AbsoluteFill
-        style={{
-          background: dark
-            ? `radial-gradient(circle at ${50 + dx}% ${50 + dy}%, transparent 42%, rgba(0,0,0,0.75) 100%)`
-            : `radial-gradient(circle at ${50 + dx}% ${50 + dy}%, transparent 45%, rgba(15,23,42,0.32) 100%)`,
-        }}
-      />
-    </AbsoluteFill>
-  );
-};
-
-/* =========================================================================
-   03. STRAIGHT POP-IN WORD BLOCK WITH GHOST SHADOW (VIDEO 1 + 2 HYBRID)
+   02. STRAIGHT SHADOW TYPOGRAPHY (USED ONLY FOR HOOK & CLOSING BRIDGES)
    ========================================================================= */
 type FontKind = "serifItalic" | "impact" | "mono" | "sansBold";
 
@@ -156,33 +123,16 @@ const ShadowPopLine: React.FC<{
   size: number;
   color: string;
   boxBg?: string;
-  letterSpacing?: number;
-}> = ({
-  text,
-  localFrame,
-  appearFrame,
-  font,
-  size,
-  color,
-  boxBg,
-  letterSpacing = 1,
-}) => {
+}> = ({ text, localFrame, appearFrame, font, size, color, boxBg }) => {
   const { fps } = useVideoConfig();
   const rel = localFrame - appearFrame;
   if (rel < 0) return null;
 
-  const pop = spring({
-    frame: rel,
-    fps,
-    config: { damping: 13, stiffness: 175, mass: 0.8 },
-  });
-
-  const scale = interpolate(pop, [0, 1], [1.32, 1]);
-  const yOff = interpolate(pop, [0, 1], [34, 0]);
-  const ghostY = interpolate(pop, [0, 1], [38, 0]);
+  const pop = spring({ frame: rel, fps, config: { damping: 14, stiffness: 170 } });
+  const scale = interpolate(pop, [0, 1], [1.3, 1]);
+  const yOff = interpolate(pop, [0, 1], [32, 0]);
   const ghostBlur = interpolate(pop, [0, 1], [22, 0]);
-  const ghostAlpha = interpolate(pop, [0, 0.7, 1], [0.6, 0.3, 0.14]);
-
+  const ghostAlpha = interpolate(pop, [0, 0.7, 1], [0.55, 0.28, 0.12]);
   const fSpec = FONT_MAP[font];
 
   return (
@@ -195,19 +145,16 @@ const ShadowPopLine: React.FC<{
         opacity: clamp(rel / 6, 0, 1),
       }}
     >
-      {/* Ghost Motion-Blur Shadow Layer */}
       <div
         style={{
           position: "absolute",
           left: 0,
           right: 0,
-          top: ghostY,
+          top: (1 - pop) * 35,
           fontFamily: fSpec.family,
           fontStyle: fSpec.style,
           fontWeight: fSpec.weight,
           fontSize: size,
-          letterSpacing,
-          lineHeight: 1.08,
           color: "#000000",
           opacity: ghostAlpha,
           filter: `blur(${6 + ghostBlur}px)`,
@@ -216,8 +163,6 @@ const ShadowPopLine: React.FC<{
       >
         {text}
       </div>
-
-      {/* Main Crisp Straight Text Layer */}
       <div
         style={{
           position: "relative",
@@ -226,14 +171,12 @@ const ShadowPopLine: React.FC<{
           fontStyle: fSpec.style,
           fontWeight: fSpec.weight,
           fontSize: size,
-          letterSpacing,
           lineHeight: 1.08,
           color,
           backgroundColor: boxBg || "transparent",
           padding: boxBg ? "10px 32px" : "0 10px",
           borderRadius: boxBg ? 10 : 0,
-          boxShadow: boxBg ? "0 18px 42px rgba(0,0,0,0.28)" : "none",
-          textShadow: boxBg ? "none" : "0 10px 24px rgba(0,0,0,0.16)",
+          boxShadow: boxBg ? "0 18px 40px rgba(0,0,0,0.28)" : "none",
         }}
       >
         {text}
@@ -243,492 +186,656 @@ const ShadowPopLine: React.FC<{
 };
 
 /* =========================================================================
-   04. CLEAN VECTOR UI CARDS (SNEAKER APP, TIMER & WAREHOUSE)
+   03. DETAILED CUSTOM SVG SNEAKER ILLUSTRATION
    ========================================================================= */
-const SneakerAppCard: React.FC<{ localFrame: number }> = ({ localFrame }) => {
+const DetailedSneakerSvg: React.FC<{ scale?: number }> = ({ scale = 1 }) => (
+  <svg width={320 * scale} height={200 * scale} viewBox="0 0 320 200">
+    {/* Glowing Ground Shadow */}
+    <ellipse cx="160" cy="178" rx="130" ry="12" fill="rgba(0, 255, 102, 0.2)" />
+    {/* Midsole & Outsole */}
+    <path
+      d="M25 145 L295 145 C302 145 305 168 290 170 L30 170 C18 170 18 145 25 145 Z"
+      fill="#F8FAFC"
+      stroke="#0F172A"
+      strokeWidth="4"
+    />
+    <path d="M35 162 L285 162" stroke={NEON_GREEN} strokeWidth="5" />
+    {/* Main Sneaker Upper Body */}
+    <path
+      d="M30 145 L35 72 L95 72 L135 35 L165 45 L160 80 L285 112 C298 118 298 145 288 145 Z"
+      fill="#1E293B"
+      stroke={CYAN}
+      strokeWidth="4.5"
+      strokeLinejoin="round"
+    />
+    {/* Heel Counter & Toe Cap Overlay */}
+    <path
+      d="M30 145 L35 88 L88 105 L78 145 Z"
+      fill="rgba(255, 42, 84, 0.85)"
+      stroke="#FFFFFF"
+      strokeWidth="2.5"
+    />
+    {/* Iconic Side Swoosh / Stripe */}
+    <path
+      d="M85 102 L195 128 L235 105"
+      fill="none"
+      stroke={NEON_GREEN}
+      strokeWidth="8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Laces */}
+    <line x1="145" y1="58" x2="175" y2="52" stroke="#FFFFFF" strokeWidth="4" />
+    <line x1="158" y1="72" x2="188" y2="66" stroke="#FFFFFF" strokeWidth="4" />
+    <line x1="172" y1="86" x2="202" y2="80" stroke="#FFFFFF" strokeWidth="4" />
+  </svg>
+);
+
+/* =========================================================================
+   04. DETAILED INTERACTIVE SMARTPHONE SNEAKER APP (SCENES 2, 3, 4, 6)
+   ========================================================================= */
+const DetailedSneakerPhoneScene: React.FC<{
+  mode: "browsing" | "hesitate" | "scarcityAttack" | "purchased";
+  localFrame: number;
+}> = ({ mode, localFrame }) => {
   const { fps } = useVideoConfig();
-  const pop = spring({ frame: Math.max(0, localFrame - 15), fps, config: { damping: 13, stiffness: 160 } });
+  const pop = spring({ frame: localFrame, fps, config: { damping: 14, stiffness: 150 } });
+
+  // Stock bar drains from 10 down to 1 in "scarcityAttack" mode
+  const stockCount =
+    mode === "scarcityAttack"
+      ? Math.max(1, Math.floor(interpolate(localFrame, [5, 45], [9, 1], { extrapolateRight: "clamp" })))
+      : 1;
+  const stockPct = mode === "scarcityAttack" ? interpolate(localFrame, [5, 45], [75, 12], { extrapolateRight: "clamp" }) : 12;
+
+  // Countdown Timer ticking down
+  const secLeft = Math.max(41, 59 - Math.floor(localFrame / 18));
+
+  // Cursor animation for "hesitate" (moves to Close X) or "purchased" (clicks BUY NOW)
+  const cursorX =
+    mode === "hesitate"
+      ? interpolate(localFrame, [10, 65], [290, 495], { extrapolateRight: "clamp" })
+      : mode === "purchased"
+        ? interpolate(localFrame, [0, 30], [420, 290], { extrapolateRight: "clamp" })
+        : 290;
+  const cursorY =
+    mode === "hesitate"
+      ? interpolate(localFrame, [10, 65], [780, 125], { extrapolateRight: "clamp" })
+      : mode === "purchased"
+        ? interpolate(localFrame, [0, 30], [620, 960], { extrapolateRight: "clamp" })
+        : 780;
 
   return (
-    <div
-      style={{
-        width: 820,
-        padding: "36px 42px",
-        borderRadius: 24,
-        background: "#111827",
-        border: "3px solid #334155",
-        boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        gap: 36,
-        marginTop: 24,
-        transform: `scale(${0.88 + pop * 0.12})`,
-        opacity: clamp((localFrame - 15) / 10, 0, 1),
-      }}
-    >
-      {/* Clean Geometric Vector Sneaker Icon */}
-      <div
+    <AbsoluteFill style={{ backgroundColor: DARK_BG, justifyContent: "center", alignItems: "center" }}>
+      {/* Subtle Radial Glow */}
+      <AbsoluteFill
         style={{
-          width: 220,
-          height: 170,
-          borderRadius: 18,
-          background: "#090D16",
-          border: `2px solid ${NEON_GREEN}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          background: `radial-gradient(circle at 50% 54%, ${
+            mode === "scarcityAttack" ? "rgba(255,42,84,0.22)" : "rgba(0,255,102,0.16)"
+          } 0%, ${DARK_BG} 70%)`,
         }}
-      >
-        <svg width="170" height="110" viewBox="0 0 170 110">
-          <path
-            d="M20 80 L155 80 C158 62 140 52 115 48 L82 22 L62 28 L55 48 L22 42 Z"
-            fill="rgba(0,255,102,0.18)"
-            stroke={NEON_GREEN}
-            strokeWidth="5"
-            strokeLinejoin="round"
-          />
-          <line x1="18" y1="90" x2="156" y2="90" stroke="#FFFFFF" strokeWidth="6" />
-        </svg>
-      </div>
+      />
 
-      <div style={{ flex: 1, textAlign: "left" }}>
-        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 22, color: "#94A3B8", fontWeight: 800 }}>
-          STREETWEAR // EDITION 01
-        </div>
-        <div style={{ fontFamily: "'Arial Black', sans-serif", fontSize: 38, color: "#FFFFFF", marginTop: 6 }}>
-          URBAN HIGH SNEAKER
+      {/* Compact Context Caption at Very Top */}
+      <div style={{ position: "absolute", top: 75, left: 60, right: 60, textAlign: "center" }}>
+        <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 36, color: "#94A3B8" }}>
+          {mode === "browsing" && "Maan lo aap phone par ek Sneaker dekh rahe ho"}
+          {mode === "hesitate" && "Aap sochte ho — 'Abhi rehne deta hoon, baad mein lunga'"}
+          {mode === "scarcityAttack" && "Tabhi price ke niche RED ALERT aur TIMER aata hai!"}
+          {mode === "purchased" && "Result? Jo chahiye nahi tha, aap turant kharid lete ho!"}
         </div>
         <div
           style={{
-            marginTop: 16,
-            display: "inline-block",
-            padding: "8px 26px",
-            borderRadius: 10,
-            background: NEON_GREEN,
-            color: "#05080F",
-            fontFamily: "Impact, sans-serif",
-            fontSize: 46,
+            marginTop: 10,
+            fontFamily: "Impact, 'Arial Black', sans-serif",
+            fontSize: 64,
+            color: mode === "scarcityAttack" ? CRIMSON : NEON_GREEN,
             letterSpacing: 2,
           }}
         >
-          RS. 2000
+          {mode === "browsing" && "PRICE: RS. 2000"}
+          {mode === "hesitate" && "CLOSING THE APP..."}
+          {mode === "scarcityAttack" && "HURRY! ONLY 1 LEFT IN STOCK!"}
+          {mode === "purchased" && "ORDER PAID: RS. 2000"}
         </div>
       </div>
-    </div>
+
+      {/* 3D SMARTPHONE FRAME */}
+      <div
+        style={{
+          marginTop: 140,
+          width: 640,
+          height: 1180,
+          borderRadius: 62,
+          background: "#090E1A",
+          border: `10px solid ${mode === "scarcityAttack" ? CRIMSON : "#263248"}`,
+          boxShadow: `0 35px 90px rgba(0,0,0,0.9), 0 0 70px ${
+            mode === "scarcityAttack" ? "rgba(255,42,84,0.35)" : "rgba(0,255,102,0.2)"
+          }`,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          transform: `scale(${0.92 + pop * 0.08})`,
+        }}
+      >
+        {/* Phone Status Bar */}
+        <div
+          style={{
+            height: 58,
+            background: "#050811",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "0 36px",
+            color: "#94A3B8",
+            fontFamily: "'Courier New', monospace",
+            fontSize: 18,
+            fontWeight: 800,
+          }}
+        >
+          <span>9:41</span>
+          <div style={{ width: 130, height: 26, borderRadius: 16, background: "#000" }} />
+          <span style={{ color: NEON_GREEN }}>5G • 99%</span>
+        </div>
+
+        {/* App Top Bar with Close 'X' Button */}
+        <div
+          style={{
+            padding: "18px 30px",
+            background: "#0D1526",
+            borderBottom: "2px solid #1E293B",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ fontFamily: "'Arial Black', sans-serif", fontSize: 24, color: "#FFF", letterSpacing: 2 }}>
+            SNKR // STORE
+          </span>
+          <div
+            style={{
+              padding: "6px 18px",
+              borderRadius: 8,
+              background: mode === "hesitate" && localFrame > 50 ? CRIMSON : "#1E293B",
+              color: "#FFF",
+              fontFamily: "'Arial Black', sans-serif",
+              fontSize: 18,
+            }}
+          >
+            CLOSE [X]
+          </div>
+        </div>
+
+        {/* App Content Body */}
+        <div style={{ flex: 1, padding: "24px 30px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          {/* Sneaker Showcase Box */}
+          <div
+            style={{
+              padding: "22px",
+              borderRadius: 24,
+              background: "#060A14",
+              border: "2px solid #1E293B",
+              textAlign: "center",
+              position: "relative",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ color: CYAN, fontFamily: "'Courier New', monospace", fontSize: 18, fontWeight: 800 }}>
+                AIR CYBER HIGH // 01
+              </span>
+              <span style={{ color: GOLD, fontFamily: "'Arial Black', sans-serif", fontSize: 18 }}>
+                4.9 ★ (1.4k)
+              </span>
+            </div>
+
+            <DetailedSneakerSvg scale={0.95} />
+
+            {/* Size Pills + Green Price Highlight */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                {["UK 7", "UK 8", "UK 9", "UK 10"].map((sz, i) => (
+                  <div
+                    key={sz}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      background: i === 2 ? NEON_GREEN : "#0F172A",
+                      color: i === 2 ? "#040806" : "#64748B",
+                      fontFamily: "'Arial Black', sans-serif",
+                      fontSize: 16,
+                    }}
+                  >
+                    {sz}
+                  </div>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  padding: "8px 24px",
+                  borderRadius: 10,
+                  background: NEON_GREEN,
+                  color: "#040806",
+                  fontFamily: "Impact, sans-serif",
+                  fontSize: 42,
+                  boxShadow: `0 0 35px ${NEON_GREEN}`,
+                }}
+              >
+                RS. 2000
+              </div>
+            </div>
+          </div>
+
+          {/* DYNAMIC LOWER SECTION BASED ON STORY SCENE */}
+          {mode === "hesitate" && (
+            <div
+              style={{
+                padding: "24px",
+                borderRadius: 20,
+                background: "#131C31",
+                border: "2px dashed #64748B",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 28, color: "#E2E8F0" }}>
+                "Abhi zaroorat nahi hai... baad mein dekhunga."
+              </div>
+            </div>
+          )}
+
+          {mode === "scarcityAttack" && (
+            <div
+              style={{
+                padding: "22px 24px",
+                borderRadius: 22,
+                background: "rgba(255, 42, 84, 0.16)",
+                border: `4px solid ${CRIMSON}`,
+                boxShadow: `0 0 50px rgba(255,42,84,0.4)`,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontFamily: "Impact, sans-serif", fontSize: 36, color: "#FFFFFF", letterSpacing: 1 }}>
+                  HURRY! ONLY {stockCount} LEFT IN STOCK!
+                </span>
+                <span
+                  style={{
+                    padding: "4px 12px",
+                    borderRadius: 6,
+                    background: CRIMSON,
+                    color: "#FFF",
+                    fontFamily: "'Courier New', monospace",
+                    fontSize: 18,
+                    fontWeight: 900,
+                  }}
+                >
+                  HIGH DEMAND
+                </span>
+              </div>
+
+              {/* Draining Red Inventory Progress Bar */}
+              <div
+                style={{
+                  marginTop: 14,
+                  width: "100%",
+                  height: 20,
+                  borderRadius: 10,
+                  background: "#090D16",
+                  border: `2px solid ${CRIMSON}`,
+                  overflow: "hidden",
+                }}
+              >
+                <div style={{ width: `${stockPct}%`, height: "100%", background: CRIMSON }} />
+              </div>
+
+              {/* Flip-Clock Reverse Countdown Timer */}
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "12px 18px",
+                  borderRadius: 12,
+                  background: "#060911",
+                  border: `2px solid ${GOLD}`,
+                }}
+              >
+                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 20, color: GOLD, fontWeight: 900 }}>
+                  OFFER EXPIRES IN:
+                </span>
+                <span style={{ fontFamily: "Impact, sans-serif", fontSize: 38, color: GOLD, letterSpacing: 3 }}>
+                  00 : 04 : {secLeft}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {mode === "purchased" && localFrame > 32 && (
+            <div
+              style={{
+                padding: "22px 24px",
+                borderRadius: 20,
+                background: "#052916",
+                border: `4px solid ${NEON_GREEN}`,
+                boxShadow: `0 0 55px ${GREEN_GLOW}`,
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontFamily: "'Courier New', monospace", fontSize: 20, color: NEON_GREEN, fontWeight: 900 }}>
+                UPI PAYMENT SUCCESSFUL
+              </div>
+              <div style={{ fontFamily: "Impact, sans-serif", fontSize: 52, color: "#FFFFFF", marginTop: 6 }}>
+                PAID RS. 2000 INSTANTLY!
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Checkout CTA Button */}
+          <div
+            style={{
+              padding: "24px 0",
+              borderRadius: 18,
+              background: mode === "scarcityAttack" ? CRIMSON : NEON_GREEN,
+              color: mode === "scarcityAttack" ? "#FFFFFF" : "#040806",
+              fontFamily: "Impact, 'Arial Black', sans-serif",
+              fontSize: 36,
+              textAlign: "center",
+              letterSpacing: 2,
+              boxShadow: `0 0 40px ${mode === "scarcityAttack" ? CRIMSON : NEON_GREEN}`,
+            }}
+          >
+            {mode === "purchased" && localFrame > 32
+              ? "ORDER CONFIRMED [ RS. 2000 ]"
+              : "BUY NOW • RS. 2000"}
+          </div>
+        </div>
+
+        {/* Animated Touch Cursor inside Phone */}
+        {(mode === "hesitate" || mode === "purchased") && (
+          <div
+            style={{
+              position: "absolute",
+              left: cursorX,
+              top: cursorY,
+              width: 58,
+              height: 58,
+              borderRadius: "50%",
+              background: "rgba(255, 255, 255, 0.35)",
+              border: "4px solid #FFFFFF",
+              boxShadow: `0 0 30px ${CYAN}`,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+      </div>
+    </AbsoluteFill>
   );
 };
 
-const ScarcityTimerCard: React.FC<{ localFrame: number }> = ({ localFrame }) => {
-  const secLeft = Math.max(51, 59 - Math.floor(localFrame / 25));
-  const pulse = 1 + Math.sin(localFrame * 0.25) * 0.03;
-
-  return (
-    <div
-      style={{
-        width: 840,
-        padding: "36px 40px",
-        borderRadius: 22,
-        background: "rgba(225, 29, 72, 0.14)",
-        border: `4px solid ${CRIMSON}`,
-        boxShadow: `0 0 65px rgba(225,29,72,0.4)`,
-        textAlign: "center",
-        marginTop: 22,
-        transform: `scale(${pulse})`,
-      }}
-    >
-      <div
-        style={{
-          display: "inline-block",
-          padding: "10px 30px",
-          borderRadius: 8,
-          background: CRIMSON,
-          color: "#FFFFFF",
-          fontFamily: "Impact, sans-serif",
-          fontSize: 54,
-          letterSpacing: 3,
-        }}
-      >
-        HURRY! ONLY 1 LEFT IN STOCK
-      </div>
-      <div
-        style={{
-          marginTop: 20,
-          fontFamily: "'Courier New', monospace",
-          fontSize: 48,
-          fontWeight: 900,
-          color: "#FACC15",
-          letterSpacing: 4,
-        }}
-      >
-        DEAL ENDS IN: 00:04:{secLeft}
-      </div>
-    </div>
-  );
-};
-
-const WarehouseComparisonCard: React.FC<{ localFrame: number }> = ({ localFrame }) => {
+/* =========================================================================
+   05. DETAILED SCENE 5: BRAIN FOMO NEURAL ECG MONITOR
+   ========================================================================= */
+const BrainFomoMonitorScene: React.FC<{ localFrame: number }> = ({ localFrame }) => {
   const { fps } = useVideoConfig();
-  const pop = spring({ frame: Math.max(0, localFrame - 18), fps, config: { damping: 13, stiffness: 165 } });
+  const pop = spring({ frame: localFrame, fps, config: { damping: 13, stiffness: 160 } });
+  const panicLevel = Math.floor(interpolate(localFrame, [0, 50], [35, 99], { extrapolateRight: "clamp" }));
 
   return (
-    <div
-      style={{
-        width: 880,
-        display: "flex",
-        gap: 26,
-        marginTop: 26,
-        transform: `scale(${0.88 + pop * 0.12})`,
-        opacity: clamp((localFrame - 18) / 10, 0, 1),
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          padding: "34px 24px",
-          borderRadius: 20,
-          background: "#111827",
-          border: `3px solid ${CRIMSON}`,
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 22, color: "#94A3B8", fontWeight: 800 }}>
-          ON YOUR APP SCREEN
+    <AbsoluteFill style={{ backgroundColor: DARK_BG, justifyContent: "center", alignItems: "center", padding: "0 60px" }}>
+      <div style={{ textAlign: "center", marginBottom: 36 }}>
+        <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 40, color: "#94A3B8" }}>
+          Isse aapke brain mein trigger hota hai
         </div>
-        <div style={{ fontFamily: "Impact, sans-serif", fontSize: 64, color: CRIMSON, marginTop: 14 }}>
-          ONLY 1 LEFT
-        </div>
-        <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 24, color: "#E2E8F0", marginTop: 8 }}>
-          Fake urgency alert
+        <div style={{ fontFamily: "Impact, sans-serif", fontSize: 86, color: CRIMSON, letterSpacing: 3, marginTop: 8 }}>
+          FOMO (FEAR OF MISSING OUT)
         </div>
       </div>
 
+      {/* Neural Telemetry Dashboard Card */}
       <div
         style={{
-          flex: 1,
-          padding: "34px 24px",
-          borderRadius: 20,
-          background: "#062415",
-          border: `4px solid ${NEON_GREEN}`,
-          boxShadow: `0 0 55px rgba(0,255,102,0.3)`,
-          textAlign: "center",
+          width: 900,
+          padding: 46,
+          borderRadius: 28,
+          background: PANEL_BG,
+          border: `4px solid ${CRIMSON}`,
+          boxShadow: `0 0 85px rgba(255,42,84,0.35)`,
+          transform: `scale(${0.9 + pop * 0.1})`,
         }}
       >
-        <div style={{ fontFamily: "'Courier New', monospace", fontSize: 22, color: NEON_GREEN, fontWeight: 800 }}>
-          IN REAL WAREHOUSE
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 24, color: "#E2E8F0", fontWeight: 900 }}>
+            BRAIN DECISION MONITOR
+          </span>
+          <span style={{ padding: "6px 18px", borderRadius: 8, background: CRIMSON, color: "#FFF", fontFamily: "'Arial Black', sans-serif", fontSize: 20 }}>
+            LOGIC: OFF // PANIC: {panicLevel}%
+          </span>
         </div>
-        <div style={{ fontFamily: "Impact, sans-serif", fontSize: 64, color: "#FFFFFF", marginTop: 14 }}>
-          10,000+ BOXES
+
+        {/* High-Frequency ECG Panic Waveform */}
+        <div style={{ padding: "24px", borderRadius: 18, background: "#050811", border: "2px solid #1E293B" }}>
+          <svg width="790" height="210" viewBox="0 0 790 210">
+            <polyline
+              fill="none"
+              stroke={CRIMSON}
+              strokeWidth="7"
+              strokeLinejoin="round"
+              points="0,140 80,140 120,30 160,190 210,15 255,195 310,45 360,175 415,10 465,195 520,35 575,180 630,20 685,160 790,140"
+            />
+          </svg>
         </div>
-        <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 24, color: NEON_GREEN, marginTop: 8 }}>
-          Full stock available
+
+        <div style={{ display: "flex", gap: 24, marginTop: 28 }}>
+          <div style={{ flex: 1, padding: "22px", borderRadius: 16, background: "#090E1A", border: "2px solid #334155", textAlign: "center" }}>
+            <div style={{ color: "#94A3B8", fontFamily: "'Courier New', monospace", fontSize: 20 }}>LOGICAL THINKING</div>
+            <div style={{ color: "#64748B", fontFamily: "Impact, sans-serif", fontSize: 52, marginTop: 8 }}>0% SHUTDOWN</div>
+          </div>
+          <div style={{ flex: 1, padding: "22px", borderRadius: 16, background: "rgba(255,42,84,0.16)", border: `3px solid ${CRIMSON}`, textAlign: "center" }}>
+            <div style={{ color: "#FFFFFF", fontFamily: "'Courier New', monospace", fontSize: 20 }}>IMPULSE URGENCY</div>
+            <div style={{ color: GOLD, fontFamily: "Impact, sans-serif", fontSize: 52, marginTop: 8 }}>
+              "ABHI NAHI LIYA TOH GAYA!"
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </AbsoluteFill>
   );
 };
 
 /* =========================================================================
-   05. SCENE DEFINITIONS (10 SCENES, 38 SECONDS TOTAL)
+   06. DETAILED SCENE 7: APP "ONLY 1 LEFT" VS 10,000+ WAREHOUSE BOXES GRID
    ========================================================================= */
-type LineSpec = {
-  text: string;
-  appear: number;
-  font: FontKind;
-  size: number;
-  color: string;
-  boxBg?: string;
-};
+const WarehouseRealityScene: React.FC<{ localFrame: number }> = ({ localFrame }) => {
+  const { fps } = useVideoConfig();
 
-type SceneSpec = {
-  id: number;
-  startSec: number;
-  endSec: number;
-  dark: boolean;
-  zoomType: "macroOut" | "pushIn" | "punchCenter";
-  typingBurstAt?: number[];
-  kachingAt?: number;
-  customCard?: "sneaker" | "timer" | "warehouse";
-  lines: LineSpec[];
-};
+  return (
+    <AbsoluteFill style={{ backgroundColor: DARK_BG, justifyContent: "center", alignItems: "center", padding: "0 55px" }}>
+      <div style={{ textAlign: "center", marginBottom: 34 }}>
+        <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 38, color: "#94A3B8" }}>
+          Jabki unke asli warehouse mein
+        </div>
+        <div style={{ fontFamily: "Impact, sans-serif", fontSize: 78, color: NEON_GREEN, letterSpacing: 2, marginTop: 8 }}>
+          HAZARON PIECES PADE HOTE HAIN!
+        </div>
+      </div>
 
-const SCENES: SceneSpec[] = [
-  // SCENE 1 (0.0s - 3.8s): HOOK PART 1
-  {
-    id: 1,
-    startSec: 0.0,
-    endSec: 3.8,
-    dark: false,
-    zoomType: "macroOut",
-    typingBurstAt: [8, 65],
-    lines: [
-      { text: "Online shopping karte waqt", appear: 4, font: "serifItalic", size: 58, color: "#334155" },
-      { text: "ONLY 2 LEFT IN STOCK", appear: 32, font: "impact", size: 96, color: "#FFFFFF", boxBg: CRIMSON },
-      { text: "ka red alert dekha hai?", appear: 64, font: "mono", size: 52, color: INK_DARK },
-    ],
-  },
-  // SCENE 2 (3.8s - 7.2s): HOOK PART 2
-  {
-    id: 2,
-    startSec: 3.8,
-    endSec: 7.2,
-    dark: true,
-    zoomType: "punchCenter",
-    typingBurstAt: [10, 62],
-    lines: [
-      { text: "Chalo aaj iske peeche ka", appear: 6, font: "serifItalic", size: 60, color: "#94A3B8" },
-      { text: "DIRTY MIND GAME", appear: 34, font: "impact", size: 108, color: "#05080F", boxBg: NEON_GREEN },
-      { text: "DEKHTE HAIN.", appear: 62, font: "sansBold", size: 74, color: "#FFFFFF" },
-    ],
-  },
-  // SCENE 3 (7.2s - 11.2s): SNEAKER IN APP (RS. 2000)
-  {
-    id: 3,
-    startSec: 7.2,
-    endSec: 11.2,
-    dark: true,
-    zoomType: "pushIn",
-    typingBurstAt: [8],
-    kachingAt: 36,
-    customCard: "sneaker",
-    lines: [
-      { text: "Maan lo aap phone par", appear: 4, font: "serifItalic", size: 56, color: "#94A3B8" },
-      { text: "EK SNEAKER DEKH RAHE HO", appear: 22, font: "impact", size: 84, color: "#FFFFFF" },
-    ],
-  },
-  // SCENE 4 (11.2s - 15.0s): "ABHI REHNE DETA HOON"
-  {
-    id: 4,
-    startSec: 11.2,
-    endSec: 15.0,
-    dark: false,
-    zoomType: "pushIn",
-    typingBurstAt: [8, 60],
-    lines: [
-      { text: "Aap normal sochte ho —", appear: 6, font: "mono", size: 50, color: "#475569" },
-      { text: "ABHI REHNE DETA HOON", appear: 32, font: "impact", size: 92, color: "#FFFFFF", boxBg: INK_DARK },
-      { text: "baad mein aaram se kharid lunga.", appear: 60, font: "serifItalic", size: 58, color: "#334155" },
-    ],
-  },
-  // SCENE 5 (15.0s - 19.2s): RED ALERT & TIMER ATTACK
-  {
-    id: 5,
-    startSec: 15.0,
-    endSec: 19.2,
-    dark: true,
-    zoomType: "punchCenter",
-    typingBurstAt: [10],
-    customCard: "timer",
-    lines: [
-      { text: "Tabhi company aapke", appear: 4, font: "serifItalic", size: 56, color: "#94A3B8" },
-      { text: "DIMAAG PAR ATTACK KARTI HAI", appear: 24, font: "impact", size: 78, color: "#FFFFFF" },
-    ],
-  },
-  // SCENE 6 (19.2s - 23.2s): FOMO TRIGGERED
-  {
-    id: 6,
-    startSec: 19.2,
-    endSec: 23.2,
-    dark: false,
-    zoomType: "punchCenter",
-    typingBurstAt: [8, 68],
-    lines: [
-      { text: "Isse brain mein trigger hota hai", appear: 4, font: "serifItalic", size: 56, color: "#334155" },
-      { text: "F. O. M. O.", appear: 30, font: "impact", size: 132, color: "#FFFFFF", boxBg: CRIMSON },
-      { text: "FEAR OF MISSING OUT", appear: 56, font: "mono", size: 54, color: INK_DARK },
-      { text: "DIMAAG SOCHNA BAND!", appear: 82, font: "sansBold", size: 68, color: CRIMSON },
-    ],
-  },
-  // SCENE 7 (23.2s - 27.2s): INSTANTLY BUY FOR RS. 2000
-  {
-    id: 7,
-    startSec: 23.2,
-    endSec: 27.2,
-    dark: true,
-    zoomType: "macroOut",
-    typingBurstAt: [8],
-    kachingAt: 58,
-    lines: [
-      { text: "Jo cheez abhi chahiye bhi nahi thi", appear: 6, font: "serifItalic", size: 56, color: "#94A3B8" },
-      { text: "AAP TURANT KHARID LETE HO", appear: 32, font: "sansBold", size: 64, color: "#FFFFFF" },
-      { text: "PAID: RS. 2000", appear: 58, font: "impact", size: 116, color: "#05080F", boxBg: NEON_GREEN },
-    ],
-  },
-  // SCENE 8 (27.2s - 31.2s): WAREHOUSE REALITY
-  {
-    id: 8,
-    startSec: 27.2,
-    endSec: 31.2,
-    dark: true,
-    zoomType: "pushIn",
-    typingBurstAt: [10],
-    customCard: "warehouse",
-    lines: [
-      { text: "Jabki unke asli warehouse mein", appear: 4, font: "serifItalic", size: 56, color: "#94A3B8" },
-      { text: "HAZARON PIECES PADE HOTE HAIN", appear: 26, font: "impact", size: 74, color: NEON_GREEN },
-    ],
-  },
-  // SCENE 9 (31.2s - 34.6s): THE SCARCITY TRAP LOCK
-  {
-    id: 9,
-    startSec: 31.2,
-    endSec: 34.6,
-    dark: false,
-    zoomType: "punchCenter",
-    typingBurstAt: [6, 40],
-    lines: [
-      { text: "Ise dark psychology mein kehte hain", appear: 4, font: "serifItalic", size: 56, color: "#334155" },
-      { text: "THE SCARCITY TRAP", appear: 32, font: "impact", size: 104, color: "#FFFFFF", boxBg: INK_DARK },
-    ],
-  },
-  // SCENE 10 (34.6s - 38.0s): EDGY CTA
-  {
-    id: 10,
-    startSec: 34.6,
-    endSec: 38.0,
-    dark: true,
-    zoomType: "pushIn",
-    typingBurstAt: [8, 56],
-    lines: [
-      { text: "ONLY 1 LEFT KE CHAKKAR MEIN", appear: 4, font: "mono", size: 50, color: NEON_GREEN },
-      { text: "kabhi jaldbazi mein shopping ki hai?", appear: 28, font: "serifItalic", size: 58, color: "#FFFFFF" },
-      { text: "REALITY COMMENT MEIN BATAO", appear: 56, font: "impact", size: 80, color: "#05080F", boxBg: NEON_GREEN },
-    ],
-  },
-];
+      {/* Top Card: What the App Lies to You */}
+      <div
+        style={{
+          width: 900,
+          padding: "26px 36px",
+          borderRadius: 22,
+          background: "rgba(255,42,84,0.14)",
+          border: `3px solid ${CRIMSON}`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 28,
+        }}
+      >
+        <div>
+          <div style={{ fontFamily: "'Courier New', monospace", fontSize: 20, color: "#FDA4AF", fontWeight: 900 }}>
+            FAKE FRONTEND ILLUSION
+          </div>
+          <div style={{ fontFamily: "'Arial Black', sans-serif", fontSize: 34, color: "#FFFFFF", marginTop: 4 }}>
+            WHAT YOU SEE ON PHONE:
+          </div>
+        </div>
+        <div style={{ padding: "12px 28px", borderRadius: 10, background: CRIMSON, color: "#FFF", fontFamily: "Impact, sans-serif", fontSize: 48 }}>
+          "ONLY 1 LEFT!"
+        </div>
+      </div>
+
+      {/* Bottom Giant Warehouse Inventory Shelving Grid (24 Animated Shoeboxes) */}
+      <div
+        style={{
+          width: 900,
+          padding: "36px",
+          borderRadius: 26,
+          background: PANEL_BG,
+          border: `4px solid ${NEON_GREEN}`,
+          boxShadow: `0 0 80px ${GREEN_GLOW}`,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <span style={{ fontFamily: "'Courier New', monospace", fontSize: 22, color: NEON_GREEN, fontWeight: 900 }}>
+            BACKEND WAREHOUSE REALITY
+          </span>
+          <span style={{ padding: "6px 20px", borderRadius: 8, background: NEON_GREEN, color: "#040806", fontFamily: "Impact, sans-serif", fontSize: 32 }}>
+            STOCK: 10,480 UNITS
+          </span>
+        </div>
+
+        {/* 6x4 Grid of Sneaker Boxes */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 16 }}>
+          {Array.from({ length: 24 }).map((_, i) => {
+            const boxPop = spring({
+              frame: Math.max(0, localFrame - i * 2),
+              fps,
+              config: { damping: 12, stiffness: 180 },
+            });
+            return (
+              <div
+                key={i}
+                style={{
+                  height: 74,
+                  borderRadius: 10,
+                  background: "#0B1528",
+                  border: `2px solid ${NEON_GREEN}`,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  transform: `scale(${boxPop})`,
+                }}
+              >
+                <div style={{ width: "75%", height: 10, background: NEON_GREEN, borderRadius: 4, marginBottom: 6 }} />
+                <span style={{ fontFamily: "'Courier New', monospace", fontSize: 14, color: "#E2E8F0", fontWeight: 900 }}>
+                  BOX #{101 + i}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
 
 /* =========================================================================
-   06. MASTER COMPOSITION
+   07. MASTER TIMELINE ORCHESTRATOR (38 SECONDS)
    ========================================================================= */
-const ScarcityTrapReel: React.FC = () => {
+const ScarcityDetailedReel: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const sec = frame / fps;
 
-  const activeScene =
-    SCENES.find((s) => sec >= s.startSec && sec < s.endSec) ??
-    SCENES[SCENES.length - 1];
-
-  const startFrame = Math.round(activeScene.startSec * FPS);
-  const endFrame = Math.round(activeScene.endSec * FPS);
-  const sceneDuration = Math.max(1, endFrame - startFrame);
-  const localFrame = Math.max(0, frame - startFrame);
-
-  // SAFE CAMERA ZOOM (Never exceeds 1.12x after settle so text NEVER overflows!)
-  let camScale = 1;
-  if (activeScene.zoomType === "macroOut") {
-    const settle = spring({
-      frame: localFrame,
-      fps,
-      config: { damping: 16, stiffness: 105 },
-    });
-    camScale = interpolate(settle, [0, 1], [1.45, 1.0]);
-  } else if (activeScene.zoomType === "punchCenter") {
-    const punch = spring({
-      frame: Math.max(0, localFrame - 34),
-      fps,
-      config: { damping: 14, stiffness: 130 },
-    });
-    camScale = interpolate(punch, [0, 1], [0.96, 1.09]);
-  } else {
-    camScale = interpolate(localFrame, [0, sceneDuration], [0.96, 1.08], {
-      extrapolateRight: "clamp",
-    });
-  }
+  // SCENE BREAKDOWN:
+  // 1 (0.0s - 6.5s): Typography Hook Bridge ("Only 2 Left in Stock... Dirty Mind Game")
+  // 2 (6.5s - 11.2s): Detailed Phone App — Browsing Sneaker @ RS. 2000 (SFX: Ka-Ching)
+  // 3 (11.2s - 14.8s): Detailed Phone App — Hesitating / Cursor moves to Close [X]
+  // 4 (14.8s - 19.5s): Detailed Phone App — Red Stock Drain Bar + Live Timer (SFX: Alert Beep)
+  // 5 (19.5s - 23.2s): Detailed Brain FOMO ECG Monitor (Logic 0%, Panic 99%)
+  // 6 (23.2s - 27.2s): Detailed Phone App — Cursor clicks BUY NOW -> Paid RS. 2000 (SFX: Ka-Ching)
+  // 7 (27.2s - 31.8s): Detailed Warehouse Split Reality (24 Animated Sneaker Boxes vs 1 Left)
+  // 8 (31.8s - 38.0s): Typography Closing Bridge ("The Scarcity Trap" + Comment CTA)
 
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: activeScene.dark ? DARK_BG : PAPER_BG,
-        overflow: "hidden",
-      }}
-    >
-      <OpticalShadowVignette frame={frame} dark={activeScene.dark} />
+    <AbsoluteFill style={{ overflow: "hidden", backgroundColor: DARK_BG }}>
+      {/* SCENE 1 (0.0s - 6.5s): TYPOGRAPHY HOOK BRIDGE */}
+      {sec < 6.5 && (
+        <AbsoluteFill style={{ backgroundColor: PAPER_BG, justifyContent: "center", alignItems: "center", padding: "0 70px" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
+            <ShadowPopLine text="Online shopping karte waqt" localFrame={frame} appearFrame={4} font="serifItalic" size={58} color="#334155" />
+            <ShadowPopLine text="ONLY 2 LEFT IN STOCK" localFrame={frame} appearFrame={30} font="impact" size={96} color="#FFFFFF" boxBg={CRIMSON} />
+            <ShadowPopLine text="ka red alert dekha hai?" localFrame={frame} appearFrame={62} font="mono" size={52} color="#0F172A" />
+            <ShadowPopLine text="Chalo aaj iske peeche ka" localFrame={frame} appearFrame={135} font="serifItalic" size={56} color="#475569" />
+            <ShadowPopLine text="DIRTY MIND GAME DEKHTE HAIN" localFrame={frame} appearFrame={165} font="impact" size={82} color="#FFFFFF" boxBg="#0F172A" />
+          </div>
+        </AbsoluteFill>
+      )}
 
-      {/* CENTERED SAFE STAGE (100% Straight Vertical Stack) */}
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "0 70px",
-          transform: `scale(${camScale})`,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 22,
-            width: "100%",
-            maxWidth: 920,
-          }}
-        >
-          {activeScene.lines.map((ln, idx) => (
-            <ShadowPopLine
-              key={idx}
-              text={ln.text}
-              localFrame={localFrame}
-              appearFrame={ln.appear}
-              font={ln.font}
-              size={ln.size}
-              color={ln.color}
-              boxBg={ln.boxBg}
-            />
-          ))}
+      {/* SCENE 2 (6.5s - 11.2s): DETAILED PHONE APP — SNEAKER RS. 2000 */}
+      {sec >= 6.5 && sec < 11.2 && (
+        <DetailedSneakerPhoneScene mode="browsing" localFrame={frame - Math.round(6.5 * FPS)} />
+      )}
 
-          {activeScene.customCard === "sneaker" && (
-            <SneakerAppCard localFrame={localFrame} />
-          )}
-          {activeScene.customCard === "timer" && (
-            <ScarcityTimerCard localFrame={localFrame} />
-          )}
-          {activeScene.customCard === "warehouse" && (
-            <WarehouseComparisonCard localFrame={localFrame} />
-          )}
-        </div>
-      </AbsoluteFill>
+      {/* SCENE 3 (11.2s - 14.8s): DETAILED PHONE APP — USER HESITATES */}
+      {sec >= 11.2 && sec < 14.8 && (
+        <DetailedSneakerPhoneScene mode="hesitate" localFrame={frame - Math.round(11.2 * FPS)} />
+      )}
+
+      {/* SCENE 4 (14.8s - 19.5s): DETAILED PHONE APP — SCARCITY BAR & LIVE TIMER */}
+      {sec >= 14.8 && sec < 19.5 && (
+        <DetailedSneakerPhoneScene mode="scarcityAttack" localFrame={frame - Math.round(14.8 * FPS)} />
+      )}
+
+      {/* SCENE 5 (19.5s - 23.2s): DETAILED BRAIN FOMO ECG MONITOR */}
+      {sec >= 19.5 && sec < 23.2 && (
+        <BrainFomoMonitorScene localFrame={frame - Math.round(19.5 * FPS)} />
+      )}
+
+      {/* SCENE 6 (23.2s - 27.2s): DETAILED PHONE APP — INSTANT RS. 2000 PURCHASE */}
+      {sec >= 23.2 && sec < 27.2 && (
+        <DetailedSneakerPhoneScene mode="purchased" localFrame={frame - Math.round(23.2 * FPS)} />
+      )}
+
+      {/* SCENE 7 (27.2s - 31.8s): DETAILED WAREHOUSE INVENTORY REALITY */}
+      {sec >= 27.2 && sec < 31.8 && (
+        <WarehouseRealityScene localFrame={frame - Math.round(27.2 * FPS)} />
+      )}
+
+      {/* SCENE 8 (31.8s - 38.0s): TYPOGRAPHY CLOSING & CTA BRIDGE */}
+      {sec >= 31.8 && (
+        <AbsoluteFill style={{ backgroundColor: PAPER_BG, justifyContent: "center", alignItems: "center", padding: "0 70px" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
+            <ShadowPopLine text="Ise dark psychology mein kehte hain" localFrame={frame - Math.round(31.8 * FPS)} appearFrame={4} font="serifItalic" size={56} color="#334155" />
+            <ShadowPopLine text="THE SCARCITY TRAP" localFrame={frame - Math.round(31.8 * FPS)} appearFrame={28} font="impact" size={102} color="#FFFFFF" boxBg="#0F172A" />
+            <ShadowPopLine text="Is 'Only 1 Left' ke chakkar mein" localFrame={frame - Math.round(31.8 * FPS)} appearFrame={95} font="mono" size={48} color={CRIMSON} />
+            <ShadowPopLine text="kabhi jaldbazi mein shopping ki hai?" localFrame={frame - Math.round(31.8 * FPS)} appearFrame={125} font="serifItalic" size={58} color="#0F172A" />
+            <ShadowPopLine text="REALITY COMMENT MEIN BATAO" localFrame={frame - Math.round(31.8 * FPS)} appearFrame={158} font="impact" size={78} color="#FFFFFF" boxBg={CRIMSON} />
+          </div>
+        </AbsoluteFill>
+      )}
 
       {/* ===================================================================
-          AUDIO TRIGGERS: SCENE WHOOSHES + TYPING SFX BURSTS + KA-CHING
+          MINIMAL SFX TIMELINE (ONLY MONEY KA-CHING & 1 STOCK ALERT BEEP)
          =================================================================== */}
-      {SCENES.map((sc) => {
-        const sFrame = Math.round(sc.startSec * FPS);
-        return (
-          <React.Fragment key={`audio-${sc.id}`}>
-            {/* Scene Change Whoosh */}
-            <Sequence from={sFrame} durationInFrames={35} layout="none">
-              <Audio
-                src={sc.zoomType === "macroOut" ? SFX.zoomWhoosh : SFX.whoosh}
-                volume={0.82}
-              />
-            </Sequence>
+      {/* 1. Sneaker Price RS. 2000 Reveal (7.0s) */}
+      <Sequence from={Math.round(7.0 * FPS)} durationInFrames={35} layout="none">
+        <Audio src={SFX.kaching} volume={0.85} />
+      </Sequence>
 
-            {/* Typing Sound Effect Bursts (Background SFX while words pop) */}
-            {sc.typingBurstAt?.map((offsetF, i) => (
-              <Sequence
-                key={`type-${sc.id}-${i}`}
-                from={sFrame + offsetF}
-                durationInFrames={32}
-                layout="none"
-              >
-                <Audio src={SFX.typingBurst} volume={0.65} />
-              </Sequence>
-            ))}
+      {/* 2. "Only 1 Left in Stock" Red Alert Trigger (15.0s) */}
+      <Sequence from={Math.round(15.0 * FPS)} durationInFrames={30} layout="none">
+        <Audio src={SFX.alertBeep} volume={0.75} />
+      </Sequence>
 
-            {/* Money Cash Register Sound on RS. 2000 */}
-            {sc.kachingAt !== undefined && (
-              <Sequence
-                from={sFrame + sc.kachingAt}
-                durationInFrames={35}
-                layout="none"
-              >
-                <Audio src={SFX.kaching} volume={0.88} />
-              </Sequence>
-            )}
-          </React.Fragment>
-        );
-      })}
+      {/* 3. Instant Purchase of RS. 2000 Sneaker (23.8s) */}
+      <Sequence from={Math.round(23.8 * FPS)} durationInFrames={35} layout="none">
+        <Audio src={SFX.kaching} volume={0.9} />
+      </Sequence>
     </AbsoluteFill>
   );
 };
@@ -737,7 +844,7 @@ export const RemotionRoot: React.FC = () => {
   return (
     <Composition
       id="Reel"
-      component={ScarcityTrapReel}
+      component={ScarcityDetailedReel}
       durationInFrames={DURATION}
       fps={FPS}
       width={WIDTH}
