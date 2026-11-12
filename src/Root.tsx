@@ -1,818 +1,1446 @@
 import React from 'react';
 import {
   AbsoluteFill,
+  // Audio, staticFile, // Uncomment when you add audio files to public/
   Composition,
+  Sequence,
+  Easing,
   interpolate,
-  spring,
   useCurrentFrame,
-  useVideoConfig,
-  // Audio, staticFile // Uncomment when you add public/voice.mp3
 } from 'remotion';
 
-// ==========================================
-// 1. DETERMINISTIC ENGINE & HELPERS
-// (Lemo-Opuscar + Claude Animation + Shotcraft)
-// ==========================================
+/**
+ * THE KING'S JUDGEMENT
+ * Lemo Opuscar inspired visual direction
+ *
+ * 1080 x 1920 | 60 FPS | 46 seconds
+ * Original SVG artwork, no stock images.
+ */
 
-function hash(n: number): number {
-  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
-  return x - Math.floor(x);
+const W = 1080;
+const H = 1920;
+const FPS = 60;
+const DURATION = 46 * FPS;
+
+const C = {
+  paper: '#eadcbd',
+  paper2: '#dfcda9',
+  ink: '#201d1a',
+  indigo: '#294d63',
+  blue: '#6c9297',
+  paleBlue: '#a9c0b7',
+  red: '#b64a37',
+  ochre: '#c09352',
+  gold: '#d5aa61',
+  green: '#60765d',
+  pale: '#f3e9d2',
+  grey: '#81786a',
+};
+
+const clamp = (v: number, a = 0, b = 1) =>
+  Math.max(a, Math.min(b, v));
+
+const ease = (f: number, a: number, b: number) =>
+  interpolate(f, [a, b], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.out(Easing.cubic),
+  });
+
+const drift = (
+  f: number,
+  distance: number,
+  start = 0,
+  end = 2760
+) =>
+  interpolate(f, [start, end], [0, distance], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.quad),
+  });
+
+// -----------------------------------------------------
+// PAPER / PRINT TEXTURES
+// -----------------------------------------------------
+
+const PAPER_TEXTURE = (id: string) => (
+  <defs>
+    <pattern
+      id={`${id}-fiber`}
+      width="87"
+      height="91"
+      patternUnits="userSpaceOnUse"
+    >
+      <path
+        d="M4 13l18-2M37 29l27-1M12 62l31-2M56 80l24-1M70 8l9 1M2 87l10-1"
+        stroke="#7f7059"
+        strokeWidth="1.2"
+        opacity=".19"
+      />
+      <path
+        d="M18 4l1 9M48 44l2 11M79 54l-1 8M31 74l-2 6"
+        stroke="#fff5dc"
+        strokeWidth="1.5"
+        opacity=".42"
+      />
+      <circle cx="23" cy="42" r="1.2" fill="#71634e" opacity=".22" />
+      <circle cx="66" cy="19" r=".9" fill="#71634e" opacity=".22" />
+      <circle cx="74" cy="72" r="1" fill="#71634e" opacity=".2" />
+    </pattern>
+
+    <pattern
+      id={`${id}-wood`}
+      width="160"
+      height="74"
+      patternUnits="userSpaceOnUse"
+    >
+      <path
+        d="M-10 18C28 2 57 34 92 16s56 4 84-9M-8 43c35-15 56 14 95-2s52-2 82-11M-8 65c30-7 54 8 84-3s54-4 91-10"
+        fill="none"
+        stroke="#172e35"
+        strokeWidth="1.25"
+        opacity=".14"
+      />
+      <path
+        d="M14 8c17 8 26 8 41 2M106 53c14 4 23 2 36-4"
+        fill="none"
+        stroke="#f7e8c9"
+        strokeWidth="2"
+        opacity=".25"
+      />
+    </pattern>
+
+    <filter
+      id={`${id}-rough`}
+      x="-5%"
+      y="-5%"
+      width="110%"
+      height="110%"
+    >
+      <feTurbulence
+        type="fractalNoise"
+        baseFrequency=".7"
+        numOctaves="2"
+        seed="17"
+        result="n"
+      />
+      <feColorMatrix in="n" type="saturate" values="0" />
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 .13" />
+      </feComponentTransfer>
+    </filter>
+  </defs>
+);
+
+// -----------------------------------------------------
+// PRINT FRAME AND CARTOUCHE
+// -----------------------------------------------------
+
+function PrintFrame({
+  children,
+  subtitle,
+  cartouche = 'राजदरबार की कथा',
+  seal = '印',
+  paperId,
+}: {
+  children: React.ReactNode;
+  subtitle: string;
+  cartouche?: string;
+  seal?: string;
+  paperId: string;
+}) {
+  const f = useCurrentFrame();
+  const reveal = ease(f, 4, 18);
+  const words = cartouche.split(' ');
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: C.paper }}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`}>
+        {PAPER_TEXTURE(paperId)}
+
+        <rect width={W} height={H} fill={C.paper} />
+
+        <rect
+          width={W}
+          height={H}
+          fill={`url(#${paperId}-fiber)`}
+          opacity=".72"
+        />
+
+        <rect
+          width={W}
+          height={H}
+          fill={`url(#${paperId}-wood)`}
+          opacity=".20"
+        />
+
+        {children}
+
+        {/* Physical print border */}
+        <rect
+          x="29"
+          y="31"
+          width="1022"
+          height="1858"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="5"
+        />
+
+        <rect
+          x="43"
+          y="45"
+          width="994"
+          height="1830"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="1.8"
+        />
+
+        <path
+          d="M29 110l10-24 14 8M1051 110l-10-24-14 8M29 1810l10 24 14-8M1051 1810l-10 24-14-8"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="2"
+        />
+
+        {/* Top-right title cartouche (widened & stacked so Hindi text fits cleanly) */}
+        <g transform="translate(860 90)" opacity={reveal}>
+          <rect
+            x="-7"
+            y="-7"
+            width="172"
+            height="438"
+            fill={C.red}
+            opacity=".17"
+            transform="translate(3 2)"
+          />
+
+          <rect
+            width="158"
+            height="430"
+            fill={C.pale}
+            stroke={C.ink}
+            strokeWidth="3"
+          />
+
+          <rect
+            x="7"
+            y="7"
+            width="144"
+            height="416"
+            fill="none"
+            stroke={C.ink}
+            strokeWidth="1"
+          />
+
+          <text
+            x="79"
+            y="50"
+            textAnchor="middle"
+            fontSize="24"
+            fill={C.red}
+            fontFamily="serif"
+          >
+            अध्याय
+          </text>
+
+          {words.map((w, idx) => (
+            <text
+              key={idx}
+              x="79"
+              y={98 + idx * 36}
+              textAnchor="middle"
+              fontSize="26"
+              fill={C.ink}
+              fontWeight="700"
+              fontFamily="'Noto Serif Devanagari','Mangal',sans-serif"
+            >
+              {w}
+            </text>
+          ))}
+
+          <path d="M24 210H134" stroke={C.ink} strokeWidth="1.5" />
+
+          <text
+            x="79"
+            y="248"
+            textAnchor="middle"
+            fontSize="19"
+            fill={C.grey}
+            fontFamily="'Noto Serif Devanagari','Mangal',sans-serif"
+          >
+            एक दृष्टांत
+          </text>
+
+          <rect x="44" y="340" width="70" height="62" fill={C.red} />
+
+          <text
+            x="79"
+            y="380"
+            textAnchor="middle"
+            fontSize="24"
+            fill={C.pale}
+            fontWeight="700"
+            fontFamily="'Noto Serif Devanagari','Mangal',sans-serif"
+          >
+            {seal}
+          </text>
+        </g>
+
+        {/* Subtitle cartouche */}
+        <g opacity={reveal}>
+          <rect
+            x="94"
+            y="1600"
+            width="892"
+            height="174"
+            rx="3"
+            fill="#9c7c50"
+            opacity=".22"
+            transform="translate(5 7)"
+          />
+
+          <rect
+            x="94"
+            y="1592"
+            width="892"
+            height="174"
+            rx="2"
+            fill={C.pale}
+            stroke={C.ink}
+            strokeWidth="4"
+          />
+
+          <rect
+            x="105"
+            y="1603"
+            width="870"
+            height="152"
+            fill="none"
+            stroke={C.ink}
+            strokeWidth="1.4"
+          />
+
+          <rect
+            x="122"
+            y="1636"
+            width="78"
+            height="78"
+            fill={C.red}
+          />
+
+          <text
+            x="161"
+            y="1685"
+            textAnchor="middle"
+            fontSize="26"
+            fill={C.pale}
+            fontWeight="700"
+            fontFamily="'Noto Serif Devanagari','Mangal',sans-serif"
+          >
+            {seal}
+          </text>
+
+          <text
+            x="580"
+            y="1695"
+            textAnchor="middle"
+            fontSize="40"
+            fill={C.ink}
+            fontWeight="700"
+            fontFamily="'Noto Serif Devanagari','Mangal',sans-serif"
+          >
+            {subtitle}
+          </text>
+        </g>
+
+        {/* Paper print imperfections */}
+        <rect
+          width={W}
+          height={H}
+          filter={`url(#${paperId}-rough)`}
+          opacity=".24"
+        />
+      </svg>
+    </AbsoluteFill>
+  );
 }
 
-// Boiling seed: steps at 12 fps regardless of 30fps or 60fps
-function boilJitter(sec: number, key: number, amp: number): number {
-  const boilStep = Math.floor(sec * 12);
-  return (hash(boilStep * 97.3 + key * 31.7) - 0.5) * 2 * amp;
+// -----------------------------------------------------
+// ENVIRONMENT
+// -----------------------------------------------------
+
+function CloudBand({
+  y,
+  color = C.paleBlue,
+  opacity = 0.55,
+}: {
+  y: number;
+  color?: string;
+  opacity?: number;
+}) {
+  return (
+    <g opacity={opacity} fill={color}>
+      <path
+        d={`M-40 ${y}c110-30 160 22 265-5s179-25 270 1 174 15 278-6 170-9 347 3v40H-40Z`}
+      />
+      <path
+        d={`M-20 ${y + 37}c116-15 157 13 250-4s159-5 242 6 174 5 270-7 182-3 380 3v26H-20Z`}
+        opacity=".48"
+      />
+    </g>
+  );
 }
 
-function clamp(v: number, min = 0, max = 1): number {
-  return Math.max(min, Math.min(max, v));
-}
-
-function easeOutBack(x: number): number {
-  const c1 = 1.70158;
-  const c3 = c1 + 1;
-  const p = clamp(x);
-  return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2);
-}
-
-// Master Beat Grid: 128 BPM
-const BPM = 128;
-function beatPulse(sec: number, decay = 6): number {
-  const beatPos = (sec * (BPM / 60)) % 1;
-  return Math.exp(-beatPos * decay);
-}
-
-// ==========================================
-// 2. MASTER TIMELINE & SUBTITLES
-// ==========================================
-
-interface SubtitleCue {
-  t0: number;
-  t1: number;
-  text: string;
-  highlight: string;
-  accent: string;
-}
-
-const SUBTITLES: SubtitleCue[] = [
-  { t0: 0.2, t1: 3.0, text: 'Socho agar tum aaj raat NA SOYO...', highlight: 'NA SOYO...', accent: '#FF3B30' },
-  { t0: 3.1, t1: 7.2, text: 'Sirf 24 HOURS without sleep...', highlight: '24 HOURS', accent: '#00F0FF' },
-  { t0: 7.3, t1: 12.0, text: 'Dimaag DRUNKEN STATE mein chala jayega!', highlight: 'DRUNKEN STATE', accent: '#FF9500' },
-  { t0: 12.2, t1: 18.0, text: '48 Hours: MICROSLEEPS shuru.', highlight: 'MICROSLEEPS', accent: '#FF3B30' },
-  { t0: 18.1, t1: 24.8, text: 'Brain 4 second ke liye SHUT DOWN ho jayega.', highlight: 'SHUT DOWN', accent: '#FF2D55' },
-  { t0: 25.0, t1: 30.5, text: '72 Hours: Dark HALLUCINATIONS.', highlight: 'HALLUCINATIONS.', accent: '#BF5AF2' },
-  { t0: 30.6, t1: 35.0, text: 'Shadows MONSTERS ban jayengi.', highlight: 'MONSTERS', accent: '#FF3B30' },
-  { t0: 35.2, t1: 40.5, text: 'Aur 11 DAYS baad? Complete system failure.', highlight: '11 DAYS', accent: '#FF3B30' },
-  { t0: 40.6, t1: 44.5, text: 'Video band karo, chup-chaap SO JAO!', highlight: 'SO JAO!', accent: '#30D158' },
-];
-
-// ==========================================
-// 3. REUSABLE VISUAL COMPONENTS
-// ==========================================
-
-const AtomStickman: React.FC<{
-  sec: number;
+function PineTree({
+  x,
+  y,
+  scale = 1,
+}: {
   x: number;
   y: number;
   scale?: number;
-  sq?: number;
-  dy?: number;
-  mood: 'tired' | 'dizzy' | 'shock' | 'scared' | 'collapsed';
-  inkColor?: string;
-}> = ({ sec, x, y, scale = 1, sq = 0, dy = 0, mood, inkColor = '#F4F1EA' }) => {
-  const j = (k: number, a = 3) => boilJitter(sec, k, a);
-  const sx = scale * (1 + sq * 0.35);
-  const sy = scale * (1 - sq * 0.35);
+}) {
+  return (
+    <g
+      transform={`translate(${x} ${y}) scale(${scale})`}
+      stroke={C.ink}
+      strokeWidth="4"
+      strokeLinejoin="round"
+    >
+      <path
+        d="M0 0v-240"
+        stroke="#514233"
+        strokeWidth="13"
+        fill="none"
+      />
 
-  const isCollapsed = mood === 'collapsed';
-  const rot = isCollapsed ? 82 : mood === 'scared' ? -8 + j(90, 2) : j(91, 1.2);
+      {[0, 1, 2, 3, 4].map((n) => (
+        <path
+          key={n}
+          d={`M0 ${-35 - n * 42}l-104 36 104-7 95 7Z`}
+          fill={n % 2 ? C.green : C.indigo}
+        />
+      ))}
+    </g>
+  );
+}
 
-  const headX = j(1, 2.5);
-  const headY = -220 + j(2, 2.5);
+// -----------------------------------------------------
+// STATUE
+// -----------------------------------------------------
+
+function Statue({
+  x = 560,
+  y = 1050,
+  scale = 1,
+  profile = true,
+  nose = 1,
+}: {
+  x?: number;
+  y?: number;
+  scale?: number;
+  profile?: boolean;
+  nose?: number;
+}) {
+  const transform = `translate(${x} ${y}) scale(${scale})`;
+
+  if (profile) {
+    return (
+      <g
+        transform={transform}
+        stroke={C.ink}
+        strokeWidth="7"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      >
+        {/* Misregistered red colour plate */}
+        <g transform="translate(3 2)" fill={C.red} opacity=".55">
+          <path d="M-5-355c-12-96 61-173 151-159 81 13 107 73 94 142l-12 43 58 49-49 22-4 69c-9 73-64 115-137 111-68-4-103-52-101-120Z" />
+        </g>
+
+        <path
+          d="M-12-358c-8-93 63-167 151-153 76 12 103 70 89 139l-12 43 51 47-46 23-3 68c-7 75-64 116-137 111-69-4-104-54-101-122Z"
+          fill="#d5c6a5"
+        />
+
+        <path
+          d="M-6-348c-7-87 61-155 139-142 68 11 90 64 78 127l-11 43 45 48-41 18"
+          fill="none"
+          stroke="#f7ecd4"
+          strokeWidth="9"
+          opacity=".75"
+        />
+
+        {/* Oversized nose */}
+        <path
+          d={`M218-289l${nose * 74} 101-43 13-50-31`}
+          fill={C.ochre}
+        />
+
+        <path
+          d="M184-221q24 13 46 0"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="6"
+        />
+
+        <path
+          d="M194-183q-15 10-32 3"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="5"
+        />
+
+        <path
+          d="M103-258q35-22 64-2"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="10"
+        />
+
+        <circle cx="147" cy="-259" r="7" fill={C.ink} stroke="none" />
+
+        <path
+          d="M73-122q69 20 125-8"
+          fill="none"
+          stroke="#8c7250"
+          strokeWidth="7"
+        />
+
+        <path
+          d="M19-45q85 42 197-6l80 105-18 170h-322l-16-166Z"
+          fill={C.paleBlue}
+        />
+
+        <path
+          d="M-52 110q110 32 300 1l44 124h-390Z"
+          fill={C.indigo}
+        />
+
+        <path d="M-88 234h460v70H-88Z" fill={C.ochre} />
+
+        <path d="M-115 304h510v44h-510Z" fill="#a47b48" />
+
+        <path
+          d="M-110 348h510v18h-510Z"
+          fill={C.ink}
+          stroke="none"
+        />
+
+        <path
+          d="M-26-57q96 26 188-4"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="4"
+        />
+      </g>
+    );
+  }
 
   return (
-    <g transform={`translate(${x}, ${y + dy}) rotate(${rot}) scale(${sx}, ${sy})`}>
-      {/* Ground Shadow */}
-      <ellipse
-        cx={0}
-        cy={140}
-        rx={95 * (1 + sq * 0.3)}
-        ry={22}
-        fill="rgba(0,0,0,0.55)"
-      />
+    <g
+      transform={transform}
+      stroke={C.ink}
+      strokeWidth="7"
+      strokeLinejoin="round"
+    >
+      <g transform="translate(3 2)" fill={C.red} opacity=".45">
+        <path d="M-135-365q-10-175 135-180t135 180v120q-3 110-135 110t-135-110Z" />
+      </g>
 
-      {/* Atomic Orbit Rings around torso */}
-      <ellipse
-        cx={j(3, 2)}
-        cy={-70 + j(4, 2)}
-        rx={95}
-        ry={34}
-        fill="none"
-        stroke="#00F0FF"
-        strokeWidth={4}
-        strokeDasharray="14 8"
-        opacity={0.45}
-        transform={`rotate(${25 + sec * 60})`}
-      />
-      <ellipse
-        cx={j(5, 2)}
-        cy={-70 + j(6, 2)}
-        rx={95}
-        ry={34}
-        fill="none"
-        stroke="#FF3B30"
-        strokeWidth={4}
-        opacity={0.35}
-        transform={`rotate(${-25 - sec * 60})`}
-      />
-
-      {/* Torso */}
       <path
-        d={`M ${headX} ${headY + 75} Q ${j(10, 8)} ${-60 + j(11, 5)} ${j(12, 3)} ${20 + j(13, 3)}`}
-        stroke={inkColor}
-        strokeWidth={14}
-        strokeLinecap="round"
-        fill="none"
+        d="M-138-366q-8-173 138-178t138 178v120q-3 110-138 110t-138-110Z"
+        fill="#d5c6a5"
       />
 
-      {/* Legs */}
       <path
-        d={`M ${j(12, 3)} ${20} Q ${-45 + j(14, 5)} ${80} ${-55 + j(15, 4)} ${135}`}
-        stroke={inkColor}
-        strokeWidth={13}
-        strokeLinecap="round"
+        d="M-68-292q31-20 62 0M7-292q31-20 62 0"
         fill="none"
-      />
-      <path
-        d={`M ${j(12, 3)} ${20} Q ${45 + j(16, 5)} ${80} ${55 + j(17, 4)} ${135}`}
-        stroke={inkColor}
-        strokeWidth={13}
-        strokeLinecap="round"
-        fill="none"
+        strokeWidth="9"
       />
 
-      {/* Arms */}
-      {mood === 'scared' ? (
-        <>
-          <path
-            d={`M 0 -115 Q ${-95 + j(20, 6)} -140 ${-65 + j(21, 6)} -210`}
-            stroke={inkColor}
-            strokeWidth={12}
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d={`M 0 -115 Q ${95 + j(22, 6)} -140 ${65 + j(23, 6)} -210`}
-            stroke={inkColor}
-            strokeWidth={12}
-            strokeLinecap="round"
-            fill="none"
-          />
-        </>
-      ) : (
-        <>
-          <path
-            d={`M 0 -115 Q ${-70 + j(24, 5)} -60 ${-85 + j(25, 5)} 5`}
-            stroke={inkColor}
-            strokeWidth={12}
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d={`M 0 -115 Q ${70 + j(26, 5)} -60 ${85 + j(27, 5)} 5`}
-            stroke={inkColor}
-            strokeWidth={12}
-            strokeLinecap="round"
-            fill="none"
-          />
-        </>
-      )}
+      <circle cx="-39" cy="-283" r="7" fill={C.ink} stroke="none" />
+      <circle cx="39" cy="-283" r="7" fill={C.ink} stroke="none" />
+
+      <path d="M0-273l-4 72 24 8" fill="none" />
+
+      <path d="M-33-171q35 19 70 0" fill="none" strokeWidth="5" />
+
+      <path
+        d="M-194 20q195-70 388 0l50 264h-488Z"
+        fill={C.blue}
+      />
+
+      <path
+        d="M-130 42l130 128 130-128"
+        fill="none"
+        stroke={C.ink}
+        strokeWidth="8"
+      />
+
+      <path d="M-206 270h412v62h-412Z" fill={C.ochre} />
+    </g>
+  );
+}
+
+// -----------------------------------------------------
+// CHARACTERS
+// -----------------------------------------------------
+
+function King({
+  x,
+  y,
+  scale = 1,
+  pointing = false,
+  surprised = false,
+}: {
+  x: number;
+  y: number;
+  scale?: number;
+  pointing?: boolean;
+  surprised?: boolean;
+}) {
+  return (
+    <g
+      transform={`translate(${x} ${y}) scale(${scale})`}
+      stroke={C.ink}
+      strokeWidth="7"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    >
+      <path
+        d="M-105-6q-22-62 8-122 35-45 104-41 78 3 100 51l30 210h-278Z"
+        fill={C.red}
+      />
+
+      <path
+        d="M-74 19q66 37 126 0l45 72h-217Z"
+        fill={C.gold}
+      />
+
+      <path
+        d="M-85 77l-28 89h223l-30-89"
+        fill={C.indigo}
+      />
 
       {/* Head */}
-      <circle
-        cx={headX}
-        cy={headY}
-        r={76 + j(30, 1.8)}
-        fill="#161922"
-        stroke={inkColor}
-        strokeWidth={12}
+      <path
+        d="M-58-147q-7-75 59-78 72 4 71 82-1 67-63 86-65-17-67-90Z"
+        fill="#bb865f"
       />
 
-      {/* Eyes */}
-      {mood === 'collapsed' ? (
-        <g stroke="#FF3B30" strokeWidth={8} strokeLinecap="round">
-          <line x1={headX - 38} y1={headY - 18} x2={headX - 14} y2={headY + 6} />
-          <line x1={headX - 14} y1={headY - 18} x2={headX - 38} y2={headY + 6} />
-          <line x1={headX + 14} y1={headY - 18} x2={headX + 38} y2={headY + 6} />
-          <line x1={headX + 38} y1={headY - 18} x2={headX + 14} y2={headY + 6} />
-        </g>
-      ) : (
-        <g>
-          <circle cx={headX - 26 + j(40, 1.5)} cy={headY - 8} r={mood === 'scared' ? 22 : 17} fill="#FFE5E5" />
-          <circle cx={headX - 26 + j(41, 2)} cy={headY - 8} r={mood === 'scared' ? 6 : 8} fill="#FF2D55" />
-          <path
-            d={`M ${headX - 44} ${headY + 14} Q ${headX - 26} ${headY + 26} ${headX - 8} ${headY + 14}`}
-            stroke="#FF3B30"
-            strokeWidth={4}
-            fill="none"
-            opacity={0.8}
-          />
+      {/* Crown */}
+      <path
+        d="M-69-204l8-88 28 38 31-67 35 68 32-39 4 88Z"
+        fill={C.gold}
+      />
 
-          <circle cx={headX + 26 + j(42, 1.5)} cy={headY - 8} r={mood === 'scared' ? 22 : 17} fill="#FFE5E5" />
-          <circle cx={headX + 26 + j(43, 2)} cy={headY - 8} r={mood === 'scared' ? 6 : 8} fill="#FF2D55" />
-          <path
-            d={`M ${headX + 8} ${headY + 14} Q ${headX + 26} ${headY + 26} ${headX + 44} ${headY + 14}`}
-            stroke="#FF3B30"
-            strokeWidth={4}
-            fill="none"
-            opacity={0.8}
-          />
-        </g>
-      )}
+      <path d="M-69-204h137" stroke={C.ink} strokeWidth="8" />
 
-      {/* Mouth */}
-      {mood === 'scared' || mood === 'shock' ? (
-        <ellipse
-          cx={headX + j(50, 2)}
-          cy={headY + 36}
-          rx={18}
-          ry={24}
-          fill="#FF2D55"
-          stroke={inkColor}
-          strokeWidth={5}
+      <path d="M-26-167q20-12 37 0" fill="none" strokeWidth="7" />
+
+      <path
+        d={
+          surprised
+            ? 'M-5-128q10 22 22 0'
+            : 'M-8-130q21 12 34-2'
+        }
+        fill="none"
+        strokeWidth="5"
+      />
+
+      <path d="M-20-89q24 22 47 0" fill="none" strokeWidth="9" />
+
+      <path
+        d="M-90-27q-44 15-90 64"
+        fill="none"
+        stroke={C.red}
+        strokeWidth="28"
+      />
+
+      {pointing ? (
+        <path
+          d="M-165 42q-15-55-31-94l-20-8 18-16 27 13 45 82"
+          fill="#bb865f"
         />
       ) : (
         <path
-          d={`M ${headX - 22} ${headY + 38} Q ${headX} ${headY + 28 + j(51, 3)} ${headX + 22} ${headY + 38}`}
-          stroke={inkColor}
-          strokeWidth={6}
-          strokeLinecap="round"
-          fill="none"
+          d="M-163 46q-16-5-20-33l-6-37 36-13 28 79"
+          fill="#bb865f"
         />
       )}
+
+      <path
+        d="M-120 165q-19 22-42 23M120 165q21 22 44 23"
+        fill="none"
+        stroke={C.ink}
+        strokeWidth="8"
+      />
     </g>
   );
-};
+}
 
-const HourCounterBadge: React.FC<{ hours: number; label: string; color: string }> = ({
-  hours,
-  label,
-  color,
-}) => {
+function Artist({
+  x,
+  y,
+  scale = 1,
+  sprinkle = false,
+  openPalm = false,
+}: {
+  x: number;
+  y: number;
+  scale?: number;
+  sprinkle?: boolean;
+  openPalm?: boolean;
+}) {
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 90,
-        left: 70,
-        padding: '18px 34px',
-        background: 'rgba(10, 14, 24, 0.85)',
-        border: `3px solid ${color}`,
-        borderRadius: 20,
-        boxShadow: `0 0 35px ${color}55`,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 20,
-        fontFamily: 'monospace',
-      }}
+    <g
+      transform={`translate(${x} ${y}) scale(${scale})`}
+      stroke={C.ink}
+      strokeWidth="6"
+      strokeLinejoin="round"
+      strokeLinecap="round"
     >
-      <div
-        style={{
-          width: 18,
-          height: 18,
-          borderRadius: '50%',
-          backgroundColor: color,
-          boxShadow: `0 0 16px ${color}`,
-        }}
+      <path
+        d="M-85-2q-20-62 10-118 34-42 88-37 62 8 70 58l22 204h-214Z"
+        fill={C.indigo}
       />
-      <div>
-        <div style={{ color: '#9BA3B0', fontSize: 22, letterSpacing: 3, fontWeight: 700 }}>
-          {label}
-        </div>
-        <div style={{ color: '#FFFFFF', fontSize: 54, fontWeight: 900, letterSpacing: 2 }}>
-          {String(Math.floor(hours)).padStart(2, '0')} HRS AWAKE
-        </div>
-      </div>
-    </div>
-  );
-};
 
-const BrushWipeOverlay: React.FC<{ progress: number; color?: string }> = ({
-  progress,
-  color = '#07090E',
-}) => {
-  if (progress <= 0 || progress >= 1) return null;
-  const bands = 7;
+      <path
+        d="M-76 34q63 35 124 0l22 66h-173Z"
+        fill={C.paleBlue}
+      />
+
+      <path
+        d="M-55-143q-12-79 53-84 63 2 70 80-6 53-59 70-56-14-64-66Z"
+        fill="#bd8a65"
+      />
+
+      <path
+        d="M-72-206q12-62 74-68 60 2 77 56-44-17-75-5-40-10-76 17Z"
+        fill={C.ochre}
+      />
+
+      <path d="M-26-164q23-12 42 2" fill="none" strokeWidth="5" />
+
+      <path d="M-7-117q25 17 43-2" fill="none" strokeWidth="5" />
+
+      {sprinkle ? (
+        <path
+          d="M-2-21q28-54 61-102l24 11-40 120"
+          fill="none"
+          stroke="#bd8a65"
+          strokeWidth="25"
+        />
+      ) : openPalm ? (
+        <path
+          d="M-5-18q38-36 70-34l30 14-5 20-41-7-30 50"
+          fill="none"
+          stroke="#bd8a65"
+          strokeWidth="24"
+        />
+      ) : (
+        <path
+          d="M-8-12q27 38 52 65"
+          fill="none"
+          stroke="#bd8a65"
+          strokeWidth="24"
+        />
+      )}
+
+      <path
+        d="M-96 162l-21 35M75 162l22 35"
+        fill="none"
+        stroke={C.ink}
+        strokeWidth="8"
+      />
+    </g>
+  );
+}
+
+// -----------------------------------------------------
+// ARCHITECTURE
+// -----------------------------------------------------
+
+function Arch({
+  x,
+  y,
+  width,
+  height,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}) {
   return (
-    <svg width={1080} height={1920} style={{ position: 'absolute', top: 0, left: 0, zIndex: 90 }}>
-      {Array.from({ length: bands }).map((_, i) => {
-        const delay = i * 0.04;
-        const p = clamp((progress - delay) / (1 - bands * 0.04));
-        const xStart =
-          p < 0.5
-            ? interpolate(p, [0, 0.5], [-1200, -50])
-            : interpolate(p, [0.5, 1], [-50, 1200]);
-        const y = i * (1920 / bands);
-        return (
-          <rect
-            key={i}
-            x={xStart}
-            y={y - 20}
-            width={1300}
-            height={1920 / bands + 45}
-            rx={40}
-            fill={color}
-          />
-        );
-      })}
-    </svg>
+    <g transform={`translate(${x} ${y})`}>
+      <path
+        d={`M0 ${height}V${width / 2}a${width / 2} ${width / 2} 0 0 1 ${width} 0v${height - width / 2}Z`}
+        fill={C.ochre}
+        opacity=".32"
+        stroke={C.ink}
+        strokeWidth="8"
+      />
+
+      <path
+        d={`M22 ${height}V${width / 2}a${width / 2 - 22} ${width / 2 - 22} 0 0 1 ${width - 44} 0v${height - width / 2}Z`}
+        fill={C.paleBlue}
+        opacity=".38"
+        stroke={C.ink}
+        strokeWidth="3"
+      />
+    </g>
   );
-};
+}
 
-// ==========================================
-// 4. MAIN VIDEO COMPONENT (ALL 5 SCENES)
-// ==========================================
+function HallBackdrop() {
+  return (
+    <g>
+      <rect x="55" y="320" width="970" height="1120" fill="#ddc79e" />
 
-export const NeverSleepVideo: React.FC = () => {
+      <path d="M55 320h970v74H55Z" fill={C.indigo} />
+
+      <Arch x={95} y={420} width={300} height={880} />
+      <Arch x={405} y={420} width={300} height={880} />
+      <Arch x={715} y={420} width={270} height={880} />
+
+      <CloudBand y={580} color={C.paper} opacity={0.45} />
+
+      <path
+        d="M55 1330q280-70 485 0t485 0v110H55Z"
+        fill={C.green}
+        opacity=".62"
+      />
+
+      <path d="M55 1437h970" stroke={C.ink} strokeWidth="8" />
+
+      <path
+        d="M80 1485h920"
+        stroke={C.ink}
+        strokeWidth="2"
+        opacity=".4"
+      />
+    </g>
+  );
+}
+
+// -----------------------------------------------------
+// DUST / FOLEY VISUAL
+// -----------------------------------------------------
+
+function Dust({
+  frame,
+  x,
+  y,
+}: {
+  frame: number;
+  x: number;
+  y: number;
+}) {
+  const dots = Array.from({ length: 22 }, (_, i) => {
+    const delay = i * 1.7;
+    const t = clamp((frame - delay) / 70);
+    const dx = ((i * 37) % 121) - 60;
+    const dy = t * (55 + (i % 6) * 15);
+
+    return (
+      <circle
+        key={i}
+        cx={x + dx + Math.sin(frame * 0.05 + i) * 8}
+        cy={y + dy}
+        r={2 + (i % 3)}
+        fill={i % 4 === 0 ? C.red : C.ochre}
+        opacity={1 - t * 0.78}
+      />
+    );
+  });
+
+  return <g>{dots}</g>;
+}
+
+// -----------------------------------------------------
+// SCENE 01 — THE HOOK
+// -----------------------------------------------------
+
+function HookScene() {
+  const f = useCurrentFrame();
+
+  const zoom = interpolate(f, [0, 65, 240], [1.18, 1.32, 1.12], {
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.quad),
+  });
+
+  const shake =
+    f < 90 ? Math.sin(f * 0.31) * (1 - f / 90) * 5 : 0;
+
+  return (
+    <PrintFrame
+      paperId="hook"
+      subtitle="नाक काट दो!"
+      cartouche="राजा का आदेश"
+      seal="आज्ञा"
+    >
+      <g
+        transform={`translate(${shake} 0) translate(540 970) scale(${zoom}) translate(-540 -970)`}
+      >
+        <rect
+          x="55"
+          y="300"
+          width="970"
+          height="1140"
+          fill={C.indigo}
+          opacity=".13"
+        />
+
+        <CloudBand y={470} color={C.blue} opacity={0.65} />
+
+        <PineTree x={115} y={1360} scale={1.0} />
+        <PineTree x={965} y={1340} scale={0.9} />
+
+        <path
+          d="M120 1390q280-120 500-20t340-7"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="9"
+        />
+
+        <Statue x={490} y={1200} scale={1.55} profile nose={1.55} />
+
+        <path
+          d="M140 540q-40 110-15 245"
+          fill="none"
+          stroke={C.red}
+          strokeWidth="13"
+          strokeDasharray="13 17"
+        />
+
+        <path
+          d="M180 470l48 44-51 15"
+          fill="none"
+          stroke={C.red}
+          strokeWidth="9"
+        />
+      </g>
+
+      <g transform="translate(140 1360)">
+        <path d="M0 0h180" stroke={C.ink} strokeWidth="4" />
+
+        <text
+          x="90"
+          y="-22"
+          textAnchor="middle"
+          fontSize="24"
+          fill={C.grey}
+          fontFamily="'Noto Serif Devanagari','Mangal',sans-serif"
+        >
+          पहला सवाल
+        </text>
+      </g>
+    </PrintFrame>
+  );
+}
+
+// -----------------------------------------------------
+// SCENE 02 — COURT
+// -----------------------------------------------------
+
+function CourtScene() {
+  const f = useCurrentFrame();
+  const move = drift(f, -24, 0, 420);
+  const kingPoint = ease(f, 10, 42);
+
+  return (
+    <PrintFrame
+      paperId="court"
+      subtitle="यह नाक बहुत बड़ी है!"
+      cartouche="दरबार का फैसला"
+      seal="राजा"
+    >
+      <g transform={`translate(${move} 0)`}>
+        <HallBackdrop />
+
+        <Statue x={580} y={1180} scale={1.05} profile nose={1.0} />
+
+        <King x={270} y={1170} scale={1.1} pointing={kingPoint > 0.15} />
+
+        <Artist x={840} y={1190} scale={0.92} />
+
+        <path
+          d="M345 800q90-60 175-6"
+          fill="none"
+          stroke={C.red}
+          strokeWidth="8"
+          strokeDasharray="12 10"
+          opacity={kingPoint}
+        />
+
+        <path
+          d="M355 760l-22 35 45-5"
+          fill="none"
+          stroke={C.red}
+          strokeWidth="8"
+          opacity={kingPoint}
+        />
+      </g>
+    </PrintFrame>
+  );
+}
+
+// -----------------------------------------------------
+// SCENE 03 — THE ARTIST'S MOVE
+// -----------------------------------------------------
+
+function DustScene() {
+  const f = useCurrentFrame();
+  const sprinkle = ease(f, 18, 48);
+
+  return (
+    <PrintFrame
+      paperId="dust"
+      subtitle="मूर्तिकार ने बहस नहीं की…"
+      cartouche="शांत उत्तर"
+      seal="धैर्य"
+    >
+      <HallBackdrop />
+
+      <Statue x={535} y={1200} scale={0.95} profile nose={1.0} />
+
+      <King x={230} y={1190} scale={0.9} surprised />
+
+      <Artist x={800} y={1180} scale={1.05} sprinkle />
+
+      <g opacity={sprinkle}>
+        <path
+          d="M804 1090q-20 90-80 151"
+          fill="none"
+          stroke={C.ochre}
+          strokeWidth="6"
+          strokeDasharray="8 13"
+        />
+
+        <Dust frame={f} x={730} y={1290} />
+      </g>
+
+      <path
+        d="M220 1444q300-26 600 0"
+        stroke={C.red}
+        strokeWidth="9"
+        fill="none"
+        strokeDasharray="5 19"
+        opacity={sprinkle}
+      />
+
+      <path
+        d="M230 1400h610"
+        stroke={C.ink}
+        strokeWidth="6"
+        opacity=".55"
+      />
+    </PrintFrame>
+  );
+}
+
+// -----------------------------------------------------
+// SCENE 04 — WRONG VIEWPOINT
+// -----------------------------------------------------
+
+function CloseViewScene() {
+  const f = useCurrentFrame();
+
+  const zoom = interpolate(f, [0, 210, 480], [1.03, 1.28, 1.18], {
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.quad),
+  });
+
+  const tilt = interpolate(f, [0, 180, 480], [0, -13, -13], {
+    extrapolateRight: 'clamp',
+  });
+
+  return (
+    <PrintFrame
+      paperId="close"
+      subtitle="पास से नाक ही नाक दिखी!"
+      cartouche="राजा की नज़र"
+      seal="दृष्टि"
+    >
+      <g
+        transform={`translate(540 990) rotate(${tilt}) scale(${zoom}) translate(-540 -990)`}
+      >
+        <rect
+          x="55"
+          y="330"
+          width="970"
+          height="1110"
+          fill={C.blue}
+          opacity=".27"
+        />
+
+        <CloudBand y={470} color={C.paleBlue} opacity={0.62} />
+
+        <path
+          d="M100 1330q270-70 520-6t350-10"
+          fill="none"
+          stroke={C.ink}
+          strokeWidth="8"
+        />
+
+        <Statue x={240} y={1215} scale={1.45} profile nose={1.8} />
+
+        <g transform="translate(815 880) scale(.62)">
+          <King x={0} y={0} scale={1.0} pointing />
+        </g>
+
+        <path
+          d="M160 680q100-70 215-20"
+          stroke={C.red}
+          strokeWidth="11"
+          fill="none"
+          strokeDasharray="18 12"
+        />
+
+        <path
+          d="M180 650l-4 55 48-30"
+          stroke={C.red}
+          strokeWidth="9"
+          fill="none"
+        />
+      </g>
+    </PrintFrame>
+  );
+}
+
+// -----------------------------------------------------
+// SCENE 05 — PULL BACK
+// -----------------------------------------------------
+
+function StepBackScene() {
+  const f = useCurrentFrame();
+
+  const back = ease(f, 30, 130);
+
+  const cam = interpolate(f, [0, 130, 480], [1.2, 0.86, 0.82], {
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.cubic),
+  });
+
+  const kingX = interpolate(f, [0, 130, 480], [350, 205, 205], {
+    extrapolateRight: 'clamp',
+  });
+
+  return (
+    <PrintFrame
+      paperId="stepback"
+      subtitle="फिर उसने राजा को पीछे बुलाया…"
+      cartouche="दूरी का रहस्य"
+      seal="बोध"
+    >
+      <g
+        transform={`translate(540 1020) scale(${cam}) translate(-540 -1020)`}
+      >
+        <HallBackdrop />
+
+        <path
+          d="M100 1430h850"
+          stroke={C.red}
+          strokeWidth="8"
+          strokeDasharray="10 15"
+          opacity=".78"
+        />
+
+        <path
+          d="M210 1385v70M790 1385v70"
+          stroke={C.ink}
+          strokeWidth="6"
+        />
+
+        <Statue x={570} y={1200} scale={0.95} profile nose={1.0} />
+
+        <King
+          x={kingX}
+          y={1188}
+          scale={0.8}
+          pointing={false}
+          surprised={back > 0.4}
+        />
+
+        <Artist x={850} y={1195} scale={0.75} openPalm />
+
+        <path
+          d="M340 1060q125-75 240-16"
+          fill="none"
+          stroke={C.red}
+          strokeWidth="7"
+          strokeDasharray="10 12"
+          opacity={back}
+        />
+      </g>
+    </PrintFrame>
+  );
+}
+
+// -----------------------------------------------------
+// SCENE 06 — REVEAL
+// -----------------------------------------------------
+
+function RevealScene() {
+  const f = useCurrentFrame();
+
+  const reveal = ease(f, 8, 70);
+
+  const sealScale = interpolate(f, [70, 82, 102], [1.35, 1, 1], {
+    extrapolateRight: 'clamp',
+  });
+
+  return (
+    <PrintFrame
+      paperId="reveal"
+      subtitle="नाक नहीं बदली… नज़रिया बदला।"
+      cartouche="सच्चाई सामने"
+      seal="सत्य"
+    >
+      <HallBackdrop />
+
+      <g transform={`translate(0 ${drift(f, -12, 0, 360)})`}>
+        <Statue x={590} y={1210} scale={0.9} profile nose={1.0} />
+
+        <King x={260} y={1190} scale={0.88} surprised />
+
+        <Artist x={850} y={1200} scale={0.82} openPalm />
+      </g>
+
+      <g transform={`translate(820 560) scale(${sealScale})`}>
+        <rect
+          width="115"
+          height="115"
+          fill={C.red}
+          stroke={C.ink}
+          strokeWidth="5"
+        />
+
+        <text
+          x="57"
+          y="77"
+          textAnchor="middle"
+          fontSize="56"
+          fill={C.pale}
+          fontWeight="700"
+          fontFamily="serif"
+        >
+          ✓
+        </text>
+      </g>
+
+      <path
+        d="M165 1430q220-95 425-10t340-12"
+        fill="none"
+        stroke={C.ochre}
+        strokeWidth="8"
+        opacity={reveal}
+      />
+    </PrintFrame>
+  );
+}
+
+// -----------------------------------------------------
+// SCENE 07 — MORAL / ECHO
+// -----------------------------------------------------
+
+function MoralScene() {
+  const f = useCurrentFrame();
+
+  const zoom = interpolate(f, [0, 160, 420], [1.05, 0.92, 0.78], {
+    extrapolateRight: 'clamp',
+    easing: Easing.inOut(Easing.quad),
+  });
+
+  const glow = ease(f, 70, 160);
+
+  return (
+    <PrintFrame
+      paperId="moral"
+      subtitle="दूरी नहीं… नज़रिया बदलो।"
+      cartouche="कहानी का सार"
+      seal="सीख"
+    >
+      <g
+        transform={`translate(540 1020) scale(${zoom}) translate(-540 -1020)`}
+      >
+        <rect
+          x="55"
+          y="330"
+          width="970"
+          height="1110"
+          fill={C.paleBlue}
+          opacity=".25"
+        />
+
+        <CloudBand y={490} color={C.paper} opacity={0.8} />
+
+        <PineTree x={130} y={1385} scale={0.85} />
+        <PineTree x={940} y={1380} scale={0.82} />
+
+        <Statue x={530} y={1210} scale={0.88} profile nose={1.0} />
+
+        <King x={225} y={1200} scale={0.72} surprised />
+
+        <Artist x={820} y={1210} scale={0.72} openPalm />
+
+        <path
+          d="M240 1440q280-100 540 0"
+          fill="none"
+          stroke={C.red}
+          strokeWidth="7"
+          opacity={glow}
+        />
+      </g>
+
+      <g opacity={glow}>
+        <path
+          d="M245 650q295-150 590 0"
+          fill="none"
+          stroke={C.ochre}
+          strokeWidth="5"
+          strokeDasharray="8 18"
+        />
+
+        <circle cx="540" cy="580" r="6" fill={C.red} />
+      </g>
+    </PrintFrame>
+  );
+}
+
+// -----------------------------------------------------
+// SCENE ROUTER
+// -----------------------------------------------------
+
+function Scene({
+  kind,
+}: {
+  kind:
+    | 'hook'
+    | 'court'
+    | 'dust'
+    | 'close'
+    | 'stepback'
+    | 'reveal'
+    | 'moral';
+}) {
+  switch (kind) {
+    case 'hook':
+      return <HookScene />;
+
+    case 'court':
+      return <CourtScene />;
+
+    case 'dust':
+      return <DustScene />;
+
+    case 'close':
+      return <CloseViewScene />;
+
+    case 'stepback':
+      return <StepBackScene />;
+
+    case 'reveal':
+      return <RevealScene />;
+
+    case 'moral':
+      return <MoralScene />;
+  }
+}
+
+// -----------------------------------------------------
+// TIMELINE
+// -----------------------------------------------------
+
+const SCENES: {
+  kind:
+    | 'hook'
+    | 'court'
+    | 'dust'
+    | 'close'
+    | 'stepback'
+    | 'reveal'
+    | 'moral';
+  from: number;
+  duration: number;
+}[] = [
+  { kind: 'hook', from: 0, duration: 240 },
+  { kind: 'court', from: 240, duration: 420 },
+  { kind: 'dust', from: 660, duration: 360 },
+  { kind: 'close', from: 1020, duration: 480 },
+  { kind: 'stepback', from: 1500, duration: 480 },
+  { kind: 'reveal', from: 1980, duration: 360 },
+  { kind: 'moral', from: 2340, duration: 420 },
+];
+
+// -----------------------------------------------------
+// MAIN COMPOSITION
+// -----------------------------------------------------
+
+export const Reel: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const sec = frame / fps;
-  const pulse = beatPulse(sec);
 
-  const camX = Math.sin(sec * 1.8) * 10;
-  const camY = Math.cos(sec * 2.3) * 10;
-
-  const wipe1 = sec > 2.75 && sec < 3.35 ? (sec - 2.75) / 0.6 : 0;
-  const wipe2 = sec > 24.7 && sec < 25.3 ? (sec - 24.7) / 0.6 : 0;
-
-  const activeSub = SUBTITLES.find((s) => sec >= s.t0 && sec <= s.t1);
+  const fadeOut = interpolate(
+    frame,
+    [DURATION - 24, DURATION],
+    [1, 0],
+    {
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    }
+  );
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: '#07090F',
-        overflow: 'hidden',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        backgroundColor: C.paper,
       }}
     >
-      {/* Uncomment when you upload public/voice.mp3 */}
-      {/* <Audio src={staticFile('voice.mp3')} /> */}
-
-      {/* Background Subtle Grid */}
-      <svg width={1080} height={1920} style={{ position: 'absolute', opacity: 0.14 }}>
-        <defs>
-          <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
-            <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#00F0FF" strokeWidth="1.5" />
-          </pattern>
-        </defs>
-        <rect width="1080" height="1920" fill="url(#grid)" />
-      </svg>
-
-      {/* SCENE 1: THE HOOK (0s - 3s) */}
-      {sec < 3.05 && (
-        <AbsoluteFill
-          style={{
-            transform: `translate(${camX}px, ${camY}px) scale(${interpolate(sec, [0, 3], [1, 1.12])})`,
-          }}
+      {SCENES.map((scene) => (
+        <Sequence
+          key={scene.kind}
+          from={scene.from}
+          durationInFrames={scene.duration}
         >
-          <HourCounterBadge hours={0} label="EXPERIMENT START" color="#FF3B30" />
+          <Scene kind={scene.kind} />
+        </Sequence>
+      ))}
 
-          <div
-            style={{
-              position: 'absolute',
-              top: '45%',
-              left: '50%',
-              width: 750,
-              height: 750,
-              transform: 'translate(-50%, -50%)',
-              borderRadius: '50%',
-              background: `radial-gradient(circle, rgba(255,59,48,${0.22 + pulse * 0.2}) 0%, transparent 70%)`,
-            }}
-          />
+      {/*
+        UNCOMMENT ONLY IF public/music-bed.wav EXISTS IN YOUR REPO:
+        <Audio src={staticFile('music-bed.wav')} volume={0.82} />
+      */}
 
-          <svg width={1080} height={1920}>
-            {(() => {
-              const dropStartFrame = Math.floor(1.05 * fps);
-              const dropSpring = spring({
-                frame: frame - dropStartFrame,
-                fps,
-                config: { damping: 11, stiffness: 180 },
-              });
-              const clockY = interpolate(dropSpring, [0, 1], [-400, 620]);
-              const impactSquash =
-                sec >= 1.13 && sec <= 1.5
-                  ? Math.sin(((sec - 1.13) / 0.37) * Math.PI) * 0.38
-                  : 0;
-
-              return (
-                <>
-                  {sec >= 0.95 && (
-                    <g
-                      transform={`translate(540, ${clockY}) rotate(${boilJitter(sec, 77, 8)}) scale(${1 + impactSquash * 0.25}, ${1 - impactSquash * 0.25})`}
-                    >
-                      <circle cx={0} cy={0} r={135} fill="#1C1F2B" stroke="#FF3B30" strokeWidth={14} />
-                      <line x1={0} y1={0} x2={0} y2={-80} stroke="#FFFFFF" strokeWidth={12} strokeLinecap="round" />
-                      <line
-                        x1={0}
-                        y1={0}
-                        x2={65}
-                        y2={20}
-                        stroke="#FF3B30"
-                        strokeWidth={10}
-                        strokeLinecap="round"
-                        transform={`rotate(${sec * 540})`}
-                      />
-                    </g>
-                  )}
-
-                  <AtomStickman
-                    sec={sec}
-                    x={540}
-                    y={1280}
-                    scale={1.45}
-                    sq={impactSquash}
-                    dy={impactSquash * 55}
-                    mood={sec > 1.13 ? 'shock' : 'tired'}
-                  />
-                </>
-              );
-            })()}
-          </svg>
-        </AbsoluteFill>
-      )}
-
-      {/* SCENE 2: 24 HOURS - 3D HOLOGRAM BRAIN HUD (3s - 12s) */}
-      {sec >= 3.05 && sec < 12.1 && (
-        <AbsoluteFill>
-          <HourCounterBadge
-            hours={interpolate(sec, [3.1, 5.5], [1, 24], { extrapolateRight: 'clamp' })}
-            label="COGNITIVE DECLINE"
-            color="#00F0FF"
-          />
-
-          <svg width={1080} height={1920}>
-            <g transform="translate(540, 780)">
-              {[180, 290, 380].map((r, idx) => (
-                <ellipse
-                  key={idx}
-                  cx={0}
-                  cy={190 + idx * 25}
-                  rx={r}
-                  ry={r * 0.26}
-                  fill="none"
-                  stroke="#00F0FF"
-                  strokeWidth={idx === 1 ? 4 : 2}
-                  strokeDasharray={idx % 2 === 0 ? '18 12' : '40 15'}
-                  opacity={0.45}
-                  transform={`rotate(${(idx % 2 === 0 ? 1 : -1) * sec * 24})`}
-                />
-              ))}
-
-              {Array.from({ length: 75 }).map((_, i) => {
-                const phi = Math.acos(1 - (2 * (i + 0.5)) / 75);
-                const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-                const rotY = sec * 1.3;
-
-                const rawX = Math.sin(phi) * Math.cos(theta);
-                const hemiOffset = rawX >= 0 ? 35 : -35;
-                const x3d = rawX * 230 + hemiOffset;
-                const y3d = Math.cos(phi) * 175;
-                const z3d = Math.sin(phi) * Math.sin(theta) * 260;
-
-                const rx = x3d * Math.cos(rotY) - z3d * Math.sin(rotY);
-                const rz = x3d * Math.sin(rotY) + z3d * Math.cos(rotY);
-                const depthScale = 900 / (900 - rz);
-
-                const sx = rx * depthScale;
-                const sy = y3d * depthScale;
-                const isAlertNode = i % 7 === 0 && sec > 6.5;
-
-                return (
-                  <g key={i}>
-                    <line
-                      x1={0}
-                      y1={0}
-                      x2={sx}
-                      y2={sy}
-                      stroke={isAlertNode ? '#FF3B30' : '#00F0FF'}
-                      strokeWidth={1.2}
-                      opacity={0.22 * depthScale}
-                    />
-                    <circle
-                      cx={sx}
-                      cy={sy}
-                      r={(isAlertNode ? 9 : 5.5) * depthScale}
-                      fill={isAlertNode ? '#FF3B30' : '#00F0FF'}
-                      opacity={clamp(depthScale * 0.85, 0.2, 1)}
-                    />
-                  </g>
-                );
-              })}
-
-              {sec > 5.2 && (
-                <g transform={`translate(140, -120) scale(${easeOutBack((sec - 5.2) * 2)})`}>
-                  <rect
-                    x={-55}
-                    y={-55}
-                    width={110}
-                    height={110}
-                    fill="none"
-                    stroke="#FF9500"
-                    strokeWidth={4}
-                    strokeDasharray="25 15"
-                  />
-                  <line x1={55} y1={-55} x2={135} y2={-115} stroke="#FF9500" strokeWidth={4} />
-                  <rect
-                    x={135}
-                    y={-165}
-                    width={295}
-                    height={95}
-                    rx={12}
-                    fill="rgba(255,149,0,0.18)"
-                    stroke="#FF9500"
-                    strokeWidth={3}
-                  />
-                  <text x={155} y={-125} fill="#FF9500" fontSize={22} fontFamily="monospace" fontWeight="bold">
-                    BAC EQUIVALENT
-                  </text>
-                  <text x={155} y={-88} fill="#FFFFFF" fontSize={34} fontFamily="monospace" fontWeight="900">
-                    0.10% DRUNK
-                  </text>
-                </g>
-              )}
-            </g>
-
-            <AtomStickman
-              sec={sec}
-              x={540 + Math.sin(sec * 4) * 35}
-              y={1420}
-              scale={1.1}
-              sq={Math.sin(sec * 5) * 0.08}
-              mood="dizzy"
-            />
-          </svg>
-        </AbsoluteFill>
-      )}
-
-      {/* SCENE 3: 48 HOURS - MICROSLEEP GLITCH (12.1s - 25s) */}
-      {sec >= 12.1 && sec < 25.0 && (
-        <AbsoluteFill>
-          {(() => {
-            const isBlackout =
-              (sec > 15.0 && sec < 15.25) ||
-              (sec > 18.2 && sec < 20.6) ||
-              (sec > 22.0 && sec < 22.2);
-
-            if (isBlackout) {
-              return (
-                <AbsoluteFill
-                  style={{
-                    backgroundColor: '#000000',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      color: '#FF2D55',
-                      fontSize: 56,
-                      fontFamily: 'monospace',
-                      fontWeight: 900,
-                      letterSpacing: 6,
-                      border: '4px solid #FF2D55',
-                      padding: '24px 48px',
-                      boxShadow: '0 0 50px rgba(255, 45, 85, 0.5)',
-                    }}
-                  >
-                    [BRAIN OFFLINE: 04.0s]
-                  </div>
-                </AbsoluteFill>
-              );
-            }
-
-            return (
-              <AbsoluteFill>
-                <HourCounterBadge
-                  hours={interpolate(sec, [12.1, 14.5], [24, 48], { extrapolateRight: 'clamp' })}
-                  label="MICROSLEEP WARNING"
-                  color="#FF2D55"
-                />
-
-                {Array.from({ length: 6 }).map((_, idx) => {
-                  const yPos = hash(Math.floor(sec * 15) * 19 + idx) * 1920;
-                  const showBar = pulse > 0.65;
-                  if (!showBar) return null;
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        position: 'absolute',
-                        top: yPos,
-                        left: 0,
-                        width: '100%',
-                        height: 28,
-                        backgroundColor:
-                          idx % 2 === 0 ? 'rgba(0, 240, 255, 0.35)' : 'rgba(255, 45, 85, 0.35)',
-                      }}
-                    />
-                  );
-                })}
-
-                <svg width={1080} height={1920}>
-                  <AtomStickman
-                    sec={sec}
-                    x={540 + boilJitter(sec, 88, 14)}
-                    y={1180}
-                    scale={1.55}
-                    sq={pulse * 0.22}
-                    mood="shock"
-                  />
-                </svg>
-              </AbsoluteFill>
-            );
-          })()}
-        </AbsoluteFill>
-      )}
-
-      {/* SCENE 4: 72 HOURS - HALLUCINATIONS (25s - 35s) */}
-      {sec >= 25.0 && sec < 35.1 && (
-        <AbsoluteFill
-          style={{
-            background: 'radial-gradient(circle at 50% 60%, #1A0B2E 0%, #050508 80%)',
-          }}
-        >
-          <HourCounterBadge
-            hours={interpolate(sec, [25.0, 27.5], [48, 72], { extrapolateRight: 'clamp' })}
-            label="REALITY BREAKDOWN"
-            color="#BF5AF2"
-          />
-
-          <svg width={1080} height={1920}>
-            {[-320, 320].map((sideX, idx) => {
-              const creepIn = interpolate(sec, [25.2, 34.5], [0.6, 1.25], {
-                extrapolateRight: 'clamp',
-              });
-              const mx = 540 + sideX * (1.5 - creepIn * 0.45) + boilJitter(sec, idx * 10 + 1, 12);
-              const my = 720 + Math.sin(sec * 3 + idx) * 40;
-              return (
-                <g key={idx} transform={`translate(${mx}, ${my}) scale(${creepIn})`}>
-                  <ellipse
-                    cx={0}
-                    cy={0}
-                    rx={170 + boilJitter(sec, idx + 20, 18)}
-                    ry={340 + boilJitter(sec, idx + 30, 22)}
-                    fill="rgba(12, 5, 22, 0.9)"
-                    stroke="#BF5AF2"
-                    strokeWidth={5}
-                  />
-                  <circle cx={-45} cy={-90} r={18} fill="#FF3B30" />
-                  <circle cx={45} cy={-90} r={18} fill="#FF3B30" />
-                </g>
-              );
-            })}
-
-            <AtomStickman
-              sec={sec}
-              x={540}
-              y={1350}
-              scale={1.35}
-              sq={Math.sin(sec * 24) * 0.12}
-              mood="scared"
-            />
-          </svg>
-        </AbsoluteFill>
-      )}
-
-      {/* SCENE 5: 11 DAYS PAYOFF & SPOTLIGHT OUTRO (35.1s - 45s) */}
-      {sec >= 35.1 && (
-        <AbsoluteFill style={{ backgroundColor: '#040507' }}>
-          <HourCounterBadge
-            hours={interpolate(sec, [35.1, 37.5], [72, 264], { extrapolateRight: 'clamp' })}
-            label="FATAL THRESHOLD (11 DAYS)"
-            color="#FF3B30"
-          />
-
-          <svg width={1080} height={1920}>
-            <polygon points="540,0 160,1550 920,1550" fill="rgba(255, 255, 255, 0.07)" />
-            <ellipse cx={540} cy={1450} rx={360} ry={70} fill="rgba(255, 255, 255, 0.12)" />
-
-            {(() => {
-              const progress = clamp((sec - 35.5) / 6.5);
-              const endX = interpolate(progress, [0, 1], [80, 1000]);
-              return (
-                <g>
-                  <path
-                    d="M 80 650 L 260 650 L 300 520 L 345 810 L 390 460 L 435 760 L 470 650 L 1000 650"
-                    fill="none"
-                    stroke="#FF3B30"
-                    strokeWidth={10}
-                    strokeLinecap="round"
-                    strokeDasharray={1200}
-                    strokeDashoffset={1200 * (1 - progress)}
-                  />
-                  <circle cx={endX} cy={650} r={16} fill="#FF3B30" />
-                </g>
-              );
-            })()}
-
-            <AtomStickman sec={sec} x={520} y={1360} scale={1.3} mood="collapsed" />
-          </svg>
-        </AbsoluteFill>
-      )}
-
-      {/* BURNED-IN HIGH-RETENTION SUBTITLES */}
-      {activeSub && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 240,
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            padding: '0 60px',
-            zIndex: 80,
-          }}
-        >
-          {(() => {
-            const subPop = spring({
-              frame: Math.max(0, Math.floor((sec - activeSub.t0) * fps)),
-              fps,
-              config: { damping: 12, stiffness: 220 },
-            });
-            const parts = activeSub.text.split(activeSub.highlight);
-
-            return (
-              <div
-                style={{
-                  transform: `scale(${interpolate(subPop, [0, 1], [0.75, 1])})`,
-                  background: 'rgba(8, 10, 18, 0.92)',
-                  border: `3px solid ${activeSub.accent}`,
-                  borderRadius: 28,
-                  padding: '28px 42px',
-                  textAlign: 'center',
-                  boxShadow: `0 18px 50px rgba(0,0,0,0.85), 0 0 30px ${activeSub.accent}44`,
-                }}
-              >
-                <span
-                  style={{
-                    color: '#FFFFFF',
-                    fontSize: 52,
-                    fontWeight: 900,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {parts[0]}
-                  <span
-                    style={{
-                      color: activeSub.accent,
-                      textDecoration: 'underline',
-                      textShadow: `0 0 24px ${activeSub.accent}`,
-                    }}
-                  >
-                    {activeSub.highlight}
-                  </span>
-                  {parts[1] || ''}
-                </span>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* BrushWipe Transitions */}
-      <BrushWipeOverlay progress={wipe1} color="#00F0FF" />
-      <BrushWipeOverlay progress={wipe2} color="#BF5AF2" />
+      <AbsoluteFill
+        style={{
+          backgroundColor: '#181613',
+          opacity: 1 - fadeOut,
+          pointerEvents: 'none',
+        }}
+      />
     </AbsoluteFill>
   );
 };
 
-// ==========================================
-// 5. REMOTION ROOT REGISTRATION
-// ==========================================
+// -----------------------------------------------------
+// ROOT
+// -----------------------------------------------------
 
-export const RemotionRoot: React.FC = () => {
-  return (
-    <>
-      {/* Target ID required by your GitHub Actions workflow */}
-      <Composition
-        id="Reel"
-        component={NeverSleepVideo}
-        durationInFrames={2700} // 45s @ 60fps
-        fps={60}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="NeverSleepShorts"
-        component={NeverSleepVideo}
-        durationInFrames={2700}
-        fps={60}
-        width={1080}
-        height={1920}
-      />
-    </>
-  );
-};
+export const RemotionRoot: React.FC = () => (
+  <>
+    <Composition
+      id="Reel"
+      component={Reel}
+      durationInFrames={DURATION}
+      fps={FPS}
+      width={W}
+      height={H}
+    />
+  </>
+);
 
 export default RemotionRoot;
