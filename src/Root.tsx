@@ -14,15 +14,14 @@ import {
 // (Lemo-Opuscar + Claude Animation + Shotcraft)
 // ==========================================
 
-// Deterministic hash (no Math.random())
 function hash(n: number): number {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
   return x - Math.floor(x);
 }
 
-// Boiling seed: steps at 12 fps (every 2.5 frames at 30fps)
-function boilJitter(frame: number, key: number, amp: number): number {
-  const boilStep = Math.floor(frame / 2.5);
+// Boiling seed: steps at 12 fps regardless of 30fps or 60fps
+function boilJitter(sec: number, key: number, amp: number): number {
+  const boilStep = Math.floor(sec * 12);
   return (hash(boilStep * 97.3 + key * 31.7) - 0.5) * 2 * amp;
 }
 
@@ -39,8 +38,7 @@ function easeOutBack(x: number): number {
 
 // Master Beat Grid: 128 BPM
 const BPM = 128;
-function beatPulse(frame: number, fps: number, decay = 6): number {
-  const sec = frame / fps;
+function beatPulse(sec: number, decay = 6): number {
   const beatPos = (sec * (BPM / 60)) % 1;
   return Math.exp(-beatPos * decay);
 }
@@ -74,7 +72,7 @@ const SUBTITLES: SubtitleCue[] = [
 // ==========================================
 
 const AtomStickman: React.FC<{
-  frame: number;
+  sec: number;
   x: number;
   y: number;
   scale?: number;
@@ -82,8 +80,8 @@ const AtomStickman: React.FC<{
   dy?: number;
   mood: 'tired' | 'dizzy' | 'shock' | 'scared' | 'collapsed';
   inkColor?: string;
-}> = ({ frame, x, y, scale = 1, sq = 0, dy = 0, mood, inkColor = '#F4F1EA' }) => {
-  const j = (k: number, a = 3) => boilJitter(frame, k, a);
+}> = ({ sec, x, y, scale = 1, sq = 0, dy = 0, mood, inkColor = '#F4F1EA' }) => {
+  const j = (k: number, a = 3) => boilJitter(sec, k, a);
   const sx = scale * (1 + sq * 0.35);
   const sy = scale * (1 - sq * 0.35);
 
@@ -115,7 +113,7 @@ const AtomStickman: React.FC<{
         strokeWidth={4}
         strokeDasharray="14 8"
         opacity={0.45}
-        transform={`rotate(${25 + frame * 2})`}
+        transform={`rotate(${25 + sec * 60})`}
       />
       <ellipse
         cx={j(5, 2)}
@@ -126,7 +124,7 @@ const AtomStickman: React.FC<{
         stroke="#FF3B30"
         strokeWidth={4}
         opacity={0.35}
-        transform={`rotate(${-25 - frame * 2})`}
+        transform={`rotate(${-25 - sec * 60})`}
       />
 
       {/* Torso */}
@@ -340,7 +338,7 @@ export const NeverSleepVideo: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const sec = frame / fps;
-  const pulse = beatPulse(frame, fps);
+  const pulse = beatPulse(sec);
 
   const camX = Math.sin(sec * 1.8) * 10;
   const camY = Math.cos(sec * 2.3) * 10;
@@ -395,20 +393,23 @@ export const NeverSleepVideo: React.FC = () => {
 
           <svg width={1080} height={1920}>
             {(() => {
+              const dropStartFrame = Math.floor(1.05 * fps);
               const dropSpring = spring({
-                frame: frame - 32,
+                frame: frame - dropStartFrame,
                 fps,
                 config: { damping: 11, stiffness: 180 },
               });
               const clockY = interpolate(dropSpring, [0, 1], [-400, 620]);
               const impactSquash =
-                frame >= 34 && frame <= 45 ? Math.sin(((frame - 34) / 11) * Math.PI) * 0.38 : 0;
+                sec >= 1.13 && sec <= 1.5
+                  ? Math.sin(((sec - 1.13) / 0.37) * Math.PI) * 0.38
+                  : 0;
 
               return (
                 <>
-                  {frame >= 28 && (
+                  {sec >= 0.95 && (
                     <g
-                      transform={`translate(540, ${clockY}) rotate(${boilJitter(frame, 77, 8)}) scale(${1 + impactSquash * 0.25}, ${1 - impactSquash * 0.25})`}
+                      transform={`translate(540, ${clockY}) rotate(${boilJitter(sec, 77, 8)}) scale(${1 + impactSquash * 0.25}, ${1 - impactSquash * 0.25})`}
                     >
                       <circle cx={0} cy={0} r={135} fill="#1C1F2B" stroke="#FF3B30" strokeWidth={14} />
                       <line x1={0} y1={0} x2={0} y2={-80} stroke="#FFFFFF" strokeWidth={12} strokeLinecap="round" />
@@ -420,19 +421,19 @@ export const NeverSleepVideo: React.FC = () => {
                         stroke="#FF3B30"
                         strokeWidth={10}
                         strokeLinecap="round"
-                        transform={`rotate(${frame * 18})`}
+                        transform={`rotate(${sec * 540})`}
                       />
                     </g>
                   )}
 
                   <AtomStickman
-                    frame={frame}
+                    sec={sec}
                     x={540}
                     y={1280}
                     scale={1.45}
                     sq={impactSquash}
                     dy={impactSquash * 55}
-                    mood={frame > 34 ? 'shock' : 'tired'}
+                    mood={sec > 1.13 ? 'shock' : 'tired'}
                   />
                 </>
               );
@@ -464,7 +465,7 @@ export const NeverSleepVideo: React.FC = () => {
                   strokeWidth={idx === 1 ? 4 : 2}
                   strokeDasharray={idx % 2 === 0 ? '18 12' : '40 15'}
                   opacity={0.45}
-                  transform={`rotate(${(idx % 2 === 0 ? 1 : -1) * frame * 0.8})`}
+                  transform={`rotate(${(idx % 2 === 0 ? 1 : -1) * sec * 24})`}
                 />
               ))}
 
@@ -543,7 +544,7 @@ export const NeverSleepVideo: React.FC = () => {
             </g>
 
             <AtomStickman
-              frame={frame}
+              sec={sec}
               x={540 + Math.sin(sec * 4) * 35}
               y={1420}
               scale={1.1}
@@ -599,7 +600,7 @@ export const NeverSleepVideo: React.FC = () => {
                 />
 
                 {Array.from({ length: 6 }).map((_, idx) => {
-                  const yPos = hash(Math.floor(frame / 2) * 19 + idx) * 1920;
+                  const yPos = hash(Math.floor(sec * 15) * 19 + idx) * 1920;
                   const showBar = pulse > 0.65;
                   if (!showBar) return null;
                   return (
@@ -620,8 +621,8 @@ export const NeverSleepVideo: React.FC = () => {
 
                 <svg width={1080} height={1920}>
                   <AtomStickman
-                    frame={frame}
-                    x={540 + boilJitter(frame, 88, 14)}
+                    sec={sec}
+                    x={540 + boilJitter(sec, 88, 14)}
                     y={1180}
                     scale={1.55}
                     sq={pulse * 0.22}
@@ -652,15 +653,15 @@ export const NeverSleepVideo: React.FC = () => {
               const creepIn = interpolate(sec, [25.2, 34.5], [0.6, 1.25], {
                 extrapolateRight: 'clamp',
               });
-              const mx = 540 + sideX * (1.5 - creepIn * 0.45) + boilJitter(frame, idx * 10 + 1, 12);
+              const mx = 540 + sideX * (1.5 - creepIn * 0.45) + boilJitter(sec, idx * 10 + 1, 12);
               const my = 720 + Math.sin(sec * 3 + idx) * 40;
               return (
                 <g key={idx} transform={`translate(${mx}, ${my}) scale(${creepIn})`}>
                   <ellipse
                     cx={0}
                     cy={0}
-                    rx={170 + boilJitter(frame, idx + 20, 18)}
-                    ry={340 + boilJitter(frame, idx + 30, 22)}
+                    rx={170 + boilJitter(sec, idx + 20, 18)}
+                    ry={340 + boilJitter(sec, idx + 30, 22)}
                     fill="rgba(12, 5, 22, 0.9)"
                     stroke="#BF5AF2"
                     strokeWidth={5}
@@ -672,11 +673,11 @@ export const NeverSleepVideo: React.FC = () => {
             })}
 
             <AtomStickman
-              frame={frame}
+              sec={sec}
               x={540}
               y={1350}
               scale={1.35}
-              sq={Math.sin(frame * 0.8) * 0.12}
+              sq={Math.sin(sec * 24) * 0.12}
               mood="scared"
             />
           </svg>
@@ -715,7 +716,7 @@ export const NeverSleepVideo: React.FC = () => {
               );
             })()}
 
-            <AtomStickman frame={frame} x={520} y={1360} scale={1.3} mood="collapsed" />
+            <AtomStickman sec={sec} x={520} y={1360} scale={1.3} mood="collapsed" />
           </svg>
         </AbsoluteFill>
       )}
@@ -793,28 +794,20 @@ export const NeverSleepVideo: React.FC = () => {
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {/* Target ID required by your GitHub Actions workflow */}
+      <Composition
+        id="Reel"
+        component={NeverSleepVideo}
+        durationInFrames={2700} // 45s @ 60fps
+        fps={60}
+        width={1080}
+        height={1920}
+      />
       <Composition
         id="NeverSleepShorts"
         component={NeverSleepVideo}
-        durationInFrames={1350}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      {/* Fallback IDs so your existing GitHub Actions workflow finds it automatically */}
-      <Composition
-        id="MyComp"
-        component={NeverSleepVideo}
-        durationInFrames={1350}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="Main"
-        component={NeverSleepVideo}
-        durationInFrames={1350}
-        fps={30}
+        durationInFrames={2700}
+        fps={60}
         width={1080}
         height={1920}
       />
