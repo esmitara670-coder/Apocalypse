@@ -3,970 +3,1045 @@ import {
   AbsoluteFill,
   Composition,
   Easing,
-  Sequence,
   interpolate,
   spring,
   useCurrentFrame,
-  useVideoConfig,
-  // Audio, staticFile // Uncomment when adding public/voice.mp3
+  // Audio, Sequence, staticFile // Uncomment when adding audio in public/
 } from 'remotion';
 
-// =========================================================
-// 1. DETERMINISTIC MATH & MULTI-SKILL ENGINE
-// =========================================================
+// ============================================================================
+// 1. AUDIO CHUNK DURATION CONFIG (AUTO-SYNCS ALL 24 SCENES & SUBTITLES)
+// Order of your uploaded audio files:
+// Chunk 1 = File 1 (Intro)
+// Chunk 2 = File 6 (Pixels / Planck Length)
+// Chunk 3 = File 4 (Double Slit Experiment)
+// Chunk 4 = File 5 (Speed of Light / CPU Clock)
+// Chunk 5 = File 2 (DNA Error-Correcting Code)
+// Chunk 6 = File 3 (Future Ancestor AI / Outro)
+// ============================================================================
 
+const FPS = 60;
 const W = 1080;
 const H = 1920;
-const FPS = 60;
-const TOTAL_FRAMES = 1800; // 30 Seconds = 10 Shots x 3s (180 frames each)
+
+// Adjust any number here if your specific audio file is slightly shorter/longer
+const CHUNK_DURATIONS_SEC = [24, 24, 24, 24, 24, 24];
+
+const CHUNK_START_SEC = CHUNK_DURATIONS_SEC.reduce<number[]>((acc, _, i) => {
+  acc.push(i === 0 ? 0 : acc[i - 1] + CHUNK_DURATIONS_SEC[i - 1]);
+  return acc;
+}, []);
+
+const TOTAL_SECONDS = CHUNK_DURATIONS_SEC.reduce((a, b) => a + b, 0);
+const TOTAL_FRAMES = Math.round(TOTAL_SECONDS * FPS);
+
+// ============================================================================
+// 2. DETERMINISTIC ENGINE (NO Math.random() - 100% REPRODUCIBLE)
+// ============================================================================
 
 function hash(n: number): number {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
   return x - Math.floor(x);
 }
 
-// Claude Animation Base: 12 FPS Hand-Drawn Boil
-function boil(frame: number, seed: number, amp = 2.5): number {
-  const step12fps = Math.floor(frame / 5); // 60fps / 5 = 12fps
-  return (hash(step12fps * 91.7 + seed * 37.3) - 0.5) * 2 * amp;
+// 12 FPS Hand-Drawn Boiling Linework Jitter
+function boil(frame: number, seed: number, amp = 2.4): number {
+  const step = Math.floor(frame / 5);
+  return (hash(step * 97.3 + seed * 31.7) - 0.5) * 2 * amp;
 }
 
 function clamp(v: number, min = 0, max = 1): number {
   return Math.max(min, Math.min(max, v));
 }
 
-// =========================================================
-// 2. GLOBAL CYBER-HUD & 3D ENVIRONMENT LAYER
-// (Ensures NO frame ever looks empty or flat)
-// =========================================================
+// ============================================================================
+// 3. 24 SYNCHRONIZED SUBTITLES (4 PER AUDIO CHUNK = 24 SUB-SCENES)
+// ============================================================================
 
-const CyberEnvironment: React.FC<{
-  accent: string;
-  shotIndex: number;
+interface SubItem {
+  chunk: number;
+  subIdx: number; // 0, 1, 2, 3 within the chunk
   title: string;
   metric: string;
-}> = ({ accent, shotIndex, title, metric }) => {
-  const frame = useCurrentFrame();
+  accent: string;
+  text: string;
+  hi: string;
+}
+
+const SUB_SCENES: SubItem[] = [
+  // CHUNK 1: INTRO & SIMULATION HOOK
+  { chunk: 0, subIdx: 0, title: 'REALITY_CHECK.EXE', metric: 'SYS: ONLINE', accent: '#00F0FF', text: 'क्या आपकी पूरी ज़िंदगी और यह दुनिया सिर्फ़ एक COMPUTER PROGRAM है?', hi: 'COMPUTER PROGRAM' },
+  { chunk: 0, subIdx: 1, title: 'PROBABILITY MATRIX', metric: 'ODDS: 99.9%', accent: '#F59E0B', text: 'Top Scientists और ELON MUSK मानते हैं हम एक Video Game में जी रहे हैं!', hi: 'ELON MUSK' },
+  { chunk: 0, subIdx: 2, title: 'SIMULATION THEORY', metric: 'CORE: ACTIVE', accent: '#A855F7', text: 'Science में इसे SIMULATION THEORY कहते हैं—आइए इसे decode करें।', hi: 'SIMULATION THEORY' },
+  { chunk: 0, subIdx: 3, title: 'AI CONSCIOUSNESS', metric: 'NODE: HUMAN', accent: '#FF2D55', text: 'क्या हम सच में ARTIFICIAL INTELLIGENCE का एक हिस्सा हैं? आइए देखते हैं!', hi: 'ARTIFICIAL INTELLIGENCE' },
+
+  // CHUNK 2: PROOF 1 - PIXELS & PLANCK LENGTH
+  { chunk: 1, subIdx: 0, title: 'PROOF #01 · PIXELS', metric: 'ZOOM: 1000x', accent: '#00F0FF', text: 'पहला सबूत: किसी भी game में पास से देखने पर छोटे PIXELS दिखाई देते हैं।', hi: 'PIXELS' },
+  { chunk: 1, subIdx: 1, title: 'VOXEL GEOMETRY', metric: 'MESH: BLOCKS', accent: '#10B981', text: 'Graphics कितने भी real हों, एक limit के बाद सब BLOCKS में बदल जाता है।', hi: 'BLOCKS' },
+  { chunk: 1, subIdx: 2, title: 'PLANCK LENGTH', metric: '1.6 × 10⁻³⁵ m', accent: '#F59E0B', text: 'Quantum Physics के अनुसार हमारे Universe का भी एक pixel है—PLANCK LENGTH!', hi: 'PLANCK LENGTH!' },
+  { chunk: 1, subIdx: 3, title: 'RESOLUTION LIMIT', metric: 'MIN_RES: LOCKED', accent: '#FF2D55', text: 'क्या यह हमारे Universe का MINIMUM PIXEL RESOLUTION है?', hi: 'MINIMUM PIXEL RESOLUTION' },
+
+  // CHUNK 3: PROOF 2 - DOUBLE SLIT & RENDER OPTIMIZATION
+  { chunk: 2, subIdx: 0, title: 'PROOF #02 · QUANTUM', metric: 'SLIT_TEST: ON', accent: '#A855F7', text: 'दूसरा सबूत और भी shocking है—जिसे DOUBLE SLIT EXPERIMENT कहते हैं!', hi: 'DOUBLE SLIT EXPERIMENT' },
+  { chunk: 2, subIdx: 1, title: 'FRUSTUM CULLING', metric: 'VRAM SAVED: 78%', accent: '#10B981', text: 'Memory बचाने के लिए game engine सिर्फ़ वही RENDER करता है जो player देखता है।', hi: 'RENDER' },
+  { chunk: 2, subIdx: 2, title: 'WAVE FUNCTION', metric: 'STATE: UNOBSERVED', accent: '#00F0FF', text: 'हमारे particles भी तब तक रूप नहीं लेते, जब तक कोई उन्हें OBSERVE न करे!', hi: 'OBSERVE' },
+  { chunk: 2, subIdx: 3, title: 'REALITY COLLAPSE', metric: 'STATE: SOLID', accent: '#FF2D55', text: 'जैसे ही हम देखते हैं, वे अचानक SOLID REALITY में render हो जाते हैं!', hi: 'SOLID REALITY' },
+
+  // CHUNK 4: PROOF 3 - SPEED OF LIGHT & CPU CLOCK SPEED
+  { chunk: 3, subIdx: 0, title: 'PROOF #03 · LIGHT SPEED', metric: '299,792 KM/S', accent: '#F59E0B', text: 'तीसरा सबूत: Speed of Light 3 LAKH KM/SEC पर फिक्स की गई है।', hi: '3 LAKH KM/SEC' },
+  { chunk: 3, subIdx: 1, title: 'RELATIVITY WALL', metric: 'LIMIT: MAX', accent: '#FF2D55', text: 'Einstein के मुताबिक़ कोई भी चीज़ इस SPEED LIMIT को पार नहीं कर सकती।', hi: 'SPEED LIMIT' },
+  { chunk: 3, subIdx: 2, title: 'COSMIC PROCESSOR', metric: 'CLOCK: MAX GHz', accent: '#00F0FF', text: 'Light की speed ही हमारे Universe के Processor की MAXIMUM CLOCK SPEED है!', hi: 'MAXIMUM CLOCK SPEED' },
+  { chunk: 3, subIdx: 3, title: 'HARDCODED LIMIT', metric: 'CONST: LOCKED', accent: '#10B981', text: 'Hardware क्रैश से बचाने के लिए इस स्पीड को HARDCODE किया गया है।', hi: 'HARDCODE' },
+
+  // CHUNK 5: PROOF 4 - DNA ERROR-CORRECTING CODE
+  { chunk: 4, subIdx: 0, title: 'PROOF #04 · DNA CODE', metric: 'HELIX: BINARY', accent: '#10B981', text: 'चौथा सबूत: वैज्ञानिकों को इंसानी DNA में ERROR-CORRECTING CODES मिले हैं!', hi: 'ERROR-CORRECTING CODES' },
+  { chunk: 4, subIdx: 1, title: 'SHANNON PARITY 1940', metric: 'BIT_CHECK: OK', accent: '#00F0FF', text: 'यह वही computer codes हैं जो CLAUDE SHANNON ने 1940s में बनाए थे।', hi: 'CLAUDE SHANNON' },
+  { chunk: 4, subIdx: 2, title: 'BIO-SOFTWARE MATCH', metric: 'MATCH: 99.99%', accent: '#A855F7', text: 'Biological DNA के अंदर सेम MATHEMATICAL SOFTWARE CODE मिलना इत्तेफ़ाक़ नहीं है!', hi: 'MATHEMATICAL SOFTWARE CODE' },
+  { chunk: 4, subIdx: 3, title: 'THE PROGRAMMER', metric: 'AUTHOR: UNKNOWN', accent: '#F59E0B', text: 'क्या किसी SUPER-INTELLIGENT PROGRAMMER ने हमारे जेनेटिक्स का कोड लिखा है?', hi: 'SUPER-INTELLIGENT PROGRAMMER' },
+
+  // CHUNK 6: CONCLUSION - ANCESTOR SIMULATION & OUTRO
+  { chunk: 5, subIdx: 0, title: 'THE ARCHITECTS', metric: 'ERA: FUTURE', accent: '#00F0FF', text: 'तो यह Simulation किसने बनाया? शायद FUTURE के इंसानों ने अपने past को देखने के लिए!', hi: 'FUTURE के इंसानों' },
+  { chunk: 5, subIdx: 1, title: 'COSMIC HARD DRIVE', metric: 'DRIVE: ACTIVE', accent: '#A855F7', text: 'हम उन्हीं के AI MODELS हैं और एक विशाल Hard Drive के अंदर जी रहे हैं।', hi: 'AI MODELS' },
+  { chunk: 5, subIdx: 2, title: 'CODE DIAGNOSTIC', metric: 'STATUS: AWAKE', accent: '#10B981', text: 'अगर आप यह सोच पा रहे हैं, तो आपका CODE बिल्कुल सही काम कर रहा है!', hi: 'CODE' },
+  { chunk: 5, subIdx: 3, title: '@ATOM_STICKMAN', metric: 'SUBSCRIBE NOW', accent: '#FF2D55', text: 'Reality के dark secrets जानने के लिए ATOM STICKMAN को अभी Subscribe करें!', hi: 'ATOM STICKMAN' },
+];
+
+// ============================================================================
+// 4. ULTRA-DETAILED CYBERPUNK MATRIX ENVIRONMENT & HUD
+// ============================================================================
+
+const MatrixHudBackdrop: React.FC<{
+  frame: number;
+  accent: string;
+  chunkIdx: number;
+  subIdx: number;
+  title: string;
+  metric: string;
+  overallProgress: number;
+}> = ({ frame, accent, chunkIdx, subIdx, title, metric, overallProgress }) => {
   const sec = frame / FPS;
 
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      {/* Deep Radial Atmosphere */}
+      {/* Deep Cyber-Void Atmosphere */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: `radial-gradient(circle at 50% 45%, ${accent}22 0%, #070A12 62%, #030408 100%)`,
+          background: `radial-gradient(circle at 50% 42%, ${accent}26 0%, #060913 58%, #020307 100%)`,
         }}
       />
 
       <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
-        {/* Moving Perspective Floor & Ceiling Grid */}
-        <g opacity={0.22} stroke={accent} strokeWidth={1.5}>
-          {Array.from({ length: 14 }).map((_, i) => {
-            const xSpread = (i - 6.5) * 220;
+        {/* Digital Binary Data Rain Columns in Background */}
+        <g opacity={0.14} fontFamily="monospace" fontSize={20} fontWeight="bold" fill={accent}>
+          {Array.from({ length: 18 }).map((_, col) => {
+            const x = 40 + col * 58;
+            const speed = 1.5 + (col % 4) * 0.8;
+            const yOffset = (frame * speed + col * 190) % 1920;
+            return (
+              <g key={col} transform={`translate(${x}, ${yOffset - 300})`}>
+                {Array.from({ length: 8 }).map((__, row) => {
+                  const bit = hash(col * 31 + row * 17 + Math.floor(frame / 10)) > 0.5 ? '1' : '0';
+                  return (
+                    <text key={row} x={0} y={row * 34} opacity={(row + 1) / 8}>
+                      {bit}
+                    </text>
+                  );
+                })}
+              </g>
+            );
+          })}
+        </g>
+
+        {/* 3D Perspective Floor & Ceiling Grid */}
+        <g opacity={0.26} stroke={accent} strokeWidth={1.6}>
+          {Array.from({ length: 15 }).map((_, i) => {
+            const spread = (i - 7) * 210;
             return (
               <React.Fragment key={i}>
-                <line x1={540 + xSpread * 0.15} y1={1250} x2={540 + xSpread} y2={1920} />
-                <line x1={540 + xSpread * 0.15} y1={670} x2={540 + xSpread} y2={0} opacity={0.4} />
+                <line x1={540 + spread * 0.14} y1={1240} x2={540 + spread} y2={1920} />
+                <line x1={540 + spread * 0.14} y1={340} x2={540 + spread} y2={0} opacity={0.35} />
               </React.Fragment>
             );
           })}
-          {Array.from({ length: 8 }).map((_, i) => {
-            const move = ((frame * 2.5 + i * 80) % 640) / 640;
-            const yFloor = 1250 + Math.pow(move, 1.8) * 670;
-            return <line key={i} x1={0} y1={yFloor} x2={W} y2={yFloor} opacity={move} />;
+          {Array.from({ length: 9 }).map((_, i) => {
+            const p = ((frame * 2.2 + i * 75) % 675) / 675;
+            const y = 1240 + Math.pow(p, 1.85) * 680;
+            return <line key={i} x1={0} y1={y} x2={W} y2={y} opacity={p * 0.9} />;
           })}
         </g>
 
-        {/* Floating Depth Particles (40 deterministic particles) */}
-        {Array.from({ length: 40 }).map((_, i) => {
-          const px = (hash(i * 13) * W + frame * (hash(i * 7) - 0.5) * 3 + W) % W;
-          const py = (hash(i * 29) * H - frame * (1.2 + hash(i * 19) * 2.5) + H * 10) % H;
-          const r = 1.5 + hash(i * 41) * 4;
-          return (
-            <circle
-              key={i}
-              cx={px}
-              cy={py}
-              r={r}
-              fill={i % 3 === 0 ? accent : '#FFFFFF'}
-              opacity={0.18 + hash(i * 53) * 0.45}
-            />
-          );
-        })}
-
-        {/* Lemo-Opuscar HUD Corner Brackets & Telemetry */}
-        <g stroke={accent} strokeWidth={4} fill="none" opacity={0.85}>
-          <path d="M 45 110 L 45 55 L 110 55" />
-          <path d="M 1035 110 L 1035 55 L 970 55" />
-          <path d="M 45 1810 L 45 1865 L 110 1865" />
-          <path d="M 1035 1810 L 1035 1865 L 970 1865" />
-        </g>
-
-        {/* Top Telemetry Bar */}
-        <g transform="translate(75, 75)">
-          <rect x={0} y={0} width={930} height={74} rx={12} fill="rgba(8,12,22,0.82)" stroke={`${accent}66`} strokeWidth={2} />
-          <circle cx={38} cy={37} r={10} fill={accent} opacity={0.5 + Math.sin(sec * 18) * 0.5} />
-          <text x={65} y={45} fill="#FFFFFF" fontSize={24} fontFamily="monospace" fontWeight="900" letterSpacing={2}>
-            {`SHOT 0${shotIndex}/10 · ${title}`}
+        {/* Top Chapter Progress Bar & Telemetry Header */}
+        <g transform="translate(55, 60)">
+          <rect x={0} y={0} width={970} height={92} rx={16} fill="rgba(7, 11, 22, 0.9)" stroke={accent} strokeWidth={3} />
+          {/* 6 Chapter Segments */}
+          {Array.from({ length: 6 }).map((_, c) => {
+            const segW = 152;
+            const sx = 16 + c * 158;
+            const isDone = c < chunkIdx;
+            const isCurrent = c === chunkIdx;
+            return (
+              <rect
+                key={c}
+                x={sx}
+                y={14}
+                width={segW}
+                height={10}
+                rx={5}
+                fill={isDone ? accent : isCurrent ? '#FFFFFF' : '#1E293B'}
+                opacity={isCurrent ? 0.6 + Math.sin(sec * 12) * 0.4 : 1}
+              />
+            );
+          })}
+          <circle cx={34} cy={60} r={10} fill={accent} />
+          <text x={58} y={68} fill="#FFFFFF" fontSize={25} fontFamily="monospace" fontWeight="900" letterSpacing={2}>
+            {`CH.0${chunkIdx + 1}.${subIdx + 1} // ${title}`}
           </text>
-          <text x={900} y={45} textAnchor="end" fill={accent} fontSize={24} fontFamily="monospace" fontWeight="bold">
+          <text x={945} y={68} textAnchor="end" fill={accent} fontSize={25} fontFamily="monospace" fontWeight="900">
             {metric}
           </text>
         </g>
 
-        {/* Bottom Audio/Neural Waveform Visualizer */}
-        <g transform="translate(80, 1815)">
-          {Array.from({ length: 46 }).map((_, i) => {
-            const h = 8 + Math.abs(Math.sin(sec * 12 + i * 0.45)) * 28;
-            return (
-              <rect
-                key={i}
-                x={i * 20}
-                y={-h / 2}
-                width={10}
-                height={h}
-                rx={4}
-                fill={i % 5 === 0 ? accent : '#3A465E'}
-                opacity={0.75}
-              />
-            );
-          })}
-        </g>
+        {/* Overall Video Master Timeline Scrub Bar */}
+        <rect x={55} y={1855} width={970} height={8} rx={4} fill="#1E293B" />
+        <rect x={55} y={1855} width={970 * overallProgress} height={8} rx={4} fill={accent} />
       </svg>
     </AbsoluteFill>
   );
 };
 
-// =========================================================
-// 3. DETAILED ARTICULATED ATOM STICKMAN RIG
-// (Claude Animation Base: Boil + Squash/Stretch + Glowing Atom Core)
-// =========================================================
+// ============================================================================
+// 5. ARTICULATED ATOM STICKMAN RIG (WITH 12FPS BOIL & GLOWING ATOM CORE)
+// ============================================================================
 
-const DetailedAtomStickman: React.FC<{
+const AtomStickmanRig: React.FC<{
   frame: number;
   x: number;
   y: number;
   scale?: number;
   rot?: number;
-  sq?: number;
-  pose: 'falling' | 'panic' | 'hyperfocus' | 'catching' | 'exhausted' | 'hero';
-  accent?: string;
-}> = ({ frame, x, y, scale = 1, rot = 0, sq = 0, pose, accent = '#00F0FF' }) => {
-  const b = (seed: number, amp = 2.8) => boil(frame, seed, amp);
-  const sx = scale * (1 + sq * 0.35);
-  const sy = scale * (1 - sq * 0.35);
+  pose: 'inspect' | 'mindblown' | 'floating' | 'turning' | 'scanning' | 'hero';
+  accent: string;
+}> = ({ frame, x, y, scale = 1, rot = 0, pose, accent }) => {
+  const b = (seed: number, amp = 2.5) => boil(frame, seed, amp);
+  const floatY = pose === 'floating' ? Math.sin(frame * 0.08) * 24 : Math.sin(frame * 0.1) * 6;
 
   const headX = b(1, 2);
-  const headY = -230 + b(2, 2);
+  const headY = -225 + b(2, 2);
 
-  // Dynamic limb coordinates by pose
-  const limbs = {
-    falling: {
-      lShoulder: [-70, -140], lHand: [-155, -240],
-      rShoulder: [75, -150], rHand: [160, -210],
-      lKnee: [-65, 50], lFoot: [-110, 140],
-      rKnee: [75, 20], rFoot: [130, 95],
-    },
-    panic: {
-      lShoulder: [-85, -160], lHand: [-65, -255],
-      rShoulder: [85, -160], rHand: [65, -255],
-      lKnee: [-55, 75], lFoot: [-70, 175],
-      rKnee: [55, 75], rFoot: [70, 175],
-    },
-    hyperfocus: {
-      lShoulder: [-65, -110], lHand: [-115, -35],
-      rShoulder: [65, -110], rHand: [115, -35],
-      lKnee: [-50, 80], lFoot: [-65, 180],
-      rKnee: [50, 80], rFoot: [65, 180],
-    },
-    catching: {
-      lShoulder: [-80, -145], lHand: [-160, -70],
-      rShoulder: [95, -155], rHand: [220, -185],
-      lKnee: [-85, 65], lFoot: [-140, 145],
-      rKnee: [65, 85], rFoot: [40, 180],
-    },
-    exhausted: {
-      lShoulder: [-55, -75], lHand: [-45, 45],
-      rShoulder: [55, -75], rHand: [45, 45],
-      lKnee: [-70, 95], lFoot: [-85, 180],
-      rKnee: [70, 95], rFoot: [85, 180],
-    },
-    hero: {
-      lShoulder: [-75, -115], lHand: [-125, -10],
-      rShoulder: [75, -115], rHand: [125, -10],
-      lKnee: [-55, 85], lFoot: [-75, 185],
-      rKnee: [55, 85], rFoot: [75, 185],
-    },
+  const armMap = {
+    inspect: { l: [-75, -135, -135, -65], r: [85, -155, 165, -210] },
+    mindblown: { l: [-95, -165, -70, -250], r: [95, -165, 70, -250] },
+    floating: { l: [-95, -110, -165, -150], r: [95, -110, 165, -150] },
+    turning: { l: [-55, -125, -120, -90], r: [95, -135, 185, -135] },
+    scanning: { l: [-70, -120, -95, -20], r: [85, -150, 145, -185] },
+    hero: { l: [-80, -115, -130, -15], r: [80, -115, 130, -15] },
   }[pose];
 
   return (
-    <g transform={`translate(${x}, ${y}) rotate(${rot + b(9, 0.8)}) scale(${sx}, ${sy})`}>
-      {/* Outer Aura Glow */}
-      <circle cx={0} cy={-80} r={190} fill={accent} opacity={0.09} />
+    <g transform={`translate(${x}, ${y + floatY}) rotate(${rot + b(9, 0.7)}) scale(${scale})`}>
+      {/* Holographic Floor Ring Under Character */}
+      <ellipse cx={0} cy={175} rx={115} ry={24} fill="none" stroke={accent} strokeWidth={3} strokeDasharray="16 10" opacity={0.6} />
+      <ellipse cx={0} cy={175} rx={85} ry={16} fill={accent} opacity={0.18} />
 
-      {/* Spine / Ribcage Armor Lines */}
+      {/* Torso Spine */}
       <path
-        d={`M ${headX} ${headY + 82} Q ${b(10, 5)} ${-80} ${b(11, 4)} ${15}`}
-        stroke="#F4F6FA"
+        d={`M ${headX} ${headY + 80} Q ${b(10, 4)} -75 ${b(11, 3)} 20`}
+        stroke="#F8FAFC"
         strokeWidth={16}
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* Glowing Cyan Atom Core on Chest (Brand Mascot Signature) */}
-      <g transform={`translate(${b(12, 2)}, ${-95 + b(13, 2)})`}>
-        {[0, 60, 120].map((angle, idx) => {
-          const eAngle = (frame * 0.12 + idx * 2.1) % (Math.PI * 2);
-          const ex = Math.cos(eAngle) * 78;
-          const ey = Math.sin(eAngle) * 26;
+      {/* Signature Glowing Atom Core on Chest */}
+      <g transform={`translate(${b(12, 1.5)}, ${-88 + b(13, 1.5)})`}>
+        {[0, 60, 120].map((deg, i) => {
+          const ang = (frame * 0.1 + i * 2.09) % (Math.PI * 2);
           return (
-            <g key={idx} transform={`rotate(${angle})`}>
-              <ellipse
-                cx={0}
-                cy={0}
-                rx={78}
-                ry={26}
-                fill="none"
-                stroke={accent}
-                strokeWidth={3.5}
-                opacity={0.75}
-              />
-              <circle cx={ex} cy={ey} r={7} fill="#FFFFFF" stroke={accent} strokeWidth={3} />
+            <g key={i} transform={`rotate(${deg})`}>
+              <ellipse cx={0} cy={0} rx={74} ry={25} fill="none" stroke={accent} strokeWidth={3.5} opacity={0.85} />
+              <circle cx={Math.cos(ang) * 74} cy={Math.sin(ang) * 25} r={6.5} fill="#FFFFFF" stroke={accent} strokeWidth={3} />
             </g>
           );
         })}
         <circle cx={0} cy={0} r={14} fill={accent} />
-        <circle cx={0} cy={0} r={7} fill="#FFFFFF" />
+        <circle cx={0} cy={0} r={6} fill="#FFFFFF" />
       </g>
 
-      {/* Articulated Arms with Elbows & Boiling Ink */}
+      {/* Arms */}
       <path
-        d={`M 0 -135 Q ${limbs.lShoulder[0] + b(20, 4)} ${limbs.lShoulder[1] + b(21, 4)} ${limbs.lHand[0] + b(22, 4)} ${limbs.lHand[1] + b(23, 4)}`}
-        stroke="#F4F6FA"
+        d={`M 0 -130 Q ${armMap.l[0] + b(20, 3)} ${armMap.l[1]} ${armMap.l[2] + b(21, 4)} ${armMap.l[3]}`}
+        stroke="#F8FAFC"
         strokeWidth={14}
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d={`M 0 -135 Q ${limbs.rShoulder[0] + b(24, 4)} ${limbs.rShoulder[1] + b(25, 4)} ${limbs.rHand[0] + b(26, 4)} ${limbs.rHand[1] + b(27, 4)}`}
-        stroke="#F4F6FA"
+        d={`M 0 -130 Q ${armMap.r[0] + b(22, 3)} ${armMap.r[1]} ${armMap.r[2] + b(23, 4)} ${armMap.r[3]}`}
+        stroke="#F8FAFC"
         strokeWidth={14}
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* Articulated Legs with Knees */}
+      {/* Legs */}
       <path
-        d={`M 0 15 Q ${limbs.lKnee[0] + b(30, 4)} ${limbs.lKnee[1]} ${limbs.lFoot[0] + b(31, 4)} ${limbs.lFoot[1]}`}
-        stroke="#F4F6FA"
+        d={`M 0 20 Q ${-55 + b(30, 3)} 95 ${-70 + b(31, 3)} 170`}
+        stroke="#F8FAFC"
         strokeWidth={15}
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d={`M 0 15 Q ${limbs.rKnee[0] + b(32, 4)} ${limbs.rKnee[1]} ${limbs.rFoot[0] + b(33, 4)} ${limbs.rFoot[1]}`}
-        stroke="#F4F6FA"
+        d={`M 0 20 Q ${55 + b(32, 3)} 95 ${70 + b(33, 3)} 170`}
+        stroke="#F8FAFC"
         strokeWidth={15}
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* Head with Double Ink Boil */}
-      <circle
-        cx={headX}
-        cy={headY}
-        r={84 + b(40, 1.5)}
-        fill="#0D121F"
-        stroke={accent}
-        strokeWidth={4}
-        opacity={0.6}
-      />
-      <circle
-        cx={headX}
-        cy={headY}
-        r={80 + b(41, 1.5)}
-        fill="#101626"
-        stroke="#F4F6FA"
-        strokeWidth={12}
-      />
+      {/* Head */}
+      <circle cx={headX} cy={headY} r={80 + b(40, 1.4)} fill="#0B101E" stroke="#F8FAFC" strokeWidth={12} />
+      <circle cx={headX} cy={headY} r={86} fill="none" stroke={accent} strokeWidth={2.5} opacity={0.55} />
 
-      {/* Expressive Eyes & Dilated Pupils */}
-      {(() => {
-        const pupilRadius = pose === 'hyperfocus' || pose === 'catching' ? 15 : pose === 'panic' ? 6 : 10;
-        const eyeRadius = pose === 'exhausted' ? 12 : 24;
-        return (
-          <g>
-            {/* Left Eye */}
-            <ellipse cx={headX - 28} cy={headY - 8} rx={22} ry={eyeRadius} fill="#FFFFFF" />
-            <circle cx={headX - 28 + b(50, 1.5)} cy={headY - 8} r={pupilRadius} fill={accent} />
-            <circle cx={headX - 28 + b(50, 1.5)} cy={headY - 8} r={pupilRadius * 0.45} fill="#05070B" />
-
-            {/* Right Eye */}
-            <ellipse cx={headX + 28} cy={headY - 8} rx={22} ry={eyeRadius} fill="#FFFFFF" />
-            <circle cx={headX + 28 + b(51, 1.5)} cy={headY - 8} r={pupilRadius} fill={accent} />
-            <circle cx={headX + 28 + b(51, 1.5)} cy={headY - 8} r={pupilRadius * 0.45} fill="#05070B" />
-
-            {/* Eyebrows */}
-            <path
-              d={
-                pose === 'panic' || pose === 'falling'
-                  ? `M ${headX - 50} ${headY - 32} L ${headX - 10} ${headY - 46}`
-                  : `M ${headX - 50} ${headY - 42} L ${headX - 10} ${headY - 28}`
-              }
-              stroke="#F4F6FA"
-              strokeWidth={7}
-              strokeLinecap="round"
-            />
-            <path
-              d={
-                pose === 'panic' || pose === 'falling'
-                  ? `M ${headX + 50} ${headY - 32} L ${headX + 10} ${headY - 46}`
-                  : `M ${headX + 50} ${headY - 42} L ${headX + 10} ${headY - 28}`
-              }
-              stroke="#F4F6FA"
-              strokeWidth={7}
-              strokeLinecap="round"
-            />
-          </g>
-        );
-      })()}
+      {/* Expressive Cyber Eyes */}
+      <ellipse cx={headX - 27} cy={headY - 6} rx={20} ry={pose === 'mindblown' ? 25 : 19} fill="#FFFFFF" />
+      <ellipse cx={headX + 27} cy={headY - 6} rx={20} ry={pose === 'mindblown' ? 25 : 19} fill="#FFFFFF" />
+      <circle cx={headX - 27 + b(41, 1.5)} cy={headY - 6} r={10} fill={accent} />
+      <circle cx={headX + 27 + b(42, 1.5)} cy={headY - 6} r={10} fill={accent} />
+      <circle cx={headX - 27} cy={headY - 6} r={4} fill="#020617" />
+      <circle cx={headX + 27} cy={headY - 6} r={4} fill="#020617" />
 
       {/* Mouth */}
-      {pose === 'panic' || pose === 'falling' ? (
-        <ellipse cx={headX} cy={headY + 38} rx={20} ry={25} fill="#FF2D55" stroke="#F4F6FA" strokeWidth={5} />
+      {pose === 'mindblown' ? (
+        <ellipse cx={headX} cy={headY + 38} rx={16} ry={20} fill={accent} stroke="#F8FAFC" strokeWidth={4} />
       ) : (
         <path
-          d={`M ${headX - 24} ${headY + 36} Q ${headX} ${headY + (pose === 'hero' ? 52 : 26)} ${headX + 24} ${headY + 36}`}
-          stroke="#F4F6FA"
-          strokeWidth={7}
+          d={`M ${headX - 22} ${headY + 36} Q ${headX} ${headY + 46} ${headX + 22} ${headY + 36}`}
+          stroke="#F8FAFC"
+          strokeWidth={6}
           strokeLinecap="round"
           fill="none"
         />
-      )}
-
-      {/* Claude Animation Base: Painted Reaction Emotes (!, Sparks, Sweat) */}
-      {(pose === 'falling' || pose === 'panic') && (
-        <g transform={`translate(${headX + 115}, ${headY - 95}) rotate(15)`}>
-          <path d="M 0 0 L 8 -55 M 22 8 L 42 -42 M -18 12 L -38 -35" stroke="#FF2D55" strokeWidth={8} strokeLinecap="round" />
-        </g>
       )}
     </g>
   );
 };
 
-// =========================================================
-// 4. TEN 3-SECOND HIGH-DENSITY SHOTS (180 FRAMES EACH)
-// =========================================================
+// ============================================================================
+// 6. 24 BESPOKE SCIENTIFIC VISUAL ENGINES (1 FOR EVERY SUB-SCENE)
+// ============================================================================
 
-// SHOT 1 (0-3s): Slow-Motion Fall & Suspended Coffee Droplets
-const Shot01_SlowMoSlip: React.FC = () => {
-  const f = useCurrentFrame();
-  const camZoom = interpolate(f, [0, 35, 180], [1.35, 1.0, 1.12], { easing: Easing.out(Easing.cubic) });
-  const fallAngle = interpolate(f, [0, 40, 180], [0, -38, -52]);
+const SceneVisualRouter: React.FC<{
+  chunk: number;
+  subIdx: number;
+  localFrame: number;
+  subDurationFrames: number;
+  globalFrame: number;
+  accent: string;
+}> = ({ chunk, subIdx, localFrame, subDurationFrames, globalFrame, accent }) => {
+  const p = clamp(localFrame / subDurationFrames);
+  const pop = spring({ frame: localFrame, fps: FPS, config: { damping: 13, stiffness: 160 } });
+  const sec = globalFrame / FPS;
 
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent="#FF2D55" shotIndex={1} title="TIME DILATION HOOK" metric="SPEED: 0.05x" />
-      <svg width={W} height={H} style={{ transform: `scale(${camZoom})` }}>
-        {/* Speed Lines */}
-        {Array.from({ length: 16 }).map((_, i) => {
-          const y = 250 + i * 95;
-          return (
-            <line
-              key={i}
-              x1={0}
-              y1={y}
-              x2={W}
-              y2={y - 120}
-              stroke="#FF2D55"
-              strokeWidth={2}
-              strokeDasharray="40 90"
-              strokeDashoffset={-f * 4}
-              opacity={0.35}
-            />
-          );
-        })}
-
-        {/* Floating Coffee Cup & Suspended Liquid Droplets in Mid-Air */}
-        <g transform={`translate(${310 - f * 0.4}, ${640 - f * 0.5}) rotate(${-25 - f * 0.3})`}>
-          <rect x={-45} y={-55} width={90} height={110} rx={12} fill="#F4F6FA" stroke="#101626" strokeWidth={8} />
-          <path d="M 45 -30 C 85 -30, 85 30, 45 30" fill="none" stroke="#F4F6FA" strokeWidth={10} />
-          {/* Frozen droplets */}
-          {[
-            [-70, -90, 16],
-            [-120, -140, 22],
-            [-40, -165, 14],
-            [-165, -95, 18],
-            [-95, -210, 12],
-          ].map(([dx, dy, r], idx) => (
-            <circle
-              key={idx}
-              cx={dx + Math.sin(f * 0.05 + idx) * 4}
-              cy={dy + Math.cos(f * 0.05 + idx) * 4}
-              r={r}
-              fill="#D97706"
-              stroke="#FDE68A"
-              strokeWidth={3}
-            />
-          ))}
-        </g>
-
-        {/* HUD Lock Box on Floating Cup */}
-        <g transform={`translate(${210 - f * 0.4}, ${490 - f * 0.5})`}>
-          <rect x={-90} y={-90} width={180} height={180} fill="none" stroke="#00F0FF" strokeWidth={3} strokeDasharray="20 10" />
-          <text x={105} y={-40} fill="#00F0FF" fontSize={24} fontFamily="monospace" fontWeight="bold">
-            GRAVITY: FROZEN
-          </text>
-          <text x={105} y={-8} fill="#FFFFFF" fontSize={28} fontFamily="monospace" fontWeight="900">
-            9.8 m/s² → 0.2
-          </text>
-        </g>
-
-        <DetailedAtomStickman
-          frame={f}
-          x={620}
-          y={1180}
-          scale={1.45}
-          rot={fallAngle}
-          pose="falling"
-          accent="#FF2D55"
-        />
-      </svg>
-    </AbsoluteFill>
-  );
-};
-
-// SHOT 2 (3-6s): Camera Shutter Aperture & 24 FPS -> 240 FPS Overclock
-const Shot02_FpsOverclock: React.FC = () => {
-  const f = useCurrentFrame();
-  const fpsValue = Math.floor(interpolate(f, [20, 130], [24, 240], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
-  const isOverclock = f > 60;
-  const accent = isOverclock ? '#00F0FF' : '#F59E0B';
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent={accent} shotIndex={2} title="VISUAL CORTEX FPS" metric={`${fpsValue} FPS`} />
-      <svg width={W} height={H}>
-        {/* Rotating Mechanical Camera Aperture */}
-        <g transform="translate(540, 790)">
-          <circle cx={0} cy={0} r={340} fill="#0B101D" stroke={accent} strokeWidth={8} />
-          <circle cx={0} cy={0} r={285} fill="none" stroke="#FFFFFF" strokeWidth={2} strokeDasharray="12 18" transform={`rotate(${f * 2})`} />
-
-          {/* 8 Aperture Blades */}
-          {Array.from({ length: 8 }).map((_, i) => {
-            const bladeRot = i * 45 + interpolate(f, [0, 90], [0, 32], { extrapolateRight: 'clamp' });
-            return (
-              <g key={i} transform={`rotate(${bladeRot})`}>
-                <path d="M 90 -40 L 270 -110 L 270 30 Z" fill="rgba(20,30,48,0.9)" stroke={accent} strokeWidth={3} />
-              </g>
-            );
-          })}
-
-          {/* Center FPS DigitRoll Readout */}
-          <text x={0} y={20} textAnchor="middle" fill="#FFFFFF" fontSize={125} fontFamily="monospace" fontWeight="900">
-            {fpsValue}
-          </text>
-          <text x={0} y={75} textAnchor="middle" fill={accent} fontSize={32} fontFamily="monospace" fontWeight="bold" letterSpacing={6}>
-            {isOverclock ? 'OVERCLOCK ACTIVE' : 'NORMAL FPS'}
-          </text>
-        </g>
-
-        <DetailedAtomStickman frame={f} x={540} y={1460} scale={1.15} pose="hyperfocus" accent={accent} />
-      </svg>
-    </AbsoluteFill>
-  );
-};
-
-// SHOT 3 (6-9s): 3D Neural Brain & Amygdala Hijack Radar
-const Shot03_AmygdalaHijack: React.FC = () => {
-  const f = useCurrentFrame();
-  const rotY = f * 0.035;
-  const pulse = Math.sin(f * 0.35) * 0.5 + 0.5;
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent="#FF2D55" shotIndex={3} title="AMYGDALA HIJACK" metric="LATENCY: 12ms" />
-      <svg width={W} height={H}>
-        <g transform="translate(540, 820)">
-          {/* Radar Sweep Rings */}
-          {[160, 280, 400].map((r, i) => (
-            <circle key={i} cx={0} cy={0} r={r} fill="none" stroke="#FF2D55" strokeWidth={2} strokeDasharray="24 14" opacity={0.35} />
-          ))}
-          <line
-            x1={0}
-            y1={0}
-            x2={Math.cos(f * 0.12) * 400}
-            y2={Math.sin(f * 0.12) * 400}
-            stroke="#FF2D55"
-            strokeWidth={6}
-            opacity={0.75}
-          />
-
-          {/* 95-Node 3D Point-Cloud Brain */}
-          {Array.from({ length: 95 }).map((_, i) => {
-            const phi = Math.acos(1 - (2 * (i + 0.5)) / 95);
-            const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-            const rawX = Math.sin(phi) * Math.cos(theta);
-            const x3d = rawX * 280 + (rawX >= 0 ? 35 : -35);
-            const y3d = Math.cos(phi) * 210;
-            const z3d = Math.sin(phi) * Math.sin(theta) * 310;
-
-            const rx = x3d * Math.cos(rotY) - z3d * Math.sin(rotY);
-            const rz = x3d * Math.sin(rotY) + z3d * Math.cos(rotY);
-            const scale3d = 900 / (900 - rz);
-
-            return (
-              <g key={i}>
-                <line x1={0} y1={20} x2={rx * scale3d} y2={y3d * scale3d} stroke="#00F0FF" strokeWidth={1.2} opacity={0.2} />
-                <circle cx={rx * scale3d} cy={y3d * scale3d} r={5.5 * scale3d} fill="#00F0FF" opacity={0.75 * scale3d} />
-              </g>
-            );
-          })}
-
-          {/* Glowing Red Amygdala Core Inside Brain */}
-          <circle cx={0} cy={20} r={55 + pulse * 25} fill="rgba(255,45,85,0.35)" />
-          <circle cx={0} cy={20} r={34} fill="#FF2D55" stroke="#FFFFFF" strokeWidth={5} />
-
-          {/* Callout Banner */}
-          <g transform="translate(0, 340)">
-            <rect x={-320} y={-45} width={640} height={90} rx={16} fill="rgba(255,45,85,0.2)" stroke="#FF2D55" strokeWidth={4} />
-            <text x={0} y={12} textAnchor="middle" fill="#FFFFFF" fontSize={40} fontFamily="monospace" fontWeight="900">
-              ⚠️ AMYGDALA ALARM TRIGGERED
+  // ------------------------------------------------------------------------
+  // CHUNK 0: SIMULATION HOOK (4 SUB-SHOTS)
+  // ------------------------------------------------------------------------
+  if (chunk === 0) {
+    if (subIdx === 0) {
+      // 1A: Wireframe Globe Dissolving Into Matrix Code Blocks
+      return (
+        <svg width={W} height={H}>
+          <g transform={`translate(540, 660) scale(${0.85 + pop * 0.15})`}>
+            <circle cx={0} cy={0} r={270} fill="rgba(0,240,255,0.06)" stroke="#00F0FF" strokeWidth={5} strokeDasharray="30 15" />
+            {[-160, -80, 0, 80, 160].map((lat, i) => (
+              <ellipse key={i} cx={0} cy={lat} rx={Math.sqrt(Math.max(10, 270 * 270 - lat * lat))} ry={36} fill="none" stroke="#00F0FF" strokeWidth={3} opacity={0.65} />
+            ))}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ellipse key={i} cx={0} cy={0} rx={45 + i * 38} ry={270} fill="none" stroke="#00F0FF" strokeWidth={2.5} opacity={0.5} transform={`rotate(${sec * 15 + i * 30})`} />
+            ))}
+            <text x={0} y={12} textAnchor="middle" fill="#FFFFFF" fontSize={44} fontFamily="monospace" fontWeight="900">
+              WORLD_SIM.v9.4
             </text>
           </g>
-        </g>
-      </svg>
-    </AbsoluteFill>
-  );
-};
+          <AtomStickmanRig frame={globalFrame} x={540} y={1290} scale={1.15} pose="inspect" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 1) {
+      // 1B: Elon Musk / Scientist Simulation Probability Gauge (99.9%)
+      const pct = interpolate(localFrame, [0, subDurationFrames * 0.65], [12.4, 99.9], { extrapolateRight: 'clamp' }).toFixed(1);
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 640)">
+            <rect x={-410} y={-230} width={820} height={460} rx={32} fill="#0B1222" stroke="#F59E0B" strokeWidth={6} />
+            <text x={0} y={-135} textAnchor="middle" fill="#F59E0B" fontSize={32} fontFamily="monospace" fontWeight="bold" letterSpacing={3}>
+              BASE REALITY ODDS: 1 IN BILLIONS
+            </text>
+            <text x={0} y={35} textAnchor="middle" fill="#FFFFFF" fontSize={145} fontFamily="monospace" fontWeight="900">
+              {`${pct}%`}
+            </text>
+            <text x={0} y={125} textAnchor="middle" fill="#10B981" fontSize={36} fontFamily="sans-serif" fontWeight="900">
+              PROBABILITY WE ARE IN A GAME
+            </text>
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1290} scale={1.15} pose="mindblown" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 2) {
+      // 1C: 3D Rotating Hologram Hypercube (Tesseract) Around Stickman
+      const vertices = [
+        [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+        [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],
+      ];
+      const edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0],
+        [4, 5], [5, 6], [6, 7], [7, 4],
+        [0, 4], [1, 5], [2, 6], [3, 7],
+      ];
+      const aY = sec * 1.4;
+      const aX = sec * 0.9;
+      const project = ([vx, vy, vz]: number[], size: number) => {
+        const x1 = vx * Math.cos(aY) - vz * Math.sin(aY);
+        const z1 = vx * Math.sin(aY) + vz * Math.cos(aY);
+        const y2 = vy * Math.cos(aX) - z1 * Math.sin(aX);
+        const z2 = vy * Math.sin(aX) + z1 * Math.cos(aX);
+        const s = 700 / (700 - z2 * size);
+        return [x1 * size * s, y2 * size * s];
+      };
+      const outerPts = vertices.map((v) => project(v, 220));
+      const innerPts = vertices.map((v) => project(v, 110));
 
-// SHOT 4 (9-12s): Circuit Board Breaker (Logic OFF -> Survival ON)
-const Shot04_CircuitBreaker: React.FC = () => {
-  const f = useCurrentFrame();
-  const switched = f >= 55;
-  const switchSpring = spring({ frame: f - 55, fps: FPS, config: { damping: 12, stiffness: 220 } });
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent={switched ? '#00F0FF' : '#FF9500'} shotIndex={4} title="NEURAL ROUTING" metric={switched ? 'SURVIVAL: ON' : 'ROUTING...'} />
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 680)">
+            {edges.map(([e1, e2], idx) => (
+              <React.Fragment key={idx}>
+                <line x1={outerPts[e1][0]} y1={outerPts[e1][1]} x2={outerPts[e2][0]} y2={outerPts[e2][1]} stroke="#A855F7" strokeWidth={5} />
+                <line x1={innerPts[e1][0]} y1={innerPts[e1][1]} x2={innerPts[e2][0]} y2={innerPts[e2][1]} stroke="#00F0FF" strokeWidth={4} />
+              </React.Fragment>
+            ))}
+            {outerPts.map((pt, idx) => (
+              <line key={idx} x1={pt[0]} y1={pt[1]} x2={innerPts[idx][0]} y2={innerPts[idx][1]} stroke="#FFFFFF" strokeWidth={2} opacity={0.5} />
+            ))}
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1290} scale={1.15} pose="floating" accent={accent} />
+        </svg>
+      );
+    }
+    // 1D: AI Puppet Control Strings Attached to Stickman
+    return (
       <svg width={W} height={H}>
-        {/* Copper PCB Circuit Traces */}
-        {Array.from({ length: 12 }).map((_, i) => {
-          const y = 300 + i * 95;
-          const activeColor = switched ? '#00F0FF' : '#FF3B30';
-          return (
-            <g key={i}>
+        <g transform="translate(540, 290)">
+          <rect x={-340} y={-50} width={680} height={100} rx={20} fill="#1E1028" stroke="#FF2D55" strokeWidth={5} />
+          <text x={0} y={15} textAnchor="middle" fill="#FF2D55" fontSize={40} fontFamily="monospace" fontWeight="900">
+            AI_AGENT_CONTROLLER // NPC_01
+          </text>
+        </g>
+        {/* Glowing Laser Puppet Strings */}
+        {[
+          [320, 340, 390, 1130],
+          [540, 340, 540, 1050],
+          [760, 340, 690, 1130],
+          [420, 340, 470, 1440],
+          [660, 340, 610, 1440],
+        ].map(([x1, y1, x2, y2], i) => (
+          <g key={i}>
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#FF2D55" strokeWidth={4} strokeDasharray="14 10" />
+            <circle cx={x2} cy={y2} r={14} fill="#FF2D55" />
+          </g>
+        ))}
+        <AtomStickmanRig frame={globalFrame} x={540} y={1270} scale={1.2} pose="floating" accent={accent} />
+      </svg>
+    );
+  }
+
+  // ------------------------------------------------------------------------
+  // CHUNK 1: PROOF 1 - PIXELS & PLANCK LENGTH (4 SUB-SHOTS)
+  // ------------------------------------------------------------------------
+  if (chunk === 1) {
+    if (subIdx === 0) {
+      // 2A: Magnifying Loupe Revealing RGB Pixel Matrix
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 660)">
+            <circle cx={0} cy={0} r={310} fill="#09101D" stroke="#00F0FF" strokeWidth={12} />
+            {Array.from({ length: 7 }).map((_, r) =>
+              Array.from({ length: 7 }).map((__, c) => {
+                const px = (c - 3) * 68;
+                const py = (r - 3) * 68;
+                if (px * px + py * py > 250 * 250) return null;
+                return (
+                  <g key={`${r}-${c}`} transform={`translate(${px - 26}, ${py - 26})`}>
+                    <rect x={0} y={0} width={16} height={52} rx={4} fill="#FF2D55" />
+                    <rect x={18} y={0} width={16} height={52} rx={4} fill="#10B981" />
+                    <rect x={36} y={0} width={16} height={52} rx={4} fill="#3B82F6" />
+                  </g>
+                );
+              })
+            )}
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1300} scale={1.1} pose="inspect" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 1) {
+      // 2B: Smooth Sphere Morphing Into 3D Voxel Blocks
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 670)">
+            {Array.from({ length: 9 }).map((_, r) =>
+              Array.from({ length: 9 }).map((__, c) => {
+                const dx = c - 4;
+                const dy = r - 4;
+                if (dx * dx + dy * dy > 18) return null;
+                const jiggle = Math.sin(sec * 6 + r + c) * 6;
+                return (
+                  <rect
+                    key={`${r}-${c}`}
+                    x={dx * 58 - 26}
+                    y={dy * 58 - 26 + jiggle}
+                    width={52}
+                    height={52}
+                    rx={6}
+                    fill="#10B981"
+                    stroke="#052E16"
+                    strokeWidth={4}
+                  />
+                );
+              })
+            )}
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1300} scale={1.1} pose="scanning" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 2) {
+      // 2C: Quantum Laser Caliper Measuring Planck Length (1.6 x 10^-35 m)
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 660)">
+            <line x1={-360} y1={-160} x2={-360} y2={160} stroke="#F59E0B" strokeWidth={10} />
+            <line x1={360} y1={-160} x2={360} y2={160} stroke="#F59E0B" strokeWidth={10} />
+            <line x1={-360} y1={0} x2={360} y2={0} stroke="#00F0FF" strokeWidth={6} strokeDasharray="16 12" />
+            <circle cx={0} cy={0} r={45 + Math.sin(sec * 12) * 10} fill="#F59E0B" />
+            <circle cx={0} cy={0} r={18} fill="#FFFFFF" />
+            <rect x={-330} y={-240} width={660} height={95} rx={16} fill="#111827" stroke="#F59E0B" strokeWidth={4} />
+            <text x={0} y={-178} textAnchor="middle" fill="#F59E0B" fontSize={46} fontFamily="monospace" fontWeight="900">
+              PLANCK PIXEL: 1.6 × 10⁻³⁵ m
+            </text>
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1300} scale={1.15} pose="mindblown" accent={accent} />
+        </svg>
+      );
+    }
+    // 2D: Minimum Resolution Limit Warning HUD
+    return (
+      <svg width={W} height={H}>
+        <g transform="translate(540, 660)">
+          <rect x={-420} y={-220} width={840} height={440} rx={24} fill="#1A0B16" stroke="#FF2D55" strokeWidth={6} />
+          <text x={0} y={-85} textAnchor="middle" fill="#FF2D55" fontSize={40} fontFamily="monospace" fontWeight="900">
+            ⚠️ SPACE-TIME LIMIT REACHED
+          </text>
+          <text x={0} y={20} textAnchor="middle" fill="#FFFFFF" fontSize={68} fontFamily="sans-serif" fontWeight="900">
+            UNIVERSE RESOLUTION
+          </text>
+          <text x={0} y={115} textAnchor="middle" fill="#00F0FF" fontSize={44} fontFamily="monospace" fontWeight="bold">
+            NO SUB-PLANCK DATA EXISTS
+          </text>
+        </g>
+        <AtomStickmanRig frame={globalFrame} x={540} y={1300} scale={1.15} pose="inspect" accent={accent} />
+      </svg>
+    );
+  }
+
+  // ------------------------------------------------------------------------
+  // CHUNK 2: PROOF 2 - DOUBLE SLIT & FRUSTUM CULLING (4 SUB-SHOTS)
+  // ------------------------------------------------------------------------
+  if (chunk === 2) {
+    if (subIdx === 0) {
+      // 3A: Double Slit Particle Cannon
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 680)">
+            {/* Barrier with Two Slits */}
+            <rect x={-20} y={-280} width={40} height={160} fill="#A855F7" />
+            <rect x={-20} y={-50} width={40} height={100} fill="#A855F7" />
+            <rect x={-20} y={120} width={40} height={160} fill="#A855F7" />
+            {/* Back Detector Wall */}
+            <rect x={360} y={-280} width={28} height={560} fill="#1E293B" stroke="#00F0FF" strokeWidth={4} />
+            {/* Firing Quantum Photons */}
+            {Array.from({ length: 14 }).map((_, i) => {
+              const prog = ((localFrame * 3 + i * 25) % 180) / 180;
+              const px = interpolate(prog, [0, 1], [-380, 355]);
+              const slitY = i % 2 === 0 ? -85 : 85;
+              const py = prog < 0.5 ? interpolate(prog, [0, 0.5], [0, slitY]) : slitY + Math.sin(prog * 18 + i) * 95;
+              return <circle key={i} cx={px} cy={py} r={12} fill="#00F0FF" />;
+            })}
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={240} y={1310} scale={1.1} pose="scanning" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 1) {
+      // 3B: Game Engine Frustum Culling Radar (Rendered Front Cone vs Wireframe Back)
+      const coneRot = Math.sin(sec * 2.2) * 35;
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 680)">
+            <circle cx={0} cy={0} r={330} fill="#08111E" stroke="#334155" strokeWidth={4} strokeDasharray="16 12" />
+            <g transform={`rotate(${coneRot})`}>
+              {/* Active Player FOV Cone */}
+              <path d="M 0 0 L 290 -180 A 330 330 0 0 1 290 180 Z" fill="rgba(16, 185, 129, 0.28)" stroke="#10B981" strokeWidth={5} />
+              <rect x={140} y={-95} width={85} height={85} rx={10} fill="#10B981" />
+              <rect x={165} y={20} width={75} height={75} rx={10} fill="#00F0FF" />
+            </g>
+            {/* Unrendered Culled Objects Behind Player */}
+            <rect x={-230} y={-130} width={80} height={80} fill="none" stroke="#475569" strokeWidth={3} strokeDasharray="8 8" />
+            <rect x={-210} y={50} width={80} height={80} fill="none" stroke="#475569" strokeWidth={3} strokeDasharray="8 8" />
+            <circle cx={0} cy={0} r={28} fill="#FFFFFF" stroke="#10B981" strokeWidth={8} />
+            <text x={0} y={285} textAnchor="middle" fill="#10B981" fontSize={32} fontFamily="monospace" fontWeight="900">
+              FOV RENDERED · BEHIND UNLOADED
+            </text>
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.1} pose="turning" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 2) {
+      // 3C: Unobserved Probability Wave Interference (Observer Eye CLOSED)
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 650)">
+            <text x={0} y={-230} textAnchor="middle" fill="#00F0FF" fontSize={36} fontFamily="monospace" fontWeight="900">
+              👁️ OBSERVER: OFF (PROBABILITY WAVE)
+            </text>
+            {[0, 1, 2].map((w) => (
               <path
-                d={`M 80 ${y} L 340 ${y} L 420 ${y + 45} L 1000 ${y + 45}`}
+                key={w}
+                d={`M -420 0 Q -210 ${Math.sin(sec * 8 + w) * 220} 0 0 T 420 0`}
                 fill="none"
-                stroke={activeColor}
-                strokeWidth={5}
-                opacity={0.35}
+                stroke={w === 0 ? '#00F0FF' : '#A855F7'}
+                strokeWidth={8}
+                opacity={0.8}
               />
-              <circle
-                cx={interpolate((f * 8 + i * 90) % 920, [0, 920], [80, 1000])}
-                cy={y + 22}
-                r={8}
-                fill={activeColor}
-              />
-            </g>
-          );
-        })}
-
-        {/* Dual Heavy Industrial Neural Breakers */}
-        <g transform="translate(120, 480)">
-          {/* Panel 1: Prefrontal Logic */}
-          <rect x={0} y={0} width={840} height={320} rx={24} fill="#0E1525" stroke={switched ? '#475569' : '#00F0FF'} strokeWidth={6} />
-          <text x={50} y={95} fill="#94A3B8" fontSize={28} fontFamily="monospace" fontWeight="bold">
-            MODULE 01 · PREFRONTAL CORTEX
-          </text>
-          <text x={50} y={165} fill="#FFFFFF" fontSize={52} fontFamily="sans-serif" fontWeight="900">
-            LOGICAL THINKING
-          </text>
-          <rect x={560} y={90} width={220} height={130} rx={20} fill={switched ? '#FF2D55' : '#10B981'} />
-          <text x={670} y={172} textAnchor="middle" fill="#FFFFFF" fontSize={48} fontFamily="monospace" fontWeight="900">
-            {switched ? 'OFF' : 'ON'}
-          </text>
-        </g>
-
-        <g transform={`translate(120, 880) scale(${1 + switchSpring * 0.04})`}>
-          {/* Panel 2: Hindbrain Reflex */}
-          <rect x={0} y={0} width={840} height={320} rx={24} fill="#0E1525" stroke={switched ? '#00F0FF' : '#475569'} strokeWidth={6} />
-          <text x={50} y={95} fill="#00F0FF" fontSize={28} fontFamily="monospace" fontWeight="bold">
-            MODULE 02 · REFLEX OVERDRIVE
-          </text>
-          <text x={50} y={165} fill="#FFFFFF" fontSize={52} fontFamily="sans-serif" fontWeight="900">
-            INSTANT SURVIVAL
-          </text>
-          <rect x={560} y={90} width={220} height={130} rx={20} fill={switched ? '#00F0FF' : '#334155'} />
-          <text x={670} y={172} textAnchor="middle" fill="#05070B" fontSize={48} fontFamily="monospace" fontWeight="900">
-            {switched ? 'MAX' : 'IDLE'}
-          </text>
-        </g>
-      </svg>
-    </AbsoluteFill>
-  );
-};
-
-// SHOT 5 (12-15s): Adrenaline Bloodstream Blast & Pupil Dilation
-const Shot05_AdrenalineSurge: React.FC = () => {
-  const f = useCurrentFrame();
-  const pupilSize = interpolate(f, [15, 110], [38, 118], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.back(1.6)) });
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent="#F59E0B" shotIndex={5} title="EPINEPHRINE SURGE" metric="HEART: 185 BPM" />
+            ))}
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1300} scale={1.15} pose="floating" accent={accent} />
+        </svg>
+      );
+    }
+    // 3D: Observer Eye OPENS -> Instant Collapse Into Solid Reality Bars
+    return (
       <svg width={W} height={H}>
-        {/* High-Speed Adrenaline Molecules Shooting Upward */}
-        {Array.from({ length: 32 }).map((_, i) => {
-          const x = 90 + ((i * 89) % 900);
-          const y = 1920 - ((f * (18 + (i % 9) * 3) + i * 140) % 2100);
-          return (
-            <g key={i} transform={`translate(${x}, ${y})`}>
-              <line x1={0} y1={0} x2={0} y2={95} stroke="#F59E0B" strokeWidth={5} strokeLinecap="round" opacity={0.6} />
-              <circle cx={0} cy={0} r={10} fill="#FEF08A" />
-            </g>
-          );
-        })}
+        <g transform="translate(540, 640)">
+          <ellipse cx={0} cy={-110} rx={170} ry={95} fill="#0F172A" stroke="#FF2D55" strokeWidth={8} />
+          <circle cx={0} cy={-110} r={52} fill="#FF2D55" />
+          <circle cx={0} cy={-110} r={20} fill="#FFFFFF" />
+          {/* Two Solid Rendered Particle Bands */}
+          <rect x={-160} y={40} width={95} height={240} rx={14} fill="#00F0FF" stroke="#FFFFFF" strokeWidth={4} />
+          <rect x={65} y={40} width={95} height={240} rx={14} fill="#00F0FF" stroke="#FFFFFF" strokeWidth={4} />
+          <text x={0} y={345} textAnchor="middle" fill="#FFFFFF" fontSize={40} fontFamily="monospace" fontWeight="900">
+            OBSERVED → SOLID MATTER RENDERED!
+          </text>
+        </g>
+        <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="mindblown" accent={accent} />
+      </svg>
+    );
+  }
 
-        {/* Extreme Close-Up Cybernetic Eye Dilating */}
-        <g transform="translate(540, 780)">
-          <circle cx={0} cy={0} r={290} fill="#FFFFFF" stroke="#F59E0B" strokeWidth={14} />
-          {/* Iris Fibers */}
-          <circle cx={0} cy={0} r={175} fill="#00F0FF" />
-          {Array.from({ length: 24 }).map((_, i) => (
+  // ------------------------------------------------------------------------
+  // CHUNK 3: PROOF 3 - SPEED OF LIGHT & CPU CLOCK SPEED (4 SUB-SHOTS)
+  // ------------------------------------------------------------------------
+  if (chunk === 3) {
+    if (subIdx === 0) {
+      // 4A: Cosmic Speedometer Locked at 300,000 km/s
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 680)">
+            <path d="M -320 120 A 340 340 0 1 1 320 120" fill="none" stroke="#F59E0B" strokeWidth={26} strokeLinecap="round" />
             <line
-              key={i}
               x1={0}
-              y1={0}
-              x2={Math.cos((i * Math.PI) / 12) * 175}
-              y2={Math.sin((i * Math.PI) / 12) * 175}
-              stroke="#083344"
-              strokeWidth={4}
+              y1={80}
+              x2={240}
+              y2={-110 + boil(globalFrame, 5, 8)}
+              stroke="#FF2D55"
+              strokeWidth={14}
+              strokeLinecap="round"
+            />
+            <circle cx={0} cy={80} r={28} fill="#FFFFFF" />
+            <text x={0} y={210} textAnchor="middle" fill="#FFFFFF" fontSize={74} fontFamily="monospace" fontWeight="900">
+              3,00,000 KM/S
+            </text>
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="inspect" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 1) {
+      // 4B: Einstein Speed Wall Barrier
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 660)">
+            <rect x={220} y={-260} width={36} height={520} rx={10} fill="#FF2D55" />
+            <circle cx={200} cy={0} r={60 + (localFrame % 30) * 5} fill="none" stroke="#FF2D55" strokeWidth={6} opacity={1 - (localFrame % 30) / 30} />
+            <polygon points="-220,-65 185,0 -220,65" fill="#00F0FF" />
+            <text x={0} y={320} textAnchor="middle" fill="#FF2D55" fontSize={44} fontFamily="monospace" fontWeight="900">
+              EINSTEIN BARRIER: v ≤ c
+            </text>
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="scanning" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 2) {
+      // 4C: Giant 64-Pin Quantum CPU Processor Chip
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 660)">
+            {/* CPU Gold Pins */}
+            {Array.from({ length: 10 }).map((_, i) => {
+              const pos = -180 + i * 40;
+              return (
+                <React.Fragment key={i}>
+                  <line x1={pos} y1={-280} x2={pos} y2={280} stroke="#F59E0B" strokeWidth={8} />
+                  <line x1={-280} y1={pos} x2={280} y2={pos} stroke="#F59E0B" strokeWidth={8} />
+                </React.Fragment>
+              );
+            })}
+            <rect x={-210} y={-210} width={420} height={420} rx={28} fill="#0B1325" stroke="#00F0FF" strokeWidth={8} />
+            <rect x={-130} y={-130} width={260} height={260} rx={16} fill="#111C38" stroke="#F59E0B" strokeWidth={4} />
+            <text x={0} y={-15} textAnchor="middle" fill="#00F0FF" fontSize={36} fontFamily="monospace" fontWeight="900">
+              UNIVERSE_CPU
+            </text>
+            <text x={0} y={40} textAnchor="middle" fill="#FFFFFF" fontSize={32} fontFamily="monospace" fontWeight="bold">
+              MAX CLOCK: c
+            </text>
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="mindblown" accent={accent} />
+        </svg>
+      );
+    }
+    // 4D: Hardcoded System Constant Terminal
+    return (
+      <svg width={W} height={H}>
+        <g transform="translate(540, 650)">
+          <rect x={-430} y={-210} width={860} height={420} rx={24} fill="#06121C" stroke="#10B981" strokeWidth={6} />
+          <text x={-380} y={-110} fill="#94A3B8" fontSize={30} fontFamily="monospace">
+            // UNIVERSE ENGINE CONFIG
+          </text>
+          <text x={-380} y={-25} fill="#10B981" fontSize={38} fontFamily="monospace" fontWeight="900">
+            const MAX_LIGHT_SPEED = 299792;
+          </text>
+          <text x={-380} y={55} fill="#F59E0B" fontSize={34} fontFamily="monospace" fontWeight="bold">
+            Object.freeze(PHYSICS_ENGINE);
+          </text>
+          <text x={-380} y={140} fill="#FF2D55" fontSize={34} fontFamily="monospace" fontWeight="900">
+            STATUS: HARDCODED BY ADMIN 🔒
+          </text>
+        </g>
+        <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="inspect" accent={accent} />
+      </svg>
+    );
+  }
+
+  // ------------------------------------------------------------------------
+  // CHUNK 4: PROOF 4 - DNA ERROR-CORRECTING CODE (4 SUB-SHOTS)
+  // ------------------------------------------------------------------------
+  if (chunk === 4) {
+    if (subIdx === 0 || subIdx === 2) {
+      // 5A & 5C: 3D Rotating Binary DNA Double-Helix
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 660)">
+            {Array.from({ length: 16 }).map((_, i) => {
+              const y = -310 + i * 42;
+              const phase = sec * 3.5 + i * 0.45;
+              const x1 = Math.sin(phase) * 190;
+              const x2 = Math.sin(phase + Math.PI) * 190;
+              return (
+                <g key={i}>
+                  <line x1={x1} y1={y} x2={x2} y2={y} stroke="#A855F7" strokeWidth={4} opacity={0.75} />
+                  <circle cx={x1} cy={y} r={13} fill="#10B981" />
+                  <circle cx={x2} cy={y} r={13} fill="#00F0FF" />
+                  <text x={(x1 + x2) / 2} y={y + 6} textAnchor="middle" fill="#FFFFFF" fontSize={18} fontFamily="monospace" fontWeight="bold">
+                    {i % 2 === 0 ? '101' : '010'}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.12} pose="scanning" accent={accent} />
+        </svg>
+      );
+    }
+    if (subIdx === 1) {
+      // 5B: Claude Shannon 1940s Error-Correcting Parity Bit Stream
+      const fixed = p > 0.45;
+      return (
+        <svg width={W} height={H}>
+          <g transform="translate(540, 650)">
+            <text x={0} y={-190} textAnchor="middle" fill="#00F0FF" fontSize={36} fontFamily="monospace" fontWeight="900">
+              SHANNON PARITY CHECKSUM (1948)
+            </text>
+            {['1', '0', '1', fixed ? '1' : 'ERR', '0', '1'].map((bit, i) => {
+              const isTarget = i === 3;
+              const col = isTarget ? (fixed ? '#10B981' : '#FF2D55') : '#00F0FF';
+              return (
+                <g key={i} transform={`translate(${(i - 2.5) * 145}, 0)`}>
+                  <rect x={-60} y={-85} width={120} height={170} rx={18} fill="#0F172A" stroke={col} strokeWidth={6} />
+                  <text x={0} y={20} textAnchor="middle" fill={col} fontSize={48} fontFamily="monospace" fontWeight="900">
+                    {bit}
+                  </text>
+                </g>
+              );
+            })}
+            <text x={0} y={180} textAnchor="middle" fill={fixed ? '#10B981' : '#FF2D55'} fontSize={40} fontFamily="monospace" fontWeight="900">
+              {fixed ? '✓ DNA MUTATION AUTO-CORRECTED' : '⚠️ BIT CORRUPTION DETECTED...'}
+            </text>
+          </g>
+          <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="inspect" accent={accent} />
+        </svg>
+      );
+    }
+    // 5D: Super-Intelligent Programmer Compiler
+    return (
+      <svg width={W} height={H}>
+        <g transform="translate(540, 640)">
+          <rect x={-410} y={-210} width={820} height={420} rx={26} fill="#0D1322" stroke="#F59E0B" strokeWidth={6} />
+          <text x={-360} y={-110} fill="#F59E0B" fontSize={32} fontFamily="monospace" fontWeight="bold">
+            &gt; COMPILING: HUMAN_GENOME.DNA
+          </text>
+          <text x={-360} y={-30} fill="#00F0FF" fontSize={32} fontFamily="monospace">
+            checksum_verify(chromosome_23);
+          </text>
+          <text x={-360} y={50} fill="#10B981" fontSize={32} fontFamily="monospace">
+            0 ERRORS FOUND · AUTHOR: ARCHITECT
+          </text>
+          <text x={-360} y={135} fill="#FFFFFF" fontSize={40} fontFamily="sans-serif" fontWeight="900">
+            BIOLOGY IS COMPILED SOFTWARE
+          </text>
+        </g>
+        <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="mindblown" accent={accent} />
+      </svg>
+    );
+  }
+
+  // ------------------------------------------------------------------------
+  // CHUNK 5: CONCLUSION - ANCESTOR SIMULATION & OUTRO (4 SUB-SHOTS)
+  // ------------------------------------------------------------------------
+  if (subIdx === 0) {
+    // 6A: Future Civilization Dyson Megastructure Running Earth Simulations
+    return (
+      <svg width={W} height={H}>
+        <g transform="translate(540, 660)">
+          {[140, 230, 320].map((r, i) => (
+            <circle
+              key={i}
+              cx={0}
+              cy={0}
+              r={r}
+              fill="none"
+              stroke={i === 1 ? '#00F0FF' : '#A855F7'}
+              strokeWidth={8}
+              strokeDasharray="60 25"
+              transform={`rotate(${(i % 2 === 0 ? 1 : -1) * sec * 25})`}
             />
           ))}
-          {/* Dilating Pupil */}
-          <circle cx={0} cy={0} r={pupilSize} fill="#04060C" stroke="#FEF08A" strokeWidth={4} />
-          <circle cx={-55} cy={-55} r={26} fill="#FFFFFF" opacity={0.85} />
+          <circle cx={0} cy={0} r={75} fill="#00F0FF" />
+          <text x={0} y={390} textAnchor="middle" fill="#FFFFFF" fontSize={38} fontFamily="monospace" fontWeight="900">
+            YEAR 4099 · ANCESTOR SIMULATOR
+          </text>
         </g>
-
-        <text x={540} y={1220} textAnchor="middle" fill="#FEF08A" fontSize={44} fontFamily="monospace" fontWeight="900">
-          LIGHT INTAKE: +340%
+        <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="floating" accent={accent} />
+      </svg>
+    );
+  }
+  if (subIdx === 1) {
+    // 6B: Cosmic Hard Drive Platter Storing Humanity
+    return (
+      <svg width={W} height={H}>
+        <g transform="translate(540, 660)">
+          <circle cx={0} cy={0} r={300} fill="#0B1120" stroke="#A855F7" strokeWidth={10} />
+          <circle cx={0} cy={0} r={210} fill="none" stroke="#00F0FF" strokeWidth={3} strokeDasharray="20 12" transform={`rotate(${sec * 90})`} />
+          <circle cx={0} cy={0} r={120} fill="none" stroke="#10B981" strokeWidth={3} strokeDasharray="15 10" transform={`rotate(${-sec * 120})`} />
+          <circle cx={0} cy={0} r={45} fill="#A855F7" />
+          {/* Read/Write Actuator Arm */}
+          <polygon points="340,260 40,20 75,-15" fill="#F59E0B" />
+          <text x={0} y={375} textAnchor="middle" fill="#A855F7" fontSize={38} fontFamily="monospace" fontWeight="900">
+            SECTOR 7G // EARTH_ARCHIVE.ISO
+          </text>
+        </g>
+        <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.15} pose="inspect" accent={accent} />
+      </svg>
+    );
+  }
+  if (subIdx === 2) {
+    // 6C: Self-Aware Code Diagnostic Passed
+    return (
+      <svg width={W} height={H}>
+        <g transform="translate(540, 640)">
+          <circle cx={0} cy={0} r={240} fill="rgba(16,185,129,0.12)" stroke="#10B981" strokeWidth={8} />
+          <path d="M -95 10 L -25 80 L 115 -65" fill="none" stroke="#10B981" strokeWidth={24} strokeLinecap="round" strokeLinejoin="round" />
+          <text x={0} y={320} textAnchor="middle" fill="#10B981" fontSize={44} fontFamily="monospace" fontWeight="900">
+            CONSCIOUSNESS_CODE: VERIFIED
+          </text>
+        </g>
+        <AtomStickmanRig frame={globalFrame} x={540} y={1310} scale={1.2} pose="hero" accent={accent} />
+      </svg>
+    );
+  }
+  // 6D: Final Spotlight Hero Card & Subscribe CTA
+  return (
+    <svg width={W} height={H}>
+      <polygon points="540,0 110,1520 970,1520" fill="rgba(255, 45, 85, 0.1)" />
+      <g transform={`translate(540, 440) scale(${0.9 + Math.sin(sec * 8) * 0.04})`}>
+        <rect x={-410} y={-110} width={820} height={220} rx={34} fill="#140A1D" stroke="#FF2D55" strokeWidth={7} />
+        <text x={0} y={-20} textAnchor="middle" fill="#00F0FF" fontSize={36} fontFamily="monospace" fontWeight="900" letterSpacing={4}>
+          QUESTION YOUR REALITY
         </text>
-      </svg>
-    </AbsoluteFill>
+        <text x={0} y={55} textAnchor="middle" fill="#FFFFFF" fontSize={64} fontFamily="sans-serif" fontWeight="900">
+          SUBSCRIBE · ATOM STICKMAN
+        </text>
+      </g>
+      <AtomStickmanRig frame={globalFrame} x={540} y={1220} scale={1.42} pose="hero" accent="#00F0FF" />
+    </svg>
   );
 };
 
-// SHOT 6 (15-18s): Memory Snapshot Hyper-Stack (Video-Shotcraft 3D Cards)
-const Shot06_MemoryHyperStack: React.FC = () => {
-  const f = useCurrentFrame();
-  const cardCount = Math.min(14, Math.floor(f / 8) + 1);
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent="#A855F7" shotIndex={6} title="MEMORY WRITE SPEED" metric="1,200 MB/SEC" />
-      <svg width={W} height={H}>
-        {/* 3D Isometric Stacking Memory Frames */}
-        {Array.from({ length: cardCount }).map((_, i) => {
-          const age = f - i * 8;
-          const pop = clamp(age / 14);
-          const yOffset = 1120 - i * 58;
-          const xOffset = 540 + Math.sin(i * 0.6) * 25;
-
-          return (
-            <g
-              key={i}
-              transform={`translate(${xOffset}, ${yOffset}) scale(${0.75 + i * 0.022})`}
-              opacity={0.25 + (i / 14) * 0.75}
-            >
-              <rect
-                x={-340}
-                y={-95}
-                width={680}
-                height={190}
-                rx={18}
-                fill="#111827"
-                stroke={i === cardCount - 1 ? '#00F0FF' : '#A855F7'}
-                strokeWidth={5}
-              />
-              <text x={-300} y={-25} fill="#00F0FF" fontSize={26} fontFamily="monospace" fontWeight="bold">
-                {`SNAPSHOT_FRAME_00${i + 1}.RAW`}
-              </text>
-              <text x={-300} y={35} fill="#FFFFFF" fontSize={36} fontFamily="sans-serif" fontWeight="900">
-                {`HIGH-RES SENSORY LOG #${1040 + i * 7}`}
-              </text>
-              <rect x={210} y={-45} width={95} height={90} rx={12} fill="#A855F7" opacity={pop} />
-              <text x={257} y={15} textAnchor="middle" fill="#FFFFFF" fontSize={34} fontFamily="monospace" fontWeight="900">
-                4K
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-    </AbsoluteFill>
-  );
-};
-
-// SHOT 7 (18-21s): Split-Screen Clock Paradox (Real Time vs Brain Time)
-const Shot07_ClockParadox: React.FC = () => {
-  const f = useCurrentFrame();
-  const realSec = interpolate(f, [0, 180], [0, 0.5]).toFixed(2);
-  const brainSec = interpolate(f, [0, 180], [0, 5.0]).toFixed(2);
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent="#00F0FF" shotIndex={7} title="TEMPORAL PARADOX" metric="RATIO: 1 : 10" />
-      <svg width={W} height={H}>
-        {/* Top Clock: Real World Time (Slow) */}
-        <g transform="translate(540, 520)">
-          <rect x={-420} y={-210} width={840} height={420} rx={28} fill="rgba(15,23,42,0.88)" stroke="#64748B" strokeWidth={5} />
-          <text x={0} y={-115} textAnchor="middle" fill="#94A3B8" fontSize={32} fontFamily="monospace" fontWeight="bold">
-            REAL WORLD CLOCK
-          </text>
-          <text x={0} y={45} textAnchor="middle" fill="#FFFFFF" fontSize={135} fontFamily="monospace" fontWeight="900">
-            {`${realSec}s`}
-          </text>
-          <text x={0} y={135} textAnchor="middle" fill="#64748B" fontSize={28} fontFamily="monospace">
-            ACTUAL ELAPSED TIME
-          </text>
-        </g>
-
-        {/* Bottom Clock: Brain Perceived Time (10x Faster) */}
-        <g transform="translate(540, 1060)">
-          <rect x={-420} y={-210} width={840} height={420} rx={28} fill="rgba(8,28,44,0.92)" stroke="#00F0FF" strokeWidth={6} />
-          <text x={0} y={-115} textAnchor="middle" fill="#00F0FF" fontSize={32} fontFamily="monospace" fontWeight="bold">
-            BRAIN PERCEIVED CLOCK
-          </text>
-          <text x={0} y={45} textAnchor="middle" fill="#00F0FF" fontSize={135} fontFamily="monospace" fontWeight="900">
-            {`${brainSec}s`}
-          </text>
-          <text x={0} y={135} textAnchor="middle" fill="#FFFFFF" fontSize={28} fontFamily="monospace" fontWeight="bold">
-            10X SUBJECTIVE EXPANSION
-          </text>
-        </g>
-      </svg>
-    </AbsoluteFill>
-  );
-};
-
-// SHOT 8 (21-24s): Tachypsychia Reflex Catch (Laser Trajectory Lock)
-const Shot08_ReflexCatch: React.FC = () => {
-  const f = useCurrentFrame();
-  const catchProgress = clamp(f / 95);
-  const handReachX = interpolate(catchProgress, [0, 1], [480, 740], { easing: Easing.out(Easing.back(1.4)) });
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent="#10B981" shotIndex={8} title="TACHYPSYCHIA REFLEX" metric="LOCK ACQUIRED" />
-      <svg width={W} height={H}>
-        {/* Predictive Trajectory Parabola */}
-        <path
-          d="M 740 350 Q 750 680 740 940"
-          fill="none"
-          stroke="#10B981"
-          strokeWidth={6}
-          strokeDasharray="16 12"
-        />
-
-        {/* Falling Smartphone / Object Caught 2 Inches Above Ground */}
-        <g transform={`translate(740, ${interpolate(catchProgress, [0, 1], [480, 910])}) rotate(${25 - catchProgress * 25})`}>
-          <rect x={-45} y={-85} width={90} height={170} rx={16} fill="#0F172A" stroke="#10B981" strokeWidth={8} />
-          <circle cx={0} cy={65} r={8} fill="#10B981" />
-          {f > 90 && (
-            <circle cx={0} cy={0} r={interpolate(f, [90, 140], [40, 220])} fill="none" stroke="#10B981" strokeWidth={6} opacity={interpolate(f, [90, 140], [1, 0])} />
-          )}
-        </g>
-
-        <DetailedAtomStickman
-          frame={f}
-          x={handReachX - 240}
-          y={1120}
-          scale={1.4}
-          rot={16}
-          pose="catching"
-          accent="#10B981"
-        />
-      </svg>
-    </AbsoluteFill>
-  );
-};
-
-// SHOT 9 (24-27s): Superhero Landing & Energy Battery Drain
-const Shot09_EnergyCrash: React.FC = () => {
-  const f = useCurrentFrame();
-  const battery = Math.floor(interpolate(f, [10, 140], [100, 4], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
-  const impactSquash = f < 30 ? Math.sin((f / 30) * Math.PI) * 0.35 : Math.sin(f * 0.25) * 0.06;
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent="#EF4444" shotIndex={9} title="ATP ENERGY DRAIN" metric={`BATTERY: ${battery}%`} />
-      <svg width={W} height={H}>
-        {/* Giant Battery Drain Bar */}
-        <g transform="translate(140, 320)">
-          <rect x={0} y={0} width={800} height={130} rx={20} fill="#0F172A" stroke="#EF4444" strokeWidth={6} />
-          <rect
-            x={16}
-            y={16}
-            width={(768 * battery) / 100}
-            height={98}
-            rx={12}
-            fill={battery > 30 ? '#F59E0B' : '#EF4444'}
-          />
-          <text x={400} y={82} textAnchor="middle" fill="#FFFFFF" fontSize={48} fontFamily="monospace" fontWeight="900">
-            {`NEURAL ENERGY: ${battery}%`}
-          </text>
-        </g>
-
-        <DetailedAtomStickman
-          frame={f}
-          x={540}
-          y={1220}
-          scale={1.45}
-          sq={impactSquash}
-          pose="exhausted"
-          accent="#EF4444"
-        />
-      </svg>
-    </AbsoluteFill>
-  );
-};
-
-// SHOT 10 (27-30s): Spotlight Hero Card & Subscribe Payoff
-const Shot10_SpotlightOutro: React.FC = () => {
-  const f = useCurrentFrame();
-  const pop = spring({ frame: f, fps: FPS, config: { damping: 12, stiffness: 160 } });
-
-  return (
-    <AbsoluteFill>
-      <CyberEnvironment accent="#00F0FF" shotIndex={10} title="SYSTEM ONLINE" metric="@ATOM_STICKMAN" />
-      <svg width={W} height={H}>
-        {/* Video-Shotcraft Dramatic Spotlight Cone */}
-        <polygon points="540,0 120,1520 960,1520" fill="rgba(0, 240, 255, 0.08)" />
-        <ellipse cx={540} cy={1420} rx={340} ry={65} fill="rgba(0, 240, 255, 0.18)" />
-
-        {/* Brand Subscribe Badge */}
-        <g transform={`translate(540, 360) scale(${pop})`}>
-          <rect x={-380} y={-95} width={760} height={190} rx={30} fill="#0B1325" stroke="#00F0FF" strokeWidth={6} />
-          <text x={0} y={-15} textAnchor="middle" fill="#00F0FF" fontSize={34} fontFamily="monospace" fontWeight="bold" letterSpacing={4}>
-            DECODE YOUR BRAIN
-          </text>
-          <text x={0} y={52} textAnchor="middle" fill="#FFFFFF" fontSize={62} fontFamily="sans-serif" fontWeight="900">
-            SUBSCRIBE · ATOM STICKMAN
-          </text>
-        </g>
-
-        <DetailedAtomStickman frame={f} x={540} y={1180} scale={1.5} pose="hero" accent="#00F0FF" />
-      </svg>
-    </AbsoluteFill>
-  );
-};
-
-// =========================================================
-// 5. SUBTITLE & FLASH-CUT COMPOSITOR
-// =========================================================
-
-const SUBTITLES = [
-  { shot: 0, text: 'Jab tum girne wale hote ho, toh TIME SLOW kyun ho jata hai?', hi: 'TIME SLOW', col: '#FF2D55' },
-  { shot: 1, text: 'Normal time pe brain duniya ko 24 FPS pe process karta hai...', hi: '24 FPS', col: '#00F0FF' },
-  { shot: 2, text: 'Par khatre mein AMYGDALA pure brain ko hijack kar leta hai!', hi: 'AMYGDALA', col: '#FF2D55' },
-  { shot: 3, text: 'Slow logic SHUT DOWN karke, instant survival mode on hota hai.', hi: 'SHUT DOWN', col: '#00F0FF' },
-  { shot: 4, text: 'Blood mein ADRENALINE blast hota hai aur pupils khul jaate hain!', hi: 'ADRENALINE', col: '#F59E0B' },
-  { shot: 5, text: 'Brain har second 10 GUNA ZYADA memory snapshots save karta hai!', hi: '10 GUNA ZYADA', col: '#A855F7' },
-  { shot: 6, text: 'Waqt slow nahi hota... 1 second 5 SECOND jaisa mehsus hota hai!', hi: '5 SECOND', col: '#00F0FF' },
-  { shot: 7, text: 'Is biological superpower ko TACHYPSYCHIA kehte hain!', hi: 'TACHYPSYCHIA', col: '#10B981' },
-  { shot: 8, text: 'Khatra talte hi brain ki saari ENERGY DRAIN ho jati hai.', hi: 'ENERGY DRAIN', col: '#EF4444' },
-  { shot: 9, text: 'Aise hi mind-blowing science ke liye ATOM STICKMAN ko subscribe karo!', hi: 'ATOM STICKMAN', col: '#00F0FF' },
-];
+// ============================================================================
+// 7. MASTER COMPOSITOR (REEL)
+// ============================================================================
 
 export const Reel: React.FC = () => {
   const frame = useCurrentFrame();
-  const shotIdx = Math.min(9, Math.floor(frame / 180));
-  const frameInShot = frame % 180;
-  const sub = SUBTITLES[shotIdx];
+  const sec = frame / FPS;
+  const overallProgress = clamp(frame / TOTAL_FRAMES);
+
+  // Locate active audio chunk (0..5) and sub-shot (0..3)
+  let activeChunk = 0;
+  for (let i = 0; i < 6; i++) {
+    if (sec >= CHUNK_START_SEC[i]) activeChunk = i;
+  }
+
+  const chunkElapsedSec = Math.max(0, sec - CHUNK_START_SEC[activeChunk]);
+  const chunkTotalSec = CHUNK_DURATIONS_SEC[activeChunk];
+  const subDurationSec = chunkTotalSec / 4;
+  const activeSubIdx = Math.min(3, Math.floor(chunkElapsedSec / subDurationSec));
+
+  const subElapsedSec = chunkElapsedSec - activeSubIdx * subDurationSec;
+  const localFrame = Math.floor(subElapsedSec * FPS);
+  const subDurationFrames = Math.floor(subDurationSec * FPS);
+
+  const currentMeta =
+    SUB_SCENES.find((s) => s.chunk === activeChunk && s.subIdx === activeSubIdx) || SUB_SCENES[0];
 
   const subPop = spring({
-    frame: frameInShot,
+    frame: localFrame,
     fps: FPS,
-    config: { damping: 13, stiffness: 240 },
+    config: { damping: 14, stiffness: 220 },
   });
 
-  // Video-Shotcraft FlashCut transition on every 3-second seam
-  const flashOpacity = frameInShot < 6 ? interpolate(frameInShot, [0, 6], [0.75, 0]) : 0;
+  // Subtle FlashCut on every 6-second sub-scene transition
+  const seamFlash = localFrame < 6 ? interpolate(localFrame, [0, 6], [0.55, 0]) : 0;
 
-  const shots = [
-    Shot01_SlowMoSlip,
-    Shot02_FpsOverclock,
-    Shot03_AmygdalaHijack,
-    Shot04_CircuitBreaker,
-    Shot05_AdrenalineSurge,
-    Shot06_MemoryHyperStack,
-    Shot07_ClockParadox,
-    Shot08_ReflexCatch,
-    Shot09_EnergyCrash,
-    Shot10_SpotlightOutro,
-  ];
-
-  const parts = sub.text.split(sub.hi);
+  const textParts = currentMeta.text.split(currentMeta.hi);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: '#030408' }}>
-      {/* Uncomment when adding public/voice.mp3 */}
-      {/* <Audio src={staticFile('voice.mp3')} /> */}
+    <AbsoluteFill style={{ backgroundColor: '#020307', overflow: 'hidden' }}>
+      {/*
+        ====================================================================
+        HOW TO ENABLE YOUR AUDIO IN GITHUB:
+        1. If you merged the 6 audio files (in order: 1, 6, 4, 5, 2, 3) into
+           public/voice.mp3, uncomment the line below:
+           <Audio src={staticFile('voice.mp3')} />
+        ====================================================================
+      */}
 
-      {shots.map((ShotComponent, idx) => (
-        <Sequence key={idx} from={idx * 180} durationInFrames={180}>
-          <ShotComponent />
-        </Sequence>
-      ))}
+      <MatrixHudBackdrop
+        frame={frame}
+        accent={currentMeta.accent}
+        chunkIdx={activeChunk}
+        subIdx={activeSubIdx}
+        title={currentMeta.title}
+        metric={currentMeta.metric}
+        overallProgress={overallProgress}
+      />
 
-      {/* High-Retention Subtitle Card */}
+      <SceneVisualRouter
+        chunk={activeChunk}
+        subIdx={activeSubIdx}
+        localFrame={localFrame}
+        subDurationFrames={subDurationFrames}
+        globalFrame={frame}
+        accent={currentMeta.accent}
+      />
+
+      {/* High-Retention Burned-In Hindi/English Subtitle Card */}
       <div
         style={{
           position: 'absolute',
-          bottom: 155,
-          left: 55,
-          right: 55,
+          bottom: 115,
+          left: 48,
+          right: 48,
           display: 'flex',
           justifyContent: 'center',
-          transform: `scale(${interpolate(subPop, [0, 1], [0.82, 1])})`,
+          transform: `scale(${interpolate(subPop, [0, 1], [0.86, 1])})`,
         }}
       >
         <div
           style={{
-            background: 'rgba(6, 10, 20, 0.94)',
-            border: `4px solid ${sub.col}`,
-            borderRadius: 26,
+            background: 'rgba(5, 9, 20, 0.94)',
+            border: `4px solid ${currentMeta.accent}`,
+            borderRadius: 28,
             padding: '26px 38px',
-            boxShadow: `0 18px 45px rgba(0,0,0,0.85), 0 0 35px ${sub.col}55`,
+            boxShadow: `0 18px 50px rgba(0,0,0,0.9), 0 0 35px ${currentMeta.accent}55`,
             textAlign: 'center',
           }}
         >
           <span
             style={{
               color: '#FFFFFF',
-              fontSize: 46,
+              fontSize: 42,
               fontWeight: 900,
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              lineHeight: 1.25,
+              fontFamily: "'Noto Sans Devanagari', system-ui, sans-serif",
+              lineHeight: 1.32,
             }}
           >
-            {parts[0]}
-            <span style={{ color: sub.col, textDecoration: 'underline' }}>{sub.hi}</span>
-            {parts[1] || ''}
+            {textParts[0]}
+            <span
+              style={{
+                color: currentMeta.accent,
+                textDecoration: 'underline',
+                textShadow: `0 0 22px ${currentMeta.accent}`,
+              }}
+            >
+              {currentMeta.hi}
+            </span>
+            {textParts[1] || ''}
           </span>
         </div>
       </div>
 
-      {/* Seam FlashCut */}
-      {flashOpacity > 0 && (
-        <AbsoluteFill style={{ backgroundColor: sub.col, opacity: flashOpacity, pointerEvents: 'none' }} />
+      {/* Seam Flash Overlay */}
+      {seamFlash > 0 && (
+        <AbsoluteFill
+          style={{
+            backgroundColor: currentMeta.accent,
+            opacity: seamFlash,
+            pointerEvents: 'none',
+          }}
+        />
       )}
     </AbsoluteFill>
   );
 };
+
+// ============================================================================
+// 8. REMOTION ROOT REGISTRATION (MATCHES YOUR GITHUB ACTIONS 'Reel' ID)
+// ============================================================================
 
 export const RemotionRoot: React.FC = () => (
   <>
