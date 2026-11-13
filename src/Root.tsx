@@ -1,12 +1,10 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Audio,
   Composition,
   Easing,
   interpolate,
   Sequence,
-  staticFile,
   useCurrentFrame,
 } from "remotion";
 
@@ -19,9 +17,6 @@ const W = 1080;
 const H = 1920;
 const FPS = 60;
 const DURATION = 1850;
-
-// Put this audio in your public folder.
-const AUDIO_FILE = "studio_voice (4).wav";
 
 const C = {
   blue: "#17366D",
@@ -1332,12 +1327,6 @@ const BrainPredictionFilm: React.FC = () => {
       <PageFrame />
       <CaptionTrack />
       <LiveMarkers />
-
-      {/* Original narration */}
-      <Audio
-        src={staticFile(AUDIO_FILE)}
-        volume={1}
-      />
     </AbsoluteFill>
   );
 };
