@@ -1339,7 +1339,7 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Composition
-        id="SaccadicMasking"
+        id="Reel"
         component={SaccadicMaskingVideo}
         durationInFrames={2100}
         fps={60}
