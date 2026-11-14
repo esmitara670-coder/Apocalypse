@@ -19,7 +19,8 @@ jobs:
 
       - name: Install Remotion & FFmpeg
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg wget gnupg xvfb libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2
+          sudo mount -o remount,size=2G /dev/shm
+          sudo apt-get update && sudo apt-get install -y ffmpeg wget gnupg
           wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
           sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
           sudo apt-get update && sudo apt-get install -y google-chrome-stable
@@ -41,7 +42,7 @@ jobs:
             -ar 44100 -ac 2 public/voice.mp3
 
       - name: Render 1080p 60FPS MP4
-        run: xvfb-run -a --server-args="-screen 0 1280x720x24" npx remotion render Reel Out.mp4 --codec=h264 --chromium-options="--no-sandbox"
+        run: npx remotion render Reel Out.mp4 --codec=h264 --gl=angle --concurrency=1 --browser-executable=/usr/bin/google-chrome
 
       - name: Upload Final Video
         uses: actions/upload-artifact@v4
