@@ -38,7 +38,8 @@ jobs:
             -ar 44100 -ac 2 public/voice.mp3
 
       - name: Render 1080p 60FPS MP4
-        run: npx remotion render Reel Out.mp4 --codec=h264
+        run: npx remotion render Reel Out.mp4 --codec=h264 --gl=swangle --concurrency=1 --chromium-options="--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage"
+
 
       - name: Upload Final Video
         uses: actions/upload-artifact@v4
