@@ -1,4 +1,4 @@
-name: Render Reel
+name: Render Remotion Video
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   render:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,35 +17,20 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Remotion & FFmpeg
+      - name: Fix Ubuntu 24.04 Chrome Sandbox & Install Deps
         run: |
-          sudo mount -o remount,size=2G /dev/shm
-          sudo apt-get update && sudo apt-get install -y ffmpeg wget gnupg
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-          sudo apt-get update && sudo apt-get install -y google-chrome-stable
-          npm install
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          npx -y playwright install-deps chromium
+          npm install --legacy-peer-deps
 
-      - name: Generate 47s Multi-Synced SFX Track (No TTS)
+      - name: Render 1080p MP4
         run: |
-          mkdir -p public
-          ffmpeg -y -f lavfi -i "anullsrc=r=44100:cl=stereo:d=47.0" \
-            -f lavfi -i "sine=f=880:d=0.18,afade=t=out:st=0.05:d=0.13,volume=0.25,adelay=200|200" \
-            -f lavfi -i "sine=f=540:d=0.35,afade=t=out:st=0.10:d=0.25,volume=0.38,adelay=3100|3100" \
-            -f lavfi -i "sine=f=440:d=0.45,afade=t=out:st=0.15:d=0.30,volume=0.32,adelay=8500|8500" \
-            -f lavfi -i "sine=f=720:d=0.25,afade=t=out:st=0.05:d=0.20,volume=0.35,adelay=13200|13200" \
-            -f lavfi -i "sine=f=380:d=0.45,afade=t=out:st=0.15:d=0.30,volume=0.40,adelay=20700|20700" \
-            -f lavfi -i "sine=f=140:d=0.50,afade=t=out:st=0.15:d=0.35,volume=0.42,adelay=28800|28800" \
-            -f lavfi -i "sine=f=620:d=0.30,afade=t=out:st=0.08:d=0.22,volume=0.30,adelay=32000|32000" \
-            -f lavfi -i "sine=f=880:d=0.20,afade=t=out:st=0.05:d=0.15,volume=0.30,adelay=39700|39700" \
-            -filter_complex "[0][1][2][3][4][5][6][7][8]amix=inputs=9:normalize=0,alimiter=limit=0.9" \
-            -ar 44100 -ac 2 public/voice.mp3
-
-      - name: Render 1080p 60FPS MP4
-        run: npx remotion render Reel Out.mp4 --codec=h264 --gl=angle --concurrency=1 --browser-executable=/usr/bin/google-chrome
+          npx remotion render src/Root.tsx Reel out.mp4 --codec=h264 --concurrency=2 --jpeg-quality=85 --crf=20
 
       - name: Upload Final Video
         uses: actions/upload-artifact@v4
         with:
-          name: Final-Reel-MP4
-          path: Out.mp4
+          name: Final-Rendered-Video
+          path: out.mp4
