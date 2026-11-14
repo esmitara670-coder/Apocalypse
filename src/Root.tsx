@@ -1,1335 +1,1333 @@
-import React from "react";
+import React, { useMemo, useEffect } from "react";
 import {
   AbsoluteFill,
   Composition,
-  interpolate,
   Sequence,
+  interpolate,
   spring,
   useCurrentFrame,
   useVideoConfig,
+  registerRoot,
 } from "remotion";
+import { ThreeCanvas } from "@remotion/three";
+import { useThree } from "@react-three/fiber";
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import gsap from "gsap";
 
-// ==========================================
-// 1. PERSISTENT BLUEPRINT GRID BACKGROUND
-// ==========================================
-const BlueprintGrid: React.FC = () => {
+// ============================================================================
+// THEME & CONSTANTS (Futuristic Blueprint 9:16)
+// ============================================================================
+const COLORS = {
+  bgDeep: "#040814",
+  bgNavy: "#071024",
+  cyan: "#00f0ff",
+  cyanDim: "#006680",
+  emerald: "#00ff88",
+  crimson: "#ff3366",
+  amber: "#ffb800",
+  white: "#f0f7ff",
+  slate: "#64748b",
+};
+
+const BlueprintScanlineShader = {
+  name: "BlueprintScanlineShader",
+  uniforms: {
+    tDiffuse: { value: null },
+    uIntensity: { value: 0.12 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uIntensity;
+    varying vec2 vUv;
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      float scanline = sin(vUv.y * 960.0) * 0.04 * uIntensity;
+      vec2 dist = vUv - 0.5;
+      float vignette = 1.0 - dot(dist, dist) * 0.55;
+      gl_FragColor = vec4((texel.rgb + scanline) * vignette, texel.a);
+    }
+  `,
+};
+
+// ============================================================================
+// DETERMINISTIC POST-PROCESSING RIG (EffectComposer + UnrealBloom + ShaderPass)
+// ============================================================================
+const PostProcessingRig: React.FC<{
+  bloomStrength?: number;
+  bloomRadius?: number;
+  bloomThreshold?: number;
+}> = ({ bloomStrength = 1.15, bloomRadius = 0.45, bloomThreshold = 0.25 }) => {
+  const { gl, size } = useThree();
+  const { fps } = useVideoConfig();
+
+  const composer = useMemo(() => {
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = 1.1;
+    const comp = new EffectComposer(gl);
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(size.width, size.height),
+      bloomStrength,
+      bloomRadius,
+      bloomThreshold
+    );
+    const scanlinePass = new ShaderPass(BlueprintScanlineShader);
+    comp.addPass(bloomPass);
+    comp.addPass(scanlinePass);
+    return { comp, bloomPass, scanlinePass };
+  }, [gl, size.width, size.height, bloomStrength, bloomRadius, bloomThreshold]);
+
+  useEffect(() => {
+    composer.comp.setSize(size.width, size.height);
+    return () => {
+      composer.bloomPass.dispose();
+      composer.scanlinePass.dispose();
+      composer.comp.dispose();
+    };
+  }, [composer, size.width, size.height]);
+
+  // Keep delta deterministic via Remotion FPS
+  const deterministicDelta = 1 / fps;
+  void deterministicDelta;
+
+  return null;
+};
+
+// ============================================================================
+// SHARED UI: BLUEPRINT HUD OVERLAY & KINETIC DIALOGUE SUBTITLES
+// ============================================================================
+const BlueprintHUD: React.FC<{
+  sceneCode: string;
+  sceneTitle: string;
+  sfxLabel: string;
+  telemetry: string;
+}> = ({ sceneCode, sceneTitle, sfxLabel, telemetry }) => {
   const frame = useCurrentFrame();
-  const seconds = (frame / 60).toFixed(2);
+  const { fps, durationInFrames } = useVideoConfig();
+  const timeSec = (frame / fps).toFixed(2);
+  const progressPct = ((frame / durationInFrames) * 100).toFixed(0);
 
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: "#050A14",
-        overflow: "hidden",
-        fontFamily: "monospace",
-        color: "#22D3EE",
-      }}
-    >
-      {/* Minor & Major SVG Grid */}
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {/* Blueprint SVG Grid */}
       <svg
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          opacity: 0.25,
-        }}
+        width="1080"
+        height="1920"
+        style={{ position: "absolute", inset: 0, opacity: 0.14 }}
       >
         <defs>
           <pattern
-            id="smallGrid"
-            width="40"
-            height="40"
+            id="blueprint-grid"
+            width="60"
+            height="60"
             patternUnits="userSpaceOnUse"
           >
             <path
-              d="M 40 0 L 0 0 0 40"
+              d="M 60 0 L 0 0 0 60"
               fill="none"
-              stroke="#0EA5E9"
-              strokeWidth="0.75"
-            />
-          </pattern>
-          <pattern
-            id="grid"
-            width="200"
-            height="200"
-            patternUnits="userSpaceOnUse"
-          >
-            <rect width="200" height="200" fill="url(#smallGrid)" />
-            <path
-              d="M 200 0 L 0 0 0 200"
-              fill="none"
-              stroke="#38BDF8"
-              strokeWidth="1.5"
+              stroke={COLORS.cyan}
+              strokeWidth="1"
             />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
+        <rect width="1080" height="1920" fill="url(#blueprint-grid)" />
       </svg>
 
-      {/* Radial Vignette */}
+      {/* Top Technical Telemetry Header */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(circle at center, transparent 35%, rgba(2, 6, 23, 0.9) 100%)",
-        }}
-      />
-
-      {/* Technical Safe-Zone Frame */}
-      <div
-        style={{
-          position: "absolute",
-          left: 40,
-          right: 40,
           top: 64,
-          bottom: 96,
-          border: "1px solid rgba(6, 182, 212, 0.25)",
-          pointerEvents: "none",
+          left: 56,
+          right: 56,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: `1px solid rgba(0, 240, 255, 0.3)`,
+          paddingBottom: 18,
+          fontFamily: "monospace",
+          color: COLORS.cyan,
         }}
       >
-        {/* Corner Brackets */}
-        <div
-          style={{
-            position: "absolute",
-            top: -2,
-            left: -2,
-            width: 24,
-            height: 24,
-            borderTop: "4px solid #22D3EE",
-            borderLeft: "4px solid #22D3EE",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: -2,
-            right: -2,
-            width: 24,
-            height: 24,
-            borderTop: "4px solid #22D3EE",
-            borderRight: "4px solid #22D3EE",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: -2,
-            left: -2,
-            width: 24,
-            height: 24,
-            borderBottom: "4px solid #22D3EE",
-            borderLeft: "4px solid #22D3EE",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: -2,
-            right: -2,
-            width: 24,
-            height: 24,
-            borderBottom: "4px solid #22D3EE",
-            borderRight: "4px solid #22D3EE",
-          }}
-        />
-
-        {/* Top HUD Bar */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "16px 24px",
-            fontSize: 20,
-            letterSpacing: "0.15em",
-            color: "rgba(103, 232, 249, 0.75)",
-            borderBottom: "1px solid rgba(6, 182, 212, 0.2)",
-          }}
-        >
-          <span>SYS // NEURAL_OPTICS_04</span>
-          <span>T+{seconds}s</span>
+        <div>
+          <div style={{ fontSize: 20, letterSpacing: 4, opacity: 0.8 }}>
+            {sceneCode} // {sceneTitle}
+          </div>
+          <div style={{ fontSize: 16, color: COLORS.white, opacity: 0.65, marginTop: 4 }}>
+            {telemetry}
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 22, fontWeight: 700 }}>
+            T+{timeSec}s [{progressPct}%]
+          </div>
+          <div style={{ fontSize: 15, color: COLORS.emerald, letterSpacing: 2 }}>
+            SFX: {sfxLabel}
+          </div>
         </div>
       </div>
+
+      {/* Corner Framing Brackets */}
+      {[
+        { top: 44, left: 36, borderTop: "3px solid #00f0ff", borderLeft: "3px solid #00f0ff" },
+        { top: 44, right: 36, borderTop: "3px solid #00f0ff", borderRight: "3px solid #00f0ff" },
+        { bottom: 44, left: 36, borderBottom: "3px solid #00f0ff", borderLeft: "3px solid #00f0ff" },
+        { bottom: 44, right: 36, borderBottom: "3px solid #00f0ff", borderRight: "3px solid #00f0ff" },
+      ].map((pos, idx) => (
+        <div
+          key={idx}
+          style={{
+            position: "absolute",
+            width: 36,
+            height: 36,
+            ...pos,
+          }}
+        />
+      ))}
     </AbsoluteFill>
   );
 };
 
-// ==========================================
-// 2. SCENE 1: HOOK (0 - 300 frames | 0:00 - 0:05)
-// ==========================================
-const Scene1Hook: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const scaleIn = spring({
-    frame,
-    fps,
-    config: { damping: 13, stiffness: 130 },
-  });
-
-  const minutesCount = Math.round(
-    interpolate(frame, [5, 55], [0, 40], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    })
+const KineticSubtitle: React.FC<{
+  text: string;
+  localFrame: number;
+  duration: number;
+}> = ({ text, localFrame, duration }) => {
+  const words = useMemo(() => text.split(" "), [text]);
+  const activeWordIndex = Math.floor(
+    gsap.utils.mapRange(10, duration - 25, 0, words.length, localFrame)
   );
-
-  const cycle = frame % 75;
-  const shutterClosed = cycle > 45 && cycle < 62;
-  const pulseOpacity = interpolate(Math.sin(frame * 0.2), [-1, 1], [0.55, 1]);
+  const containerOpacity = interpolate(
+    localFrame,
+    [0, 12, duration - 12, duration],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
 
   return (
     <div
       style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 64px",
-        color: "#FFFFFF",
-        fontFamily: "system-ui, -apple-system, sans-serif",
+        position: "absolute",
+        bottom: 110,
+        left: 64,
+        right: 64,
+        opacity: containerOpacity,
+        background: "linear-gradient(180deg, rgba(4,8,20,0.78) 0%, rgba(7,16,36,0.94) 100%)",
+        border: "1px solid rgba(0, 240, 255, 0.45)",
+        borderRadius: 20,
+        padding: "28px 34px",
+        boxShadow: "0 16px 48px rgba(0, 0, 0, 0.75), 0 0 28px rgba(0, 240, 255, 0.18)",
       }}
     >
-      {/* Top Badge */}
       <div
         style={{
-          transform: `scale(${scaleIn})`,
-          padding: "10px 28px",
-          marginBottom: 40,
-          borderRadius: 999,
-          border: "2px solid rgba(244, 63, 94, 0.7)",
-          backgroundColor: "rgba(76, 5, 25, 0.6)",
-          color: "#FB7185",
-          fontFamily: "monospace",
-          fontSize: 24,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-        }}
-      >
-        Daily Vision Blackout
-      </div>
-
-      {/* Big Counter */}
-      <div
-        style={{
-          transform: `scale(${scaleIn})`,
-          textAlign: "center",
-          marginBottom: 48,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 150,
-            lineHeight: 1,
-            fontWeight: 900,
-            letterSpacing: "-0.02em",
-            color: "#FFFFFF",
-            textShadow: "0 0 30px rgba(34, 211, 238, 0.55)",
-          }}
-        >
-          {minutesCount} MIN
-        </div>
-        <div
-          style={{
-            fontSize: 36,
-            fontFamily: "monospace",
-            letterSpacing: "0.25em",
-            color: "#22D3EE",
-            marginTop: 14,
-          }}
-        >
-          EVERY SINGLE DAY
-        </div>
-      </div>
-
-      {/* Wireframe Eye SVG */}
-      <div
-        style={{
-          position: "relative",
-          width: 680,
-          height: 360,
           display: "flex",
-          alignItems: "center",
+          flexWrap: "wrap",
           justifyContent: "center",
-          margin: "24px 0",
-        }}
-      >
-        <svg
-          viewBox="0 0 600 300"
-          style={{ width: "100%", height: "100%", overflow: "visible" }}
-        >
-          <path
-            d="M 40 150 Q 300 -30 560 150 Q 300 330 40 150 Z"
-            fill="rgba(8, 145, 178, 0.08)"
-            stroke="#22D3EE"
-            strokeWidth="5"
-          />
-          <circle
-            cx="300"
-            cy="150"
-            r="78"
-            fill="none"
-            stroke="#38BDF8"
-            strokeWidth="4"
-            strokeDasharray="14 8"
-          />
-          <circle
-            cx="300"
-            cy="150"
-            r="34"
-            fill={shutterClosed ? "#F43F5E" : "#22D3EE"}
-          />
-
-          {shutterClosed && (
-            <g>
-              <path
-                d="M 40 150 Q 300 -30 560 150 Q 300 330 40 150 Z"
-                fill="rgba(244, 63, 94, 0.3)"
-              />
-              <line
-                x1="90"
-                y1="230"
-                x2="510"
-                y2="70"
-                stroke="#F43F5E"
-                strokeWidth="8"
-              />
-            </g>
-          )}
-        </svg>
-
-        {/* BLIND Warning Tag */}
-        <div
-          style={{
-            opacity: shutterClosed ? 1 : pulseOpacity,
-            position: "absolute",
-            bottom: -24,
-            padding: "12px 32px",
-            borderRadius: 10,
-            fontFamily: "monospace",
-            fontSize: 30,
-            fontWeight: 700,
-            letterSpacing: "0.18em",
-            border: shutterClosed
-              ? "2px solid #FDA4AF"
-              : "2px solid rgba(244, 63, 94, 0.6)",
-            backgroundColor: shutterClosed
-              ? "#E11D48"
-              : "rgba(15, 23, 42, 0.92)",
-            color: shutterClosed ? "#FFFFFF" : "#FB7185",
-            boxShadow: shutterClosed
-              ? "0 0 30px rgba(244, 63, 94, 0.8)"
-              : "none",
-          }}
-        >
-          {shutterClosed ? "SIGNAL: BLIND" : "STATUS: LEGALLY BLIND"}
-        </div>
-      </div>
-
-      {/* Bottom Hook Caption */}
-      <p
-        style={{
-          marginTop: 68,
-          textAlign: "center",
-          fontSize: 38,
+          gap: "10px 12px",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontSize: 36,
           fontWeight: 700,
           lineHeight: 1.35,
-          color: "#E2E8F0",
-          maxWidth: 820,
+          textAlign: "center",
         }}
       >
-        Par aapka dimaag aapko ye{" "}
-        <span style={{ color: "#22D3EE", textDecoration: "underline" }}>
-          kabhi pata nahi
-        </span>{" "}
-        chalne deta.
-      </p>
+        {words.map((word, idx) => {
+          const isCurrent = idx === activeWordIndex;
+          const isPast = idx < activeWordIndex;
+          return (
+            <span
+              key={idx}
+              style={{
+                color: isCurrent
+                  ? COLORS.cyan
+                  : isPast
+                  ? COLORS.white
+                  : "rgba(240, 247, 255, 0.42)",
+                textShadow: isCurrent ? "0 0 18px rgba(0, 240, 255, 0.9)" : "none",
+                transform: isCurrent ? "scale(1.06)" : "scale(1)",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
-// ==========================================
-// 3. SCENE 2: MOTION BLUR (300 - 660 frames | 0:05 - 0:11)
-// ==========================================
-const Scene2Blur: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+// ============================================================================
+// SCENE 1 — THE MYSTERY (0–6s | 180 Frames)
+// ============================================================================
+const Scene1Mystery3D: React.FC<{ localFrame: number; fps: number }> = ({
+  localFrame,
+  fps,
+}) => {
+  const { camera } = useThree();
 
-  const jump1 = spring({
-    frame: frame - 35,
+  // Tap occurs at frame 36
+  const tapFrame = 36;
+  const postTap = Math.max(0, localFrame - tapFrame);
+
+  // Camera rapid zoom-in toward smartphone after PAY tap
+  const zoomProgress = spring({
+    frame: postTap,
     fps,
-    config: { damping: 12, stiffness: 180 },
-  });
-  const jump2 = spring({
-    frame: frame - 140,
-    fps,
-    config: { damping: 12, stiffness: 180 },
-  });
-  const jump3 = spring({
-    frame: frame - 245,
-    fps,
-    config: { damping: 12, stiffness: 180 },
+    config: { damping: 16, stiffness: 90, mass: 0.9 },
   });
 
-  const normalizedPos = jump1 - jump2 + jump3;
-  const eyeX = interpolate(normalizedPos, [0, 1], [-230, 230]);
+  const camZ = gsap.utils.interpolate(8.2, 3.15, zoomProgress);
+  const camY = gsap.utils.interpolate(0.4, 0.1, zoomProgress);
+  const phoneRotY = gsap.utils.interpolate(-0.28, 0, zoomProgress);
+  const phoneRotX = gsap.utils.interpolate(0.18, 0.02, zoomProgress);
 
-  const isMoving =
-    (frame > 35 && frame < 55) ||
-    (frame > 140 && frame < 160) ||
-    (frame > 245 && frame < 265);
+  camera.position.set(0, camY, camZ);
+  camera.lookAt(0, 0, 0);
+
+  // 320 Cyan Data Particles exploding radially from phone screen
+  const particleSeeds = useMemo(() => {
+    const count = 320;
+    const dirs: Array<{ vx: number; vy: number; vz: number; speed: number }> = [];
+    for (let i = 0; i < count; i++) {
+      const phi = Math.acos(1 - (2 * (i + 0.5)) / count);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+      const speed = 0.045 + ((i * 19) % 100) / 1400;
+      dirs.push({
+        vx: Math.sin(phi) * Math.cos(theta),
+        vy: Math.sin(phi) * Math.sin(theta),
+        vz: Math.abs(Math.cos(phi)) * 1.35 + 0.2,
+        speed,
+      });
+    }
+    return dirs;
+  }, []);
+
+  const particlePositions = useMemo(() => {
+    const arr = new Float32Array(particleSeeds.length * 3);
+    const burstTime = Math.max(0, localFrame - tapFrame);
+    for (let i = 0; i < particleSeeds.length; i++) {
+      const s = particleSeeds[i];
+      const dist = burstTime * s.speed;
+      arr[i * 3] = s.vx * dist;
+      arr[i * 3 + 1] = s.vy * dist - 0.15;
+      arr[i * 3 + 2] = s.vz * dist + 0.12;
+    }
+    return arr;
+  }, [localFrame, particleSeeds]);
+
+  const shockwaveScale = gsap.utils.mapRange(0, 90, 0.2, 5.5, postTap);
+  const shockwaveOpacity = interpolate(postTap, [0, 10, 85], [0, 0.9, 0], {
+    extrapolateRight: "clamp",
+  });
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 56px",
-        color: "#FFFFFF",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
+    <group>
+      <PostProcessingRig bloomStrength={1.25} />
+      <ambientLight intensity={0.6} />
+      <pointLight position={[4, 6, 5]} intensity={2.8} color={COLORS.cyan} />
+      <pointLight position={[-4, -4, 3]} intensity={1.4} color="#3b82f6" />
+
+      {/* 3D Smartphone Assembly */}
+      <group rotation={[phoneRotX, phoneRotY, 0]}>
+        {/* Phone Body */}
+        <mesh>
+          <boxGeometry args={[2.2, 4.3, 0.18]} />
+          <meshStandardMaterial
+            color="#0b1528"
+            metalness={0.85}
+            roughness={0.2}
+          />
+        </mesh>
+
+        {/* Glowing Cyan Wireframe Chassis */}
+        <mesh>
+          <boxGeometry args={[2.24, 4.34, 0.19]} />
+          <meshBasicMaterial color={COLORS.cyan} wireframe transparent opacity={0.35} />
+        </mesh>
+
+        {/* Illuminated Display Glass */}
+        <mesh position={[0, 0, 0.1]}>
+          <planeGeometry args={[2.0, 4.0]} />
+          <meshBasicMaterial color="#061229" />
+        </mesh>
+
+        {/* Interactive PAY Button on Phone Screen */}
+        <mesh
+          position={[
+            0,
+            -1.1,
+            localFrame >= tapFrame && localFrame <= tapFrame + 8 ? 0.11 : 0.15,
+          ]}
+        >
+          <boxGeometry args={[1.45, 0.48, 0.06]} />
+          <meshBasicMaterial
+            color={localFrame >= tapFrame ? COLORS.emerald : COLORS.cyan}
+          />
+        </mesh>
+
+        {/* Payment Processing Rotating Hologram Rings (Post-Tap) */}
+        {postTap > 0 && (
+          <group position={[0, 0.35, 0.22]}>
+            <mesh rotation={[0, 0, postTap * 0.09]}>
+              <ringGeometry args={[0.42, 0.5, 6]} />
+              <meshBasicMaterial
+                color={COLORS.cyan}
+                side={THREE.DoubleSide}
+                blending={THREE.AdditiveBlending}
+              />
+            </mesh>
+            <mesh rotation={[0, 0, -postTap * 0.14]}>
+              <ringGeometry args={[0.6, 0.65, 32]} />
+              <meshBasicMaterial
+                color={COLORS.emerald}
+                side={THREE.DoubleSide}
+                transparent
+                opacity={0.8}
+              />
+            </mesh>
+          </group>
+        )}
+      </group>
+
+      {/* Expanding Cyan Shockwave on Tap */}
+      {postTap > 0 && (
+        <mesh
+          position={[0, -0.5, 0.25]}
+          scale={[shockwaveScale, shockwaveScale, 1]}
+        >
+          <ringGeometry args={[0.45, 0.52, 64]} />
+          <meshBasicMaterial
+            color={COLORS.cyan}
+            transparent
+            opacity={shockwaveOpacity}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      )}
+
+      {/* Radial Cyan Data Particles */}
+      {postTap > 0 && (
+        <points>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[particlePositions, 3]}
+            />
+          </bufferGeometry>
+          <pointsMaterial
+            color={COLORS.cyan}
+            size={0.09}
+            transparent
+            opacity={interpolate(postTap, [0, 15, 130], [0, 1, 0.25], {
+              extrapolateRight: "clamp",
+            })}
+            blending={THREE.AdditiveBlending}
+          />
+        </points>
+      )}
+    </group>
+  );
+};
+
+const Scene1Mystery: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const isTapped = frame >= 36;
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
+      <ThreeCanvas width={1080} height={1920}>
+        <Sequence from={0} durationInFrames={180} layout="none">
+          <Scene1Mystery3D localFrame={frame} fps={fps} />
+        </Sequence>
+      </ThreeCanvas>
+
+      {/* Holographic Phone Screen Callout HUD */}
       <div
         style={{
-          fontSize: 24,
+          position: "absolute",
+          top: 240,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
           fontFamily: "monospace",
-          letterSpacing: "0.25em",
-          color: "#22D3EE",
-          marginBottom: 24,
         }}
       >
-        EYE MOVEMENT // SACCADE
+        <div
+          style={{
+            padding: "14px 32px",
+            borderRadius: 999,
+            border: `2px solid ${isTapped ? COLORS.emerald : COLORS.cyan}`,
+            backgroundColor: "rgba(4, 12, 28, 0.85)",
+            color: isTapped ? COLORS.emerald : COLORS.cyan,
+            fontSize: 28,
+            fontWeight: 700,
+            letterSpacing: 3,
+            boxShadow: `0 0 30px ${isTapped ? "rgba(0,255,136,0.4)" : "rgba(0,240,255,0.3)"}`,
+          }}
+        >
+          {isTapped
+            ? "● PROCESSING UPI TXN: ₹2,500.00"
+            : "TAP [ PAY ₹2,500 ] TO INITIATE"}
+        </div>
       </div>
 
-      <h2
-        style={{
-          fontSize: 64,
-          fontWeight: 900,
-          textAlign: "center",
-          lineHeight: 1.15,
-          margin: "0 0 60px 0",
-        }}
-      >
-        SHAKY CAMERA
-        <span style={{ color: "#F43F5E", display: "block", marginTop: 8 }}>
-          MOTION BLUR
-        </span>
-      </h2>
+      <BlueprintHUD
+        sceneCode="SCN_01"
+        sceneTitle="THE MYSTERY"
+        sfxLabel="TAP + CINEMATIC WHOOSH"
+        telemetry="PARTICLE_EMITTER: ACTIVE // ZOOM_VECTOR: LOCKED"
+      />
 
-      {/* Target A & Target B Box */}
+      <KineticSubtitle
+        text="Tumne phone se sirf 2 second mein payment kar di... Lekin tumhare paise actually gaye kahan?"
+        localFrame={frame}
+        duration={180}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// ============================================================================
+// SCENE 2 — PAYMENT REQUEST (6–14s | 240 Frames)
+// ============================================================================
+const Scene2Request3D: React.FC<{ localFrame: number }> = ({ localFrame }) => {
+  const { camera } = useThree();
+
+  // Packet travels from Smartphone (x = -6) to Sender Bank (x = 6)
+  const travelProgress = gsap.utils.clamp(0, 1, localFrame / 210);
+  const easedProgress = gsap.parseEase("power2.inOut")(travelProgress);
+  const packetX = gsap.utils.interpolate(-6.0, 5.4, easedProgress);
+
+  // Camera smoothly follows the glowing data packet
+  camera.position.set(packetX - 0.6, 1.45, 5.2);
+  camera.lookAt(packetX + 0.8, 0, 0);
+
+  // Verification scanner activates as packet nears Bank (frame 135+)
+  const scannerActive = localFrame >= 135;
+  const scannerY = Math.sin((localFrame - 135) * 0.18) * 1.4;
+
+  return (
+    <group>
+      <PostProcessingRig bloomStrength={1.3} />
+      <ambientLight intensity={0.5} />
+      <pointLight
+        position={[packetX, 1.2, 2]}
+        intensity={3.5}
+        color={COLORS.cyan}
+      />
+
+      {/* Origin Smartphone Node (Left) */}
+      <group position={[-6.2, 0, 0]}>
+        <mesh>
+          <boxGeometry args={[1.2, 2.2, 0.15]} />
+          <meshBasicMaterial color={COLORS.cyan} wireframe />
+        </mesh>
+      </group>
+
+      {/* Blueprint Highway Network Lines */}
+      {[-1.2, -0.6, 0, 0.6, 1.2].map((zOffset, idx) => (
+        <mesh
+          key={idx}
+          position={[0, -0.9, zOffset]}
+          rotation={[0, 0, Math.PI / 2]}
+        >
+          <cylinderGeometry args={[0.015, 0.015, 16, 8]} />
+          <meshBasicMaterial
+            color={idx === 2 ? COLORS.cyan : COLORS.cyanDim}
+            transparent
+            opacity={idx === 2 ? 0.9 : 0.45}
+          />
+        </mesh>
+      ))}
+
+      {/* Glowing Digital Data Packet */}
+      <group
+        position={[packetX, Math.sin(localFrame * 0.15) * 0.15, 0]}
+        rotation={[localFrame * 0.06, localFrame * 0.08, 0]}
+      >
+        <mesh>
+          <octahedronGeometry args={[0.52, 0]} />
+          <meshStandardMaterial
+            color={COLORS.white}
+            emissive={COLORS.cyan}
+            emissiveIntensity={1.6}
+          />
+        </mesh>
+        <mesh scale={[1.35, 1.35, 1.35]}>
+          <octahedronGeometry args={[0.52, 1]} />
+          <meshBasicMaterial
+            color={COLORS.cyan}
+            wireframe
+            transparent
+            opacity={0.6}
+          />
+        </mesh>
+      </group>
+
+      {/* Destination Sender Bank Monolith (Right) */}
+      <group position={[6.0, 0.2, 0]}>
+        <mesh>
+          <boxGeometry args={[2.2, 3.2, 2.2]} />
+          <meshStandardMaterial
+            color="#09152b"
+            emissive={COLORS.cyanDim}
+            emissiveIntensity={0.4}
+          />
+        </mesh>
+        <mesh>
+          <boxGeometry args={[2.26, 3.26, 2.26]} />
+          <meshBasicMaterial color={COLORS.cyan} wireframe />
+        </mesh>
+
+        {/* Active Verification Laser Scanner Plane */}
+        {scannerActive && (
+          <mesh position={[-1.2, scannerY, 0]}>
+            <boxGeometry args={[0.08, 0.12, 2.8]} />
+            <meshBasicMaterial
+              color={COLORS.emerald}
+              blending={THREE.AdditiveBlending}
+            />
+          </mesh>
+        )}
+      </group>
+    </group>
+  );
+};
+
+const Scene2PaymentRequest: React.FC = () => {
+  const frame = useCurrentFrame();
+  const isScanning = frame >= 135;
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
+      <ThreeCanvas width={1080} height={1920}>
+        <Sequence from={0} durationInFrames={240} layout="none">
+          <Scene2Request3D localFrame={frame} />
+        </Sequence>
+      </ThreeCanvas>
+
+      {/* Packet Telemetry Callout */}
       <div
         style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: 880,
-          height: 460,
-          borderRadius: 24,
-          border: "1px solid rgba(6, 182, 212, 0.35)",
-          backgroundColor: "rgba(2, 6, 23, 0.75)",
+          position: "absolute",
+          top: 230,
+          left: 64,
+          right: 64,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
+          justifyContent: "space-between",
+          fontFamily: "monospace",
         }}
       >
-        {/* Target A */}
         <div
           style={{
-            position: "absolute",
-            left: 48,
-            top: 48,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+            padding: "16px 26px",
+            background: "rgba(7, 16, 36, 0.88)",
+            border: `1px solid ${COLORS.cyan}`,
+            borderRadius: 12,
+            color: COLORS.cyan,
+            fontSize: 24,
+          }}
+        >
+          PACKET_PAYLOAD: ENCRYPTED_UPI_REQ
+        </div>
+        <div
+          style={{
+            padding: "16px 26px",
+            background: "rgba(7, 16, 36, 0.88)",
+            border: `1px solid ${isScanning ? COLORS.emerald : COLORS.amber}`,
+            borderRadius: 12,
+            color: isScanning ? COLORS.emerald : COLORS.amber,
+            fontSize: 24,
+            fontWeight: 700,
+          }}
+        >
+          {isScanning ? "SCANNER: BANK VERIFYING..." : "ROUTING TO SENDER BANK"}
+        </div>
+      </div>
+
+      <BlueprintHUD
+        sceneCode="SCN_02"
+        sceneTitle="PAYMENT REQUEST"
+        sfxLabel="DIGITAL DATA TRANSMISSION"
+        telemetry="CAMERA_MODE: PACKET_TRACKING // PROTOCOL: HTTPS_TLS_1.3"
+      />
+
+      <KineticSubtitle
+        text="Jab tum UPI se Pay karte ho, toh tumhara paisa seedha phone se transfer nahi hota! Sabse pehle, payment request tumhare bank tak pahunchti hai."
+        localFrame={frame}
+        duration={240}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// ============================================================================
+// SCENE 3 — UPI NETWORK & NPCI HUB (14–22s | 240 Frames)
+// ============================================================================
+const BANK_NODES = [
+  { name: "SENDER BANK", angle: Math.PI },
+  { name: "BANK NODE A", angle: (2 * Math.PI) / 3 },
+  { name: "BANK NODE B", angle: Math.PI / 3 },
+  { name: "RECEIVER BANK", angle: 0 },
+  { name: "BANK NODE C", angle: -Math.PI / 3 },
+  { name: "BANK NODE D", angle: (-2 * Math.PI) / 3 },
+];
+
+const Scene3Network3D: React.FC<{ localFrame: number }> = ({ localFrame }) => {
+  const { camera } = useThree();
+  const radius = 3.3;
+
+  // Orbiting blueprint overview camera
+  const camAngle = gsap.utils.interpolate(-0.25, 0.25, localFrame / 240);
+  camera.position.set(Math.sin(camAngle) * 2.2, 0.6, 8.8);
+  camera.lookAt(0, 0.2, 0);
+
+  // Packet hops: Sender Bank (idx 0) -> Central NPCI Hub -> Sender Bank Balance Check -> Receiver Bank (idx 3)
+  const hopProgress = gsap.utils.clamp(0, 1, localFrame / 200);
+  let packetPos: [number, number, number] = [0, 0.3, 0];
+  if (hopProgress < 0.35) {
+    const t = gsap.utils.mapRange(0, 0.35, 0, 1, hopProgress);
+    packetPos = [gsap.utils.interpolate(-radius, 0, t), 0.3, 0.3];
+  } else if (hopProgress < 0.7) {
+    const t = gsap.utils.mapRange(0.35, 0.7, 0, Math.PI * 2, hopProgress);
+    packetPos = [Math.cos(t) * 0.9, 0.3 + Math.sin(t) * 0.9, 0.4];
+  } else {
+    const t = gsap.utils.mapRange(0.7, 1, 0, 1, hopProgress);
+    packetPos = [gsap.utils.interpolate(0, radius, t), 0.3, 0.3];
+  }
+
+  return (
+    <group position={[0, 0.3, 0]}>
+      <PostProcessingRig bloomStrength={1.35} />
+      <ambientLight intensity={0.6} />
+      <pointLight position={[0, 0, 3]} intensity={3.5} color={COLORS.cyan} />
+
+      {/* Central Glowing NPCI / UPI Switch Node */}
+      <group rotation={[localFrame * 0.015, localFrame * 0.025, 0]}>
+        <mesh>
+          <icosahedronGeometry args={[1.05, 1]} />
+          <meshStandardMaterial
+            color="#07223d"
+            emissive={COLORS.cyan}
+            emissiveIntensity={0.95}
+            wireframe
+          />
+        </mesh>
+        <mesh>
+          <sphereGeometry args={[0.68, 24, 24]} />
+          <meshBasicMaterial color={COLORS.cyan} transparent opacity={0.35} />
+        </mesh>
+      </group>
+
+      {/* Central Verification Pulse Rings */}
+      <mesh rotation={[0, 0, localFrame * 0.02]}>
+        <ringGeometry args={[1.35, 1.44, 64]} />
+        <meshBasicMaterial
+          color={COLORS.emerald}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* Surrounding Bank Nodes & Radial Conduit Spokes */}
+      {BANK_NODES.map((node, i) => {
+        const nx = Math.cos(node.angle) * radius;
+        const ny = Math.sin(node.angle) * radius;
+        const isHighlighted = i === 0 || i === 3;
+        return (
+          <group key={node.name}>
+            {/* Spoke Line */}
+            <mesh
+              position={[nx / 2, ny / 2, -0.1]}
+              rotation={[0, 0, node.angle - Math.PI / 2]}
+            >
+              <cylinderGeometry args={[0.025, 0.025, radius, 8]} />
+              <meshBasicMaterial
+                color={isHighlighted ? COLORS.cyan : COLORS.cyanDim}
+              />
+            </mesh>
+            {/* Bank Cube Node */}
+            <mesh
+              position={[nx, ny, 0]}
+              rotation={[localFrame * 0.01, localFrame * 0.02, 0]}
+            >
+              <boxGeometry args={[0.72, 0.72, 0.72]} />
+              <meshStandardMaterial
+                color="#0c1930"
+                emissive={isHighlighted ? COLORS.emerald : COLORS.cyan}
+                emissiveIntensity={isHighlighted ? 0.9 : 0.35}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* Rapidly Traveling Verification Packet */}
+      <mesh position={packetPos}>
+        <sphereGeometry args={[0.24, 16, 16]} />
+        <meshBasicMaterial color={COLORS.white} />
+      </mesh>
+    </group>
+  );
+};
+
+const Scene3UpiNetwork: React.FC = () => {
+  const frame = useCurrentFrame();
+  const balanceChecked = frame >= 110;
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
+      <ThreeCanvas width={1080} height={1920}>
+        <Sequence from={0} durationInFrames={240} layout="none">
+          <Scene3Network3D localFrame={frame} />
+        </Sequence>
+      </ThreeCanvas>
+
+      {/* Prominent NPCI Highlight Banner */}
+      <div
+        style={{
+          position: "absolute",
+          top: 215,
+          left: 64,
+          right: 64,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+          fontFamily: "monospace",
+        }}
+      >
+        <div
+          style={{
+            padding: "18px 42px",
+            background: "rgba(0, 240, 255, 0.12)",
+            border: `2px solid ${COLORS.cyan}`,
+            borderRadius: 16,
+            boxShadow: "0 0 40px rgba(0, 240, 255, 0.35)",
+            textAlign: "center",
           }}
         >
           <div
             style={{
-              width: 64,
-              height: 64,
-              borderRadius: "50%",
-              border: "4px solid #22D3EE",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "monospace",
-              fontSize: 26,
-              fontWeight: 700,
+              fontSize: 42,
+              fontWeight: 800,
+              color: COLORS.cyan,
+              letterSpacing: 5,
             }}
           >
-            A
+            NPCI // UPI CENTRAL SWITCH
           </div>
-          <span
-            style={{
-              marginTop: 8,
-              fontFamily: "monospace",
-              fontSize: 18,
-              color: "#67E8F9",
-            }}
-          >
-            TARGET A
-          </span>
+          <div style={{ fontSize: 20, color: COLORS.white, marginTop: 4 }}>
+            NATIONAL PAYMENTS CORPORATION OF INDIA
+          </div>
         </div>
 
-        {/* Target B */}
         <div
           style={{
-            position: "absolute",
-            right: 48,
-            top: 48,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+            padding: "12px 28px",
+            borderRadius: 999,
+            background: "rgba(4, 12, 26, 0.9)",
+            border: `1px solid ${balanceChecked ? COLORS.emerald : COLORS.amber}`,
+            color: balanceChecked ? COLORS.emerald : COLORS.amber,
+            fontSize: 24,
+            fontWeight: 700,
           }}
         >
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: "50%",
-              border: "4px solid #FBBF24",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "monospace",
-              fontSize: 26,
-              fontWeight: 700,
-              color: "#FCD34D",
-            }}
-          >
-            B
-          </div>
-          <span
-            style={{
-              marginTop: 8,
-              fontFamily: "monospace",
-              fontSize: 18,
-              color: "#FCD34D",
-            }}
-          >
-            TARGET B
-          </span>
+          {balanceChecked
+            ? "✓ SENDER BANK BALANCE VERIFIED: SUFFICIENT FUNDS"
+            : "⟳ CHECKING SENDER ACCOUNT LIQUIDITY..."}
         </div>
+      </div>
 
-        {/* Motion Blur Streaks */}
-        {isMoving && (
-          <div
-            style={{
-              position: "absolute",
-              left: 96,
-              right: 96,
-              height: 96,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              opacity: 0.8,
-            }}
-          >
-            <div
-              style={{
-                height: 8,
-                background:
-                  "linear-gradient(90deg, #22D3EE, #F43F5E, #FBBF24)",
-                borderRadius: 999,
-                filter: "blur(2px)",
-              }}
-            />
-            <div
-              style={{
-                height: 12,
-                background:
-                  "linear-gradient(90deg, transparent, #FFFFFF, transparent)",
-                borderRadius: 999,
-                filter: "blur(3px)",
-              }}
-            />
-            <div
-              style={{
-                height: 8,
-                background:
-                  "linear-gradient(90deg, #FBBF24, #F43F5E, #22D3EE)",
-                borderRadius: 999,
-                filter: "blur(2px)",
-              }}
-            />
-          </div>
-        )}
+      <BlueprintHUD
+        sceneCode="SCN_03"
+        sceneTitle="UPI NETWORK & NPCI"
+        sfxLabel="ELECTRONIC PULSES + NETWORK ACTIVATION"
+        telemetry="SWITCH_CORE: NPCI_UPI_2.0 // LATENCY: 18ms"
+      />
 
-        {/* Moving Eyeball Unit */}
+      <KineticSubtitle
+        text="Phir UPI system, NPCI ke network ke through transaction ko process karta hai. Tumhara bank check karta hai ki account mein sufficient balance hai ya nahi."
+        localFrame={frame}
+        duration={240}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// ============================================================================
+// SCENE 4 — MONEY TRANSFER SPLIT-SCREEN (22–32s | 300 Frames)
+// ============================================================================
+const Scene4Transfer3D: React.FC<{ localFrame: number }> = ({ localFrame }) => {
+  const { camera } = useThree();
+  camera.position.set(0, 0, 7.5);
+  camera.lookAt(0, 0, 0);
+
+  // Glowing bridge signal travels from Left (-2.4) to Right (+2.4) between frames 90 and 190
+  const beamProgress = gsap.utils.clamp(0, 1, (localFrame - 90) / 95);
+  const signalX = gsap.utils.interpolate(-2.4, 2.4, beamProgress);
+
+  return (
+    <group>
+      <PostProcessingRig bloomStrength={1.2} />
+      <ambientLight intensity={0.6} />
+      <pointLight position={[signalX, 0.2, 2]} intensity={3} color={COLORS.cyan} />
+
+      {/* Center Conduit Bridge Line */}
+      <mesh position={[0, 0.15, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.04, 0.04, 5.2, 12]} />
+        <meshBasicMaterial color={COLORS.cyanDim} />
+      </mesh>
+
+      {/* Traveling Settlement Pulse */}
+      {localFrame >= 85 && localFrame <= 205 && (
+        <mesh position={[signalX, 0.15, 0.1]}>
+          <sphereGeometry args={[0.28, 24, 24]} />
+          <meshBasicMaterial color={COLORS.cyan} />
+        </mesh>
+      )}
+    </group>
+  );
+};
+
+const Scene4MoneyTransfer: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  // Phase 1 (25–115): Sender Balance drops from ₹12,500 to ₹10,000
+  const debitProgress = gsap.utils.clamp(0, 1, (frame - 25) / 85);
+  const senderBalance = Math.round(
+    gsap.utils.interpolate(12500, 10000, debitProgress)
+  );
+  const isDebited = frame >= 75;
+
+  // Phase 2 (165–250): Receiver Balance rises from ₹4,200 to ₹6,700
+  const creditProgress = gsap.utils.clamp(0, 1, (frame - 165) / 85);
+  const receiverBalance = Math.round(
+    gsap.utils.interpolate(4200, 6700, creditProgress)
+  );
+  const isCredited = frame >= 205;
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
+      <ThreeCanvas width={1080} height={1920}>
+        <Sequence from={0} durationInFrames={300} layout="none">
+          <Scene4Transfer3D localFrame={frame} />
+        </Sequence>
+      </ThreeCanvas>
+
+      {/* Split-Screen Dual Bank Modules */}
+      <div
+        style={{
+          position: "absolute",
+          top: 380,
+          left: 44,
+          right: 44,
+          height: 920,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 32,
+          fontFamily: "monospace",
+        }}
+      >
+        {/* LEFT PANEL: SENDER BANK */}
         <div
           style={{
-            transform: `translateX(${eyeX}px)`,
-            position: "relative",
+            background: "rgba(12, 20, 38, 0.88)",
+            border: `2px solid ${isDebited ? COLORS.crimson : COLORS.cyanDim}`,
+            borderRadius: 24,
+            padding: 32,
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
+            justifyContent: "space-between",
+            boxShadow: isDebited ? "0 0 40px rgba(255, 51, 102, 0.25)" : "none",
           }}
         >
-          <div
-            style={{
-              width: 176,
-              height: 176,
-              borderRadius: "50%",
-              border: "4px solid #22D3EE",
-              backgroundColor: "#0F172A",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 0 40px rgba(34, 211, 238, 0.35)",
-            }}
-          >
+          <div>
+            <div style={{ fontSize: 20, color: COLORS.slate, letterSpacing: 3 }}>
+              NODE_01 // ORIGIN
+            </div>
             <div
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                border: "4px solid #7DD3FC",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                fontSize: 34,
+                fontWeight: 800,
+                color: COLORS.white,
+                marginTop: 8,
               }}
             >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  backgroundColor: "#67E8F9",
-                }}
-              />
+              SENDER BANK
             </div>
           </div>
-          <div
-            style={{
-              marginTop: 16,
-              padding: "6px 18px",
-              borderRadius: 6,
-              backgroundColor: "#083344",
-              border: "1px solid rgba(6, 182, 212, 0.5)",
-              fontFamily: "monospace",
-              fontSize: 20,
-            }}
-          >
-            {normalizedPos < 0.5 ? "LOCK: POINT A" : "LOCK: POINT B"}
-          </div>
-        </div>
-      </div>
 
-      {/* Bottom Warning Box */}
-      <div
-        style={{
-          marginTop: 56,
-          padding: "20px 36px",
-          borderRadius: 14,
-          border: "1px solid rgba(244, 63, 94, 0.45)",
-          backgroundColor: "rgba(76, 5, 25, 0.35)",
-          fontFamily: "monospace",
-          fontSize: 24,
-          color: "#FDA4AF",
-          textAlign: "center",
-        }}
-      >
-        RAW OPTIC INPUT = UNUSABLE BLUR
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// 4. SCENE 3: SACCADIC MASKING (660 - 1080 frames | 0:11 - 0:18)
-// ==========================================
-const Scene3Masking: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const zoom = spring({
-    frame,
-    fps,
-    config: { damping: 16, stiffness: 90 },
-  });
-
-  const cutProgress = spring({
-    frame: frame - 95,
-    fps,
-    config: { damping: 11, stiffness: 160 },
-  });
-
-  const isMuted = frame >= 95;
-  const switchAngle = interpolate(cutProgress, [0, 1], [0, -38]);
-  const dashOffset = -(frame * 4);
-
-  return (
-    <div
-      style={{
-        transform: `scale(${0.92 + zoom * 0.08})`,
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 56px",
-        color: "#FFFFFF",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 24,
-          fontFamily: "monospace",
-          letterSpacing: "0.25em",
-          color: "#22D3EE",
-          marginBottom: 16,
-        }}
-      >
-        NEURAL DEFENSE MECHANISM
-      </div>
-
-      <h2
-        style={{
-          fontSize: 64,
-          fontWeight: 900,
-          textAlign: "center",
-          margin: "0 0 48px 0",
-        }}
-      >
-        LIVE FEED <span style={{ color: "#F43F5E" }}>MUTED</span>
-      </h2>
-
-      {/* Optic Nerve Schematic SVG */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 780,
-          backgroundColor: "rgba(2, 6, 23, 0.85)",
-          border: "1px solid rgba(6, 182, 212, 0.35)",
-          borderRadius: 28,
-          padding: 40,
-        }}
-      >
-        <svg
-          viewBox="0 0 600 620"
-          style={{ width: "100%", height: "auto", overflow: "visible" }}
-        >
-          <rect
-            x="150"
-            y="20"
-            width="300"
-            height="90"
-            rx="16"
-            fill="#0F172A"
-            stroke="#22D3EE"
-            strokeWidth="4"
-          />
-          <text
-            x="300"
-            y="75"
-            textAnchor="middle"
-            fill="#FFFFFF"
-            fontSize="30"
-            fontWeight="bold"
-            fontFamily="monospace"
-          >
-            OPTIC SENSOR
-          </text>
-
-          <line
-            x1="300"
-            y1="110"
-            x2="300"
-            y2="240"
-            stroke="#22D3EE"
-            strokeWidth="6"
-            strokeDasharray="16 12"
-            strokeDashoffset={dashOffset}
-          />
-
-          <circle cx="300" cy="240" r="14" fill="#22D3EE" />
-          <g transform={`translate(300, 350) rotate(${switchAngle})`}>
-            <line
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="-110"
-              stroke={isMuted ? "#F43F5E" : "#22D3EE"}
-              strokeWidth="10"
-              strokeLinecap="round"
-            />
-          </g>
-          <circle
-            cx="300"
-            cy="350"
-            r="14"
-            fill={isMuted ? "#F43F5E" : "#22D3EE"}
-          />
-
-          <text
-            x="345"
-            y="305"
-            fill={isMuted ? "#FB7185" : "#38BDF8"}
-            fontSize="24"
-            fontWeight="bold"
-            fontFamily="monospace"
-          >
-            {isMuted ? "GATE: OPEN (MUTED)" : "GATE: CLOSED"}
-          </text>
-
-          <line
-            x1="300"
-            y1="350"
-            x2="300"
-            y2="490"
-            stroke={isMuted ? "#334155" : "#22D3EE"}
-            strokeWidth="6"
-            strokeDasharray={isMuted ? "10 14" : "16 12"}
-            strokeDashoffset={isMuted ? 0 : dashOffset}
-          />
-
-          <rect
-            x="130"
-            y="490"
-            width="340"
-            height="100"
-            rx="16"
-            fill={isMuted ? "#1E1B2E" : "#0F172A"}
-            stroke={isMuted ? "#F43F5E" : "#22D3EE"}
-            strokeWidth="4"
-          />
-          <text
-            x="300"
-            y="550"
-            textAnchor="middle"
-            fill={isMuted ? "#FDA4AF" : "#FFFFFF"}
-            fontSize="30"
-            fontWeight="bold"
-            fontFamily="monospace"
-          >
-            VISUAL CORTEX
-          </text>
-        </svg>
-      </div>
-
-      {/* Scientific Term Callout Card */}
-      <div
-        style={{
-          opacity: cutProgress,
-          transform: `translateY(${interpolate(cutProgress, [0, 1], [30, 0])}px)`,
-          marginTop: 48,
-          padding: "24px 44px",
-          borderRadius: 20,
-          backgroundColor: "rgba(8, 51, 68, 0.92)",
-          border: "2px solid #22D3EE",
-          boxShadow: "0 0 40px rgba(34, 211, 238, 0.35)",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 20,
-            fontFamily: "monospace",
-            color: "#67E8F9",
-            letterSpacing: "0.2em",
-            marginBottom: 6,
-          }}
-        >
-          PHENOMENON IDENTIFIED
-        </div>
-        <div
-          style={{
-            fontSize: 50,
-            fontWeight: 900,
-            letterSpacing: "0.04em",
-            color: "#FFFFFF",
-          }}
-        >
-          SACCADIC MASKING
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// 5. SCENE 4: TIMELINE PATCH (1080 - 1560 frames | 0:18 - 0:26)
-// ==========================================
-const Scene4Timeline: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const copyProgress = spring({
-    frame: frame - 110,
-    fps,
-    config: { damping: 14, stiffness: 100 },
-  });
-
-  const isPatched = copyProgress > 0.85;
-
-  const cloneX = interpolate(copyProgress, [0, 1], [285, 0]);
-  const cloneY = interpolate(copyProgress, [0, 0.5, 1], [0, -170, 0]);
-  const cloneOpacity = interpolate(frame, [95, 115], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 48px",
-        color: "#FFFFFF",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 24,
-          fontFamily: "monospace",
-          letterSpacing: "0.25em",
-          color: "#22D3EE",
-          marginBottom: 16,
-        }}
-      >
-        MEMORY RECONSTRUCTION
-      </div>
-
-      <h2
-        style={{
-          fontSize: 60,
-          fontWeight: 900,
-          textAlign: "center",
-          lineHeight: 1.15,
-          margin: "0 0 24px 0",
-        }}
-      >
-        BRAIN <span style={{ color: "#22D3EE" }}>COPY-PASTES</span>
-        <br />
-        THE FUTURE FRAME
-      </h2>
-
-      <p
-        style={{
-          fontSize: 32,
-          color: "#CBD5E1",
-          textAlign: "center",
-          maxWidth: 740,
-          margin: "0 0 72px 0",
-          lineHeight: 1.4,
-        }}
-      >
-        Andhera dikhane ke bajaye, dimaag agle frame ko peeche paste kar deta
-        hai.
-      </p>
-
-      {/* Blueprint Timeline Track */}
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: 880,
-          padding: "88px 28px",
-          borderRadius: 28,
-          border: "1px solid rgba(6, 182, 212, 0.35)",
-          backgroundColor: "rgba(2, 6, 23, 0.85)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            fontSize: 20,
-            fontFamily: "monospace",
-            color: "#94A3B8",
-            marginBottom: 24,
-            padding: "0 8px",
-          }}
-        >
-          <span>00:00.00</span>
-          <span>TIMELINE BUFFER</span>
-          <span>00:00.08</span>
-        </div>
-
-        <div
-          style={{
-            position: "relative",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 20,
-            height: 220,
-          }}
-        >
-          {/* Slot 1: Frame A */}
-          <div
-            style={{
-              borderRadius: 18,
-              border: "2px solid rgba(6, 182, 212, 0.65)",
-              backgroundColor: "rgba(8, 51, 68, 0.45)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-            }}
-          >
-            <span
+          <div style={{ textAlign: "center", margin: "40px 0" }}>
+            <div style={{ fontSize: 20, color: COLORS.slate }}>
+              AVAILABLE BALANCE
+            </div>
+            <div
               style={{
-                fontFamily: "monospace",
-                fontSize: 20,
-                color: "#67E8F9",
-              }}
-            >
-              T - 1
-            </span>
-            <span style={{ fontSize: 32, fontWeight: 900, marginTop: 8 }}>
-              FRAME A
-            </span>
-          </div>
-
-          {/* Slot 2: Missing Blind Gap */}
-          <div
-            style={{
-              borderRadius: 18,
-              border: isPatched
-                ? "2px dashed #34D399"
-                : "2px dashed #F43F5E",
-              backgroundColor: isPatched
-                ? "rgba(6, 78, 59, 0.3)"
-                : "rgba(76, 5, 25, 0.35)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "monospace",
-                fontSize: 20,
-                color: "#FB7185",
-              }}
-            >
-              BLIND GAP
-            </span>
-            <span
-              style={{
-                fontSize: 26,
-                fontWeight: 700,
-                color: "#FDA4AF",
-                marginTop: 8,
-                textAlign: "center",
-              }}
-            >
-              40ms MISSING
-            </span>
-          </div>
-
-          {/* Slot 3: Frame B */}
-          <div
-            style={{
-              borderRadius: 18,
-              border: "2px solid #FBBF24",
-              backgroundColor: "rgba(69, 26, 3, 0.45)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-              boxShadow: "0 0 25px rgba(251, 191, 36, 0.25)",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "monospace",
-                fontSize: 20,
-                color: "#FCD34D",
-              }}
-            >
-              T + 1
-            </span>
-            <span
-              style={{
-                fontSize: 32,
-                fontWeight: 900,
-                color: "#FDE68A",
-                marginTop: 8,
-              }}
-            >
-              FRAME B
-            </span>
-          </div>
-
-          {/* Animated Cloned Frame B */}
-          <div
-            style={{
-              opacity: cloneOpacity,
-              transform: `translate(${cloneX}px, ${cloneY}px)`,
-              position: "absolute",
-              top: 0,
-              bottom: 0,
-              left: "34.1%",
-              width: "31.8%",
-              borderRadius: 18,
-              border: "4px solid #67E8F9",
-              backgroundColor: "rgba(6, 182, 212, 0.28)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 16,
-              boxShadow: "0 0 35px rgba(34, 211, 238, 0.65)",
-            }}
-          >
-            <span
-              style={{
-                padding: "4px 14px",
-                borderRadius: 6,
-                backgroundColor: "#22D3EE",
-                color: "#020617",
-                fontFamily: "monospace",
-                fontSize: 18,
+                fontSize: 52,
                 fontWeight: 800,
+                color: isDebited ? COLORS.crimson : COLORS.white,
+                marginTop: 12,
               }}
             >
-              PASTED
-            </span>
-            <span
+              ₹{senderBalance.toLocaleString("en-IN")}
+            </div>
+            {isDebited && (
+              <div
+                style={{
+                  fontSize: 28,
+                  color: COLORS.crimson,
+                  marginTop: 10,
+                  fontWeight: 700,
+                }}
+              >
+                - ₹2,500
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              padding: "16px 0",
+              textAlign: "center",
+              borderRadius: 12,
+              background: isDebited
+                ? "rgba(255, 51, 102, 0.18)"
+                : "rgba(0, 240, 255, 0.08)",
+              border: `2px solid ${isDebited ? COLORS.crimson : COLORS.cyanDim}`,
+              color: isDebited ? COLORS.crimson : COLORS.slate,
+              fontSize: 32,
+              fontWeight: 800,
+              letterSpacing: 4,
+            }}
+          >
+            {isDebited ? "DEBITED" : "STANDBY"}
+          </div>
+        </div>
+
+        {/* RIGHT PANEL: RECEIVER BANK */}
+        <div
+          style={{
+            background: "rgba(12, 20, 38, 0.88)",
+            border: `2px solid ${isCredited ? COLORS.emerald : COLORS.cyanDim}`,
+            borderRadius: 24,
+            padding: 32,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxShadow: isCredited ? "0 0 40px rgba(0, 255, 136, 0.25)" : "none",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 20, color: COLORS.slate, letterSpacing: 3 }}>
+              NODE_02 // DESTINATION
+            </div>
+            <div
               style={{
-                fontSize: 32,
-                fontWeight: 900,
-                color: "#FFFFFF",
+                fontSize: 34,
+                fontWeight: 800,
+                color: COLORS.white,
                 marginTop: 8,
               }}
             >
-              FRAME B
-            </span>
+              RECEIVER BANK
+            </div>
+          </div>
+
+          <div style={{ textAlign: "center", margin: "40px 0" }}>
+            <div style={{ fontSize: 20, color: COLORS.slate }}>
+              AVAILABLE BALANCE
+            </div>
+            <div
+              style={{
+                fontSize: 52,
+                fontWeight: 800,
+                color: isCredited ? COLORS.emerald : COLORS.white,
+                marginTop: 12,
+              }}
+            >
+              ₹{receiverBalance.toLocaleString("en-IN")}
+            </div>
+            {isCredited && (
+              <div
+                style={{
+                  fontSize: 28,
+                  color: COLORS.emerald,
+                  marginTop: 10,
+                  fontWeight: 700,
+                }}
+              >
+                + ₹2,500
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              padding: "16px 0",
+              textAlign: "center",
+              borderRadius: 12,
+              background: isCredited
+                ? "rgba(0, 255, 136, 0.18)"
+                : "rgba(0, 240, 255, 0.08)",
+              border: `2px solid ${isCredited ? COLORS.emerald : COLORS.cyanDim}`,
+              color: isCredited ? COLORS.emerald : COLORS.slate,
+              fontSize: 32,
+              fontWeight: 800,
+              letterSpacing: 4,
+            }}
+          >
+            {isCredited ? "CREDITED" : "AWAITING"}
           </div>
         </div>
       </div>
 
-      {/* Status Confirmation */}
-      <div
-        style={{
-          opacity: copyProgress,
-          marginTop: 56,
-          padding: "18px 36px",
-          borderRadius: 14,
-          border: "1px solid rgba(52, 211, 153, 0.5)",
-          backgroundColor: "rgba(6, 78, 59, 0.45)",
-          fontFamily: "monospace",
-          fontSize: 24,
-          color: "#6EE7B7",
-        }}
-      >
-        GAP PATCHED // SEAMLESS ILLUSION
-      </div>
-    </div>
+      <BlueprintHUD
+        sceneCode="SCN_04"
+        sceneTitle="SYNCHRONIZED LEDGER TRANSFER"
+        sfxLabel="DEBIT / CREDIT CONFIRMATION BEEPS"
+        telemetry="SETTLEMENT: ATOMIC_SWAP // LEDGER_SYNC: VERIFIED"
+      />
+
+      <KineticSubtitle
+        text="Agar sab kuch sahi hai, toh tumhare bank se paise debit hote hain... aur receiver ke bank mein credit ho jaate hain. Aur ye sab kuch seconds mein ho sakta hai!"
+        localFrame={frame}
+        duration={300}
+      />
+    </AbsoluteFill>
   );
 };
 
-// ==========================================
-// 6. SCENE 5: PAYOFF (1560 - 2100 frames | 0:26 - 0:35)
-// ==========================================
-const Scene5Payoff: React.FC = () => {
+// ============================================================================
+// SCENE 5 — FINAL REVEAL (32–40s | 240 Frames)
+// ============================================================================
+const Scene5Reveal3D: React.FC<{ localFrame: number }> = ({ localFrame }) => {
+  const { camera } = useThree();
+
+  // Smooth zoom-out from Smartphone to full Digital Payment Network
+  const zoomOutProgress = gsap.utils.clamp(0, 1, (localFrame - 20) / 130);
+  const easedZoom = gsap.parseEase("power2.inOut")(zoomOutProgress);
+  const camZ = gsap.utils.interpolate(3.4, 10.5, easedZoom);
+  const camY = gsap.utils.interpolate(0, 0.6, easedZoom);
+
+  camera.position.set(0, camY, camZ);
+  camera.lookAt(0, 0.2, 0);
+
+  return (
+    <group>
+      <PostProcessingRig bloomStrength={1.35} />
+      <ambientLight intensity={0.65} />
+      <pointLight position={[0, 2, 4]} intensity={3.2} color={COLORS.emerald} />
+
+      {/* Bottom Node: Smartphone */}
+      <group position={[0, -2.2, 0]}>
+        <mesh>
+          <boxGeometry args={[1.4, 2.5, 0.15]} />
+          <meshStandardMaterial
+            color="#071a2e"
+            emissive={COLORS.emerald}
+            emissiveIntensity={0.7}
+          />
+        </mesh>
+      </group>
+
+      {/* Center Node: UPI / NPCI Hub */}
+      <group
+        position={[0, 0.6, 0]}
+        rotation={[localFrame * 0.015, localFrame * 0.02, 0]}
+      >
+        <mesh>
+          <icosahedronGeometry args={[0.85, 1]} />
+          <meshBasicMaterial color={COLORS.cyan} wireframe />
+        </mesh>
+      </group>
+
+      {/* Left & Right Nodes: Sender & Receiver Banks */}
+      <mesh position={[-3.0, 2.2, 0]}>
+        <boxGeometry args={[1.1, 1.1, 1.1]} />
+        <meshBasicMaterial color={COLORS.cyan} wireframe />
+      </mesh>
+      <mesh position={[3.0, 2.2, 0]}>
+        <boxGeometry args={[1.1, 1.1, 1.1]} />
+        <meshBasicMaterial color={COLORS.emerald} wireframe />
+      </mesh>
+
+      {/* Glowing Network Connections */}
+      <mesh position={[0, -0.8, 0]}>
+        <cylinderGeometry args={[0.03, 0.03, 2.8, 8]} />
+        <meshBasicMaterial color={COLORS.emerald} />
+      </mesh>
+      <mesh position={[-1.5, 1.4, 0]} rotation={[0, 0, Math.PI / 3]}>
+        <cylinderGeometry args={[0.03, 0.03, 3.4, 8]} />
+        <meshBasicMaterial color={COLORS.cyan} />
+      </mesh>
+      <mesh position={[1.5, 1.4, 0]} rotation={[0, 0, -Math.PI / 3]}>
+        <cylinderGeometry args={[0.03, 0.03, 3.4, 8]} />
+        <meshBasicMaterial color={COLORS.emerald} />
+      </mesh>
+    </group>
+  );
+};
+
+const Scene5FinalReveal: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const strikeWidth = interpolate(frame, [25, 65], [0, 100], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  const reveal = spring({
-    frame: frame - 75,
+  const headlineScale = spring({
+    frame: Math.max(0, frame - 95),
     fps,
-    config: { damping: 12, stiffness: 120 },
+    config: { damping: 14, stiffness: 110 },
   });
-
-  const ringScale = 1 + Math.sin(frame * 0.08) * 0.04;
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 56px",
-        color: "#FFFFFF",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
-      {/* Crossed-out "LIVE REALITY" */}
-      <div
-        style={{
-          position: "relative",
-          display: "inline-block",
-          marginBottom: 56,
-          padding: "16px 36px",
-          borderRadius: 14,
-          border: "1px solid #334155",
-          backgroundColor: "rgba(15, 23, 42, 0.75)",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 38,
-            fontFamily: "monospace",
-            fontWeight: 700,
-            letterSpacing: "0.18em",
-            color: "#94A3B8",
-          }}
-        >
-          LIVE REALITY
-        </span>
-        <div
-          style={{
-            width: `${strikeWidth}%`,
-            position: "absolute",
-            left: 0,
-            top: "50%",
-            height: 8,
-            backgroundColor: "#F43F5E",
-            transform: "translateY(-50%)",
-            boxShadow: "0 0 15px #F43F5E",
-          }}
-        />
-      </div>
+    <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
+      <ThreeCanvas width={1080} height={1920}>
+        <Sequence from={0} durationInFrames={240} layout="none">
+          <Scene5Reveal3D localFrame={frame} />
+        </Sequence>
+      </ThreeCanvas>
 
-      {/* Main Payoff Card */}
+      {/* Smartphone Payment Successful Badge */}
       <div
         style={{
-          opacity: reveal,
-          transform: `scale(${0.85 + reveal * 0.15})`,
-          width: "100%",
-          maxWidth: 780,
-          borderRadius: 32,
-          border: "2px solid #22D3EE",
-          background:
-            "linear-gradient(180deg, rgba(8, 51, 68, 0.85) 0%, rgba(2, 6, 23, 0.96) 100%)",
-          padding: 56,
-          textAlign: "center",
-          boxShadow: "0 0 60px rgba(34, 211, 238, 0.32)",
+          position: "absolute",
+          top: 230,
+          left: 64,
+          right: 64,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          fontFamily: "monospace",
         }}
       >
         <div
           style={{
-            fontSize: 24,
-            fontFamily: "monospace",
-            letterSpacing: "0.28em",
-            color: "#67E8F9",
-            marginBottom: 24,
-          }}
-        >
-          YOUR PERCEPTION IS AN
-        </div>
-
-        <h1
-          style={{
-            fontSize: 88,
-            lineHeight: 1.05,
-            fontWeight: 900,
-            letterSpacing: "-0.02em",
-            color: "#FFFFFF",
-            margin: 0,
-            textShadow: "0 0 25px rgba(255, 255, 255, 0.35)",
-          }}
-        >
-          EDITED
-          <span style={{ display: "block", color: "#22D3EE", marginTop: 8 }}>
-            FLASHBACK
-          </span>
-        </h1>
-
-        {/* Pulsing Neural Wave */}
-        <div
-          style={{
-            marginTop: 48,
             display: "flex",
-            justifyContent: "center",
+            alignItems: "center",
+            gap: 18,
+            padding: "18px 40px",
+            borderRadius: 999,
+            background: "rgba(0, 255, 136, 0.14)",
+            border: `2px solid ${COLORS.emerald}`,
+            boxShadow: "0 0 40px rgba(0, 255, 136, 0.45)",
           }}
         >
-          <svg
-            style={{ transform: `scale(${ringScale})` }}
-            width="220"
-            height="120"
-            viewBox="0 0 220 120"
+          <span style={{ fontSize: 42, color: COLORS.emerald }}>✓</span>
+          <span
+            style={{
+              fontSize: 34,
+              fontWeight: 800,
+              color: COLORS.emerald,
+              letterSpacing: 3,
+            }}
           >
-            <path
-              d="M 10 60 Q 45 10, 80 60 T 150 60 T 210 60"
-              fill="none"
-              stroke="#22D3EE"
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
-            <path
-              d="M 10 60 Q 45 110, 80 60 T 150 60 T 210 60"
-              fill="none"
-              stroke="#38BDF8"
-              strokeWidth="3"
-              opacity="0.5"
-            />
-          </svg>
-        </div>
-
-        <div
-          style={{
-            marginTop: 32,
-            paddingTop: 24,
-            borderTop: "1px solid rgba(6, 182, 212, 0.3)",
-            fontFamily: "monospace",
-            fontSize: 24,
-            color: "#CBD5E1",
-          }}
-        >
-          40 MIN/DAY • SACCADIC MASKING
+            PAYMENT SUCCESSFUL
+          </span>
         </div>
       </div>
-    </div>
+
+      {/* Final Kinetic Blueprint Headline */}
+      {frame >= 95 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "44%",
+            left: 56,
+            right: 56,
+            transform: `scale(${headlineScale})`,
+            background: "rgba(4, 10, 24, 0.92)",
+            border: `3px solid ${COLORS.cyan}`,
+            borderRadius: 24,
+            padding: "40px 36px",
+            textAlign: "center",
+            boxShadow: "0 0 65px rgba(0, 240, 255, 0.45)",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 58,
+              fontWeight: 900,
+              color: COLORS.white,
+              letterSpacing: 2,
+              lineHeight: 1.18,
+              textShadow: "0 0 24px rgba(0, 240, 255, 0.8)",
+            }}
+          >
+            YOUR PHONE DOESN&apos;T SEND MONEY!
+          </div>
+          <div
+            style={{
+              fontSize: 24,
+              fontFamily: "monospace",
+              color: COLORS.cyan,
+              marginTop: 16,
+              letterSpacing: 4,
+            }}
+          >
+            IT INITIATES AN INSTANT DIGITAL LEDGER INSTRUCTION
+          </div>
+        </div>
+      )}
+
+      <BlueprintHUD
+        sceneCode="SCN_05"
+        sceneTitle="FULL ARCHITECTURE REVEAL"
+        sfxLabel="DEEP CINEMATIC IMPACT + SUCCESS CHIME"
+        telemetry="NETWORK_TOPOLOGY: COMPLETE // TXN_STATUS: SETTLED"
+      />
+
+      <KineticSubtitle
+        text="Matlab, tumhara phone paisa nahi bhejta... woh sirf ek digital transaction ki shuruaat karta hai!"
+        localFrame={frame}
+        duration={240}
+      />
+    </AbsoluteFill>
   );
 };
 
-// ==========================================
-// 7. MAIN COMPOSITION & REMOTION ROOT
-// ==========================================
-export const SaccadicMaskingVideo: React.FC = () => {
+// ============================================================================
+// MASTER TIMELINE COMPOSITION (40s = 1200 Frames @ 30fps, 1080x1920)
+// ============================================================================
+export const OnlinePaymentDocumentary: React.FC = () => {
   return (
-    <AbsoluteFill style={{ backgroundColor: "#050A14" }}>
-      <BlueprintGrid />
-
-      <Sequence from={0} durationInFrames={300}>
-        <Scene1Hook />
+    <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
+      {/* Scene 1: 0–6s (0–180 frames) */}
+      <Sequence from={0} durationInFrames={180}>
+        <Scene1Mystery />
       </Sequence>
 
-      <Sequence from={300} durationInFrames={360}>
-        <Scene2Blur />
+      {/* Scene 2: 6–14s (180–420 frames) */}
+      <Sequence from={180} durationInFrames={240}>
+        <Scene2PaymentRequest />
       </Sequence>
 
-      <Sequence from={660} durationInFrames={420}>
-        <Scene3Masking />
+      {/* Scene 3: 14–22s (420–660 frames) */}
+      <Sequence from={420} durationInFrames={240}>
+        <Scene3UpiNetwork />
       </Sequence>
 
-      <Sequence from={1080} durationInFrames={480}>
-        <Scene4Timeline />
+      {/* Scene 4: 22–32s (660–960 frames) */}
+      <Sequence from={660} durationInFrames={300}>
+        <Scene4MoneyTransfer />
       </Sequence>
 
-      <Sequence from={1560} durationInFrames={540}>
-        <Scene5Payoff />
+      {/* Scene 5: 32–40s (960–1200 frames) */}
+      <Sequence from={960} durationInFrames={240}>
+        <Scene5FinalReveal />
       </Sequence>
     </AbsoluteFill>
   );
@@ -1337,17 +1335,15 @@ export const SaccadicMaskingVideo: React.FC = () => {
 
 export const RemotionRoot: React.FC = () => {
   return (
-    <>
-      <Composition
-        id="Reel"
-        component={SaccadicMaskingVideo}
-        durationInFrames={2100}
-        fps={60}
-        width={1080}
-        height={1920}
-      />
-    </>
+    <Composition
+      id="WhereDoesYourMoneyGo"
+      component={OnlinePaymentDocumentary}
+      durationInFrames={1200}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
   );
 };
 
-export default RemotionRoot;
+registerRoot(RemotionRoot);
